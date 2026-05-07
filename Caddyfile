@@ -1,0 +1,40 @@
+{
+	admin off
+	log {
+		output stdout
+		format json
+	}
+}
+
+:80, :443 {
+	# TLS — replace with domain when ready:
+	# tls your@email.com
+
+	# API proxied to FastAPI backend
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	# Auth (NextAuth) goes to frontend
+	handle /auth/* {
+		reverse_proxy frontend:3000
+	}
+
+	# Everything else to Next.js
+	handle {
+		reverse_proxy frontend:3000
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		X-XSS-Protection "1; mode=block"
+		Referrer-Policy strict-origin-when-cross-origin
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	log {
+		output stdout
+	}
+}

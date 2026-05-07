@@ -1,0 +1,22 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir uv && \
+    uv pip install --system -r pyproject.toml 2>/dev/null || \
+    pip install --no-cache-dir fastapi uvicorn[standard] sqlalchemy[asyncio] asyncpg \
+        alembic pydantic[email] python-jose[cryptography] passlib[bcrypt] \
+        python-multipart weasyprint jinja2 openpyxl pandas
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
