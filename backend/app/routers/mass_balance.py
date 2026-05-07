@@ -55,9 +55,7 @@ async def get_monthly_balance(
 @router.post("/refresh", status_code=200)
 async def refresh_mass_balance() -> dict[str, str]:
     # REFRESH MATERIALIZED VIEW CONCURRENTLY cannot run inside a transaction.
-    # AsyncSession uses autobegin, so a transaction is always active there.
-    # Fix: use engine.connect() with AUTOCOMMIT so no transaction wraps the call.
-    async with engine.connect() as conn:
-        await conn.execution_options(isolation_level="AUTOCOMMIT")
+    # execution_options() returns a new object — must be set on engine before connect().
+    async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as conn:
         await conn.execute(text("SELECT refresh_mass_balance_views()"))
     return {"status": "refreshed"}
