@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, time
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, ForeignKey, Numeric, String, Text, Time, text
+from sqlalchemy import Boolean, Computed, Date, ForeignKey, Numeric, String, Text, Time, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -24,8 +24,11 @@ class DailyEntry(Base):
     car_kg: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), server_default=text("0"), nullable=True)
     truck_kg: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), server_default=text("0"), nullable=True)
     special_kg: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), server_default=text("0"), nullable=True)
-    # total_input_kg is GENERATED ALWAYS AS, read-only
-    total_input_kg: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    # total_input_kg is GENERATED ALWAYS AS (car_kg + truck_kg + special_kg)
+    total_input_kg: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2),
+        Computed("car_kg + truck_kg + special_kg", persisted=True),
+    )
 
     theor_veg_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
     manuf_veg_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -115,7 +115,7 @@ async def update_daily_entry(
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(obj, field, value)
     obj.updated_by = current_user.id
-    obj.updated_at = datetime.now(timezone.utc)
+    obj.updated_at = datetime.utcnow()
     new_snapshot = _entry_snapshot(obj)
     await _write_audit(db, "UPDATE", obj.id, current_user.id, _client_ip(request), old=old_snapshot, new=new_snapshot)
     await db.commit()
@@ -134,7 +134,7 @@ async def delete_daily_entry(
     if obj is None or obj.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Daily entry not found")
     old_snapshot = _entry_snapshot(obj)
-    obj.deleted_at = datetime.now(timezone.utc)
+    obj.deleted_at = datetime.utcnow()
     obj.updated_by = current_user.id
     await _write_audit(db, "DELETE", obj.id, current_user.id, _client_ip(request), old=old_snapshot)
     await db.commit()
