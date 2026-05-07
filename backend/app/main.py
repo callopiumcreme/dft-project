@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.routers import auth, certificates, contracts, daily_entries, suppliers
+from app.routers import auth, certificates, contracts, daily_entries, mass_balance, suppliers
 
 app = FastAPI(title="DFT Mass Balance API", version="0.1.0")
 
@@ -9,6 +9,7 @@ app.include_router(suppliers.router)
 app.include_router(contracts.router)
 app.include_router(certificates.router)
 app.include_router(daily_entries.router)
+app.include_router(mass_balance.router)
 
 
 @app.get("/health")
