@@ -3,22 +3,26 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 SECRET_KEY = os.environ.get("JWT_SECRET", "changeme-dft-secret-key-2026")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _truncate(plain: str) -> bytes:
+    # bcrypt 5.x rejects passwords > 72 bytes; we silently truncate (bcrypt
+    # only reads the first 72 bytes anyway, so security is unchanged).
+    return plain.encode("utf-8")[:72]
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(_truncate(plain), hashed.encode("utf-8"))
 
 
 def hash_password(plain: str) -> str:
-    return pwd_context.hash(plain)
+    return bcrypt.hashpw(_truncate(plain), bcrypt.gensalt()).decode("utf-8")
 
 
 def create_access_token(subject: str, role: str) -> str:
