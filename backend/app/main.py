@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 
-from app.routers import admin, anagrafica, auth, daily_inputs, daily_production
+from app.routers import admin, anagrafica, auth, daily_inputs, daily_production, reports
 from app.services.mv_refresh import refresh_all_mvs
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,7 @@ app.include_router(anagrafica.certificates_router)
 app.include_router(anagrafica.contracts_router)
 app.include_router(daily_inputs.router)
 app.include_router(daily_production.router)
+app.include_router(reports.router)
 
 
 @app.get("/health")
