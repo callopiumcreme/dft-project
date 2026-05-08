@@ -84,8 +84,9 @@ Già presenti: `@radix-ui/react-accordion`, `@radix-ui/react-label`, `@radix-ui/
 **Acceptance**: tipi generati per `/reports/*`, `/suppliers`, `/daily-inputs`, `/daily-production`, `/auth/*`. `apiGet('/health')` testato.
 
 ### S3-3: Auth flow login/logout
-**Scope**: Pagina `/login` form (RHF + zod schema email/password). Route handler `/api/auth/login/route.ts` POST → forward a `${BACKEND_URL}/auth/login` → ricevi JWT → set cookie httpOnly Secure SameSite=Lax con `Max-Age` da JWT exp. `/api/auth/logout/route.ts` POST → cookie clear. `/api/auth/me` GET proxy con cookie.
-**Acceptance**: login con `admin@dft.test / admin` → cookie set → redirect `/app`. Logout → cookie cleared → redirect `/`. Cookie marcato HttpOnly verificato in DevTools.
+**Scope**: Pagina `/login` con form action via **Next 14 Server Actions** (`loginAction`/`logoutAction` in `src/lib/auth.ts`, `'use server'`). loginAction → `apiPost('/auth/login')` → cookie `dft_session` httpOnly + Secure(prod) + SameSite=Lax + Max-Age 8h → `redirect('/app')`. logoutAction → `cookies().delete()` → `redirect('/')`. Stub `/app/page.tsx` che chiama `apiGet('/auth/me')` per testing (sostituito da S3-5 layout shell). Server actions over route handlers per CSRF auto-protection + form action native + progressive enhancement.
+**Acceptance**: login con `admin@dft-project.com / admin` → cookie set → redirect `/app`. Logout → cookie cleared → redirect `/`. Cookie marcato HttpOnly verificato in DevTools.
+**Note backend**: utente seed in DB era `admin@dft.test` ma Pydantic EmailStr (FastAPI response validation) rifiuta TLD `.test` come reserved special-use. Email aggiornata a `admin@dft-project.com` in DB. TODO backend: configurare `EmailStr` con `check_deliverability=False` o usare `str` per consentire test domains.
 
 ### S3-4: Middleware route protection
 **Scope**: `landing/middleware.ts` matcher `/app/:path*`. Legge cookie `dft_session`, verifica JWT con `jose.jwtVerify` usando JWT_SECRET env. Se mancante/invalido/scaduto → 302 `/login?next=${pathname}`. Se valido → next() con header `x-user-role` per RSC.
@@ -149,7 +150,7 @@ Già presenti: `@radix-ui/react-accordion`, `@radix-ui/react-label`, `@radix-ui/
 ## 6. Dipendenze
 
 - Backend running su `localhost:18000` (Docker compose backend service)
-- DB con seed Sprint 1 (utente `admin@dft.test` con password set)
+- DB con seed Sprint 1 (utente `admin@dft-project.com` con password set — vedi nota S3-3 sul TLD)
 - Materialized views populated (eseguire `POST /admin/refresh-mvs` se vuote)
 - Variabili env in `landing/.env.local`:
   ```
