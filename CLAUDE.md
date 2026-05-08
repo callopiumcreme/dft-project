@@ -12,7 +12,7 @@
 - **Backend:** FastAPI (Python 3.12) + SQLAlchemy 2.0 async + Pydantic v2 + Alembic
 - **DB:** PostgreSQL 16 — 8 migrations in `backend/alembic/versions/`
 - **Auth:** JWT Bearer, 8h TTL, ruoli: `admin|operator|viewer|certifier`
-- **Frontend:** Next.js 14 App Router (stub — non ancora implementato)
+- **Frontend:** Next.js 14 App Router — `landing/` (deploy https://oistebio.usenexos.com via PM2 + nginx Hetzner). Sprint 3 estende con `/app/*` protetto JWT
 - **Proxy:** Caddy 2 (non nginx) — auto HTTPS
 - **Containers:** Docker Compose (`db + backend + frontend + caddy`)
 - **Lint:** ruff + mypy strict + pre-commit (già configurati)
@@ -32,9 +32,11 @@
 | Sprint | Stato |
 |--------|-------|
 | Sprint 1 — Foundation | ✅ QUASI COMPLETO (manca S1-14 CI) |
-| Sprint 2 — Ingest xlsx + reports | ⏳ TODO |
-| Sprint 3 — Frontend dashboard | ⏳ TODO (frontend è stub) |
+| Sprint 2 — Ingest xlsx + reports | ✅ COMPLETO (DFTEN-64..71 Done) |
+| Sprint 3 — Frontend dashboard integrato | 📋 PIANIFICATO (`docs/sprint-3-frontend.md`) — 10 issue da creare in Plane |
 | Sprint 4-6 — Data entry, PDF, deploy | ⏳ TODO |
+
+**Decisione Sprint 3:** single Next.js app — estendere `landing/` con `/app/*` protetto. NO `frontend/` separato.
 
 ## File critici
 
@@ -49,6 +51,8 @@
 | `backend/alembic/versions/` | 8 migration files (0001-0008) |
 | `docker-compose.yml` | Stack completo |
 | `docs/agentos-context.md` | Analisi approfondita AgentOS |
+| `docs/sprint-3-frontend.md` | Sprint 3 — piano frontend integrato in landing/ |
+| `landing/` | Next.js 14 app (marketing + dashboard Sprint 3) |
 
 ## Comandi
 

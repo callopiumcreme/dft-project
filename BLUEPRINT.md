@@ -333,11 +333,17 @@ GET    /audit-log               # admin only
 - Materialized views + refresh strategy
 - Endpoint reports (mass balance, by supplier, monthly)
 
-### Sprint 3 — Frontend dashboard (1 settimana)
-- Layout Next.js + auth integration
-- Pagina dashboard con KPI + grafici Recharts
-- Tabella entries (read-only) con filtri
-- Routing protetto per ruolo
+### Sprint 3 — Frontend dashboard integrato (1 settimana)
+**Approccio**: estendere `landing/` (Next.js 14 esistente, deploy oistebio.usenexos.com) con area protetta `/app/*`. NO progetto frontend separato — single app, single deploy.
+- shadcn/ui + UI primitives in `landing/`
+- API client tipizzato (openapi-typescript da backend)
+- Auth flow: `/login` form → httpOnly cookie → middleware protegge `/app/*`
+- Layout dashboard (sidebar + topbar)
+- Dashboard home KPI + sparkline
+- 3 report views: mass-balance daily/monthly, by-supplier, closure-status
+- Anagrafiche read-only views (CRUD in Sprint 4)
+
+Vedi `docs/sprint-3-frontend.md` per breakdown completo issues.
 
 ### Sprint 4 — Data entry + admin (1 settimana)
 - Form nuova entry (tutti i campi)
