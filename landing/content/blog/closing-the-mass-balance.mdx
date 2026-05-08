@@ -1,0 +1,41 @@
+---
+title: "Closing the mass balance: lessons from year-end 2024"
+date: "2026-04-12"
+excerpt: "Eight million kilograms in, two and a half million out, and a 0.5% tolerance to defend."
+---
+
+The first time we ran a year-end mass balance against the Girardot data, we
+were not closing the books — we were finding out which Excel formulas had been
+quietly wrong for nine months.
+
+This is the story of replacing them.
+
+## What the numbers had to do
+
+Eight million kilograms of mixed plastic entered the plant in 2024. Of those,
+roughly two and a half million left as **OUTPUT EU certified** biofuel — the
+fraction that survived intake QC, processing, the C14 sample, the certifier
+review and the POS issuance.
+
+Everything in between — PLUS PROD, EU PROD, carbon black, metal scrap, water,
+syngas, losses — had to add up to within 0.5% of input. That is the closure
+tolerance ISCC EU expects you to defend in front of an auditor.
+
+## The actual hard part
+
+The hard part is not arithmetic. The hard part is that the closure has to
+remain true after a load is recategorised three months later because the
+certifier flagged a C14 anomaly. Spreadsheets do not survive that. An
+append-only ledger does.
+
+> The auditor opened a tablet, queried any month of 2024, and the numbers
+> reconciled in seconds. That conversation used to take days.
+
+## What the schema needs to know
+
+- Which load came from which supplier on which truck on which day.
+- Which production batch consumed which loads.
+- Which sample was drawn from which batch and which lab certified it.
+- Which POS document attests which kilogram of output.
+
+Lose any one of those edges and the closure becomes a story instead of a fact.
