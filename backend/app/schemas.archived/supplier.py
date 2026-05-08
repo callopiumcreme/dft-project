@@ -7,10 +7,9 @@ from pydantic import BaseModel, ConfigDict
 
 class SupplierBase(BaseModel):
     name: str
-    code: str
-    country: str | None = None
+    code: str | None = None
+    country: str = "CO"
     active: bool = True
-    is_aggregate: bool = False
     notes: str | None = None
 
 
@@ -23,7 +22,6 @@ class SupplierUpdate(BaseModel):
     code: str | None = None
     country: str | None = None
     active: bool | None = None
-    is_aggregate: bool | None = None
     notes: str | None = None
 
 
@@ -33,4 +31,3 @@ class SupplierRead(SupplierBase):
     id: int
     created_at: datetime
     updated_at: datetime
-    deleted_at: datetime | None = None

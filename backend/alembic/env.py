@@ -10,7 +10,16 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.db.base import Base
-from app.models import certificate, contract, supplier  # noqa: F401
+from app.models import (  # noqa: F401
+    audit_log,
+    certificate,
+    contract,
+    daily_input,
+    daily_production,
+    supplier,
+    supplier_certificate,
+    user,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import Connection

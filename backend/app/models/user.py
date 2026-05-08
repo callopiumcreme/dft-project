@@ -1,30 +1,29 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
 
-from sqlalchemy import Boolean, CheckConstraint, String, text
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Text
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql import func
 
 from app.db.base import Base
-
-UserRole = Literal["admin", "operator", "viewer", "certifier"]
 
 
 class User(Base):
     __tablename__ = "users"
     __table_args__ = (
         CheckConstraint(
-            "role IN ('admin', 'operator', 'viewer', 'certifier')",
-            name="ck_users_role",
+            "role IN ('admin','operator','viewer','certifier')", name="users_role_check"
         ),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
-    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    full_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    role: Mapped[str] = mapped_column(String(20), nullable=False)
-    active: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(server_default=text("NOW()"), nullable=False)
-    last_login_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    email: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    full_name: Mapped[str | None] = mapped_column(Text)
+    role: Mapped[str] = mapped_column(Text, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        server_default=func.now(), onupdate=func.now(), nullable=False
+    )

@@ -5,17 +5,18 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-AuditAction = Literal["insert", "update", "delete", "soft_delete", "restore"]
+AuditAction = Literal["INSERT", "UPDATE", "DELETE"]
 
 
 class AuditLogRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    user_id: int | None = None
+    action: AuditAction
     table_name: str
     record_id: int
-    action: AuditAction
     old_values: dict[str, Any] | None = None
     new_values: dict[str, Any] | None = None
-    changed_by: int | None = None
-    changed_at: datetime
+    ip_address: str | None = None
+    created_at: datetime

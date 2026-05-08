@@ -8,11 +8,10 @@ from pydantic import BaseModel, ConfigDict
 
 class ContractBase(BaseModel):
     code: str
-    supplier_id: int | None = None
-    start_date: date | None = None
+    supplier_id: int
+    start_date: date
     end_date: date | None = None
     total_kg_committed: Decimal | None = None
-    is_placeholder: bool = False
     notes: str | None = None
 
 
@@ -26,7 +25,6 @@ class ContractUpdate(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     total_kg_committed: Decimal | None = None
-    is_placeholder: bool | None = None
     notes: str | None = None
 
 
@@ -35,5 +33,3 @@ class ContractRead(ContractBase):
 
     id: int
     created_at: datetime
-    updated_at: datetime
-    deleted_at: datetime | None = None

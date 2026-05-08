@@ -5,34 +5,32 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-CertStatus = Literal["active", "expired", "revoked", "placeholder"]
+CertificateStatus = Literal["active", "expired", "suspended"]
+CertificateScheme = Literal["ISCC", "RSPO", "RTRS", "REDcert", "SQC"]
 
 
 class CertificateBase(BaseModel):
     cert_number: str
-    scheme: str = "ISCC EU"
-    status: CertStatus = "active"
-    issued_at: date | None = None
+    supplier_id: int
+    issued_at: date
     expires_at: date | None = None
-    is_placeholder: bool = False
+    scheme: str = "ISCC"
+    status: CertificateStatus = "active"
     document_url: str | None = None
-    notes: str | None = None
 
 
 class CertificateCreate(CertificateBase):
-    supplier_ids: list[int] = []
+    pass
 
 
 class CertificateUpdate(BaseModel):
     cert_number: str | None = None
-    scheme: str | None = None
-    status: CertStatus | None = None
+    supplier_id: int | None = None
     issued_at: date | None = None
     expires_at: date | None = None
-    is_placeholder: bool | None = None
+    scheme: str | None = None
+    status: CertificateStatus | None = None
     document_url: str | None = None
-    notes: str | None = None
-    supplier_ids: list[int] | None = None
 
 
 class CertificateRead(CertificateBase):
@@ -41,4 +39,3 @@ class CertificateRead(CertificateBase):
     id: int
     created_at: datetime
     updated_at: datetime
-    deleted_at: datetime | None = None
