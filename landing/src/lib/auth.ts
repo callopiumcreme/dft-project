@@ -12,9 +12,18 @@ export type LoginState = { error?: string };
 
 const COOKIE_MAX_AGE = 60 * 60 * 8;
 
+function safeNext(raw: unknown): string {
+  if (typeof raw !== 'string') return '/app';
+  if (!raw.startsWith('/')) return '/app';
+  if (raw.startsWith('//') || raw.startsWith('/\\')) return '/app';
+  if (raw === '/login') return '/app';
+  return raw;
+}
+
 export async function loginAction(_prev: LoginState, fd: FormData): Promise<LoginState> {
   const email = String(fd.get('email') ?? '').trim();
   const password = String(fd.get('password') ?? '');
+  const next = safeNext(fd.get('next'));
 
   if (!email || !password) {
     return { error: 'Email e password obbligatori' };
@@ -43,7 +52,7 @@ export async function loginAction(_prev: LoginState, fd: FormData): Promise<Logi
     maxAge: COOKIE_MAX_AGE,
   });
 
-  redirect('/app');
+  redirect(next);
 }
 
 export async function logoutAction(): Promise<void> {

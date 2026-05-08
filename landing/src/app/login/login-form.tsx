@@ -23,11 +23,12 @@ function SubmitButton() {
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ next }: { next: string }) {
   const [state, action] = useFormState(loginAction, initialState);
 
   return (
     <form action={action} className="space-y-8" noValidate>
+      <input type="hidden" name="next" value={next} />
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input

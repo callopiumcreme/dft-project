@@ -7,7 +7,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function LoginPage() {
+function safeNext(raw: string | string[] | undefined): string {
+  if (typeof raw !== 'string') return '/app';
+  if (!raw.startsWith('/')) return '/app';
+  if (raw.startsWith('//') || raw.startsWith('/\\')) return '/app';
+  if (raw === '/login') return '/app';
+  return raw;
+}
+
+type SearchParams = { next?: string | string[]; expired?: string | string[] };
+
+export default function LoginPage({ searchParams }: { searchParams: SearchParams }) {
+  const next = safeNext(searchParams.next);
+  const expired = searchParams.expired === '1';
+
   return (
     <main className="min-h-dvh grid place-items-center bg-bg px-6 py-16">
       <div className="w-full max-w-sm">
@@ -20,7 +33,15 @@ export default function LoginPage() {
         <p className="mt-2 mb-12 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">
           Mass balance — accesso operatori
         </p>
-        <LoginForm />
+        {expired && (
+          <p
+            role="status"
+            className="mb-6 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-accent"
+          >
+            Sessione scaduta · accedi di nuovo
+          </p>
+        )}
+        <LoginForm next={next} />
         <p className="mt-12 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">
           Sessione 8h · cookie httpOnly
         </p>
