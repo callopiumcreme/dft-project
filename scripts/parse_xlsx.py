@@ -117,10 +117,10 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
     wb = load_workbook(path, data_only=True)
     inputs: list[DailyInput] = []
     productions: dict[date, DailyProduction] = {}
-    src = path.name
 
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
+        src = f"{path.name}#{sheet_name}"
         current_date: date | None = None
         for r in range(17, ws.max_row + 1):
             row = [ws.cell(r, c).value for c in range(1, 23)]
@@ -190,9 +190,9 @@ def _merge_production(prod: DailyProduction, row: list, r: int) -> None:
     if prod.kg_to_production is None:
         prod.kg_to_production = _abs_or_none(row[10])
     if prod.eu_prod_kg is None:
-        prod.eu_prod_kg = _f(row[11])
+        prod.eu_prod_kg = _abs_or_none(row[11])
     if prod.plus_prod_kg is None:
-        prod.plus_prod_kg = _f(row[12])
+        prod.plus_prod_kg = _abs_or_none(row[12])
     if prod.carbon_black_kg is None:
         prod.carbon_black_kg = _abs_or_none(row[14])
     if prod.metal_scrap_kg is None:
@@ -204,7 +204,7 @@ def _merge_production(prod: DailyProduction, row: list, r: int) -> None:
     if prod.losses_kg is None:
         prod.losses_kg = _abs_or_none(row[18])
     if prod.output_eu_kg is None:
-        prod.output_eu_kg = _f(row[19])
+        prod.output_eu_kg = _abs_or_none(row[19])
     if prod.contract_ref is None and row[20]:
         prod.contract_ref = str(row[20]).strip()
     if prod.pos_number is None and row[21]:
