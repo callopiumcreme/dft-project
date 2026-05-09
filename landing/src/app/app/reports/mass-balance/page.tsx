@@ -4,12 +4,16 @@ import type { components } from '@/lib/backend-types';
 
 type DailyRow = components['schemas']['MassBalanceDailyRow'];
 type MonthlyRow = components['schemas']['MassBalanceMonthlyRow'];
+type DailyInput = components['schemas']['DailyInputRead'];
+type Supplier = components['schemas']['SupplierRead'];
+type Certificate = components['schemas']['CertificateRead'];
+type Contract = components['schemas']['ContractRead'];
 
 export const dynamic = 'force-dynamic';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const numFmt = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 });
-const pctFmt = new Intl.NumberFormat('it-IT', {
+const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+const pctFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -33,6 +37,11 @@ function fmtPct(v: string | null | undefined): string {
   return pctFmt.format(n);
 }
 
+function fmtTime(v: string | null | undefined): string {
+  if (!v) return '—';
+  return v.length >= 5 ? v.slice(0, 5) : v;
+}
+
 function buildHref(base: string, params: Record<string, string | undefined>): string {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) sp.set(k, v);
@@ -44,36 +53,67 @@ interface PageProps {
   searchParams: { view?: string; from?: string; to?: string };
 }
 
+const DAILY_GRID_TEMPLATE =
+  '160px minmax(100px,1fr) minmax(120px,1fr) minmax(80px,1fr) minmax(80px,1fr) minmax(110px,1fr) minmax(100px,1fr) minmax(80px,1fr) minmax(90px,1fr) minmax(80px,1fr) minmax(100px,1fr) minmax(110px,1fr) minmax(90px,1fr)';
+
 export default async function MassBalancePage({ searchParams }: PageProps) {
   const view = searchParams.view === 'monthly' ? 'monthly' : 'daily';
   const from = sanitizeDate(searchParams.from);
   const to = sanitizeDate(searchParams.to);
 
-  let rows: (DailyRow | MonthlyRow)[] = [];
+  let dailyRows: DailyRow[] = [];
+  let monthlyRows: MonthlyRow[] = [];
+  let entriesByDay: Map<string, DailyInput[]> = new Map();
+  let supplierMap: Map<number, Supplier> = new Map();
+  let certificateMap: Map<number, Certificate> = new Map();
+  let contractMap: Map<number, Contract> = new Map();
   let fetchError: string | null = null;
 
   try {
     if (view === 'monthly') {
-      rows = await apiGet<MonthlyRow[]>('/reports/mass-balance/monthly', {
+      monthlyRows = await apiGet<MonthlyRow[]>('/reports/mass-balance/monthly', {
         query: { date_from: from, date_to: to },
       });
     } else {
-      rows = await apiGet<DailyRow[]>('/reports/mass-balance/daily', {
-        query: { date_from: from, date_to: to, limit: 3660 },
-      });
+      const [daily, entries, suppliers, certs, contracts] = await Promise.all([
+        apiGet<DailyRow[]>('/reports/mass-balance/daily', {
+          query: { date_from: from, date_to: to, limit: 3660 },
+        }),
+        apiGet<DailyInput[]>('/daily-inputs', {
+          query: { date_from: from, date_to: to, limit: 1000 },
+        }),
+        apiGet<Supplier[]>('/suppliers', { query: { active_only: 'false' } }),
+        apiGet<Certificate[]>('/certificates'),
+        apiGet<Contract[]>('/contracts'),
+      ]);
+      dailyRows = daily;
+      supplierMap = new Map(suppliers.map((s) => [s.id, s]));
+      certificateMap = new Map(certs.map((c) => [c.id, c]));
+      contractMap = new Map(contracts.map((c) => [c.id, c]));
+      entriesByDay = new Map();
+      for (const e of entries) {
+        const list = entriesByDay.get(e.entry_date) ?? [];
+        list.push(e);
+        entriesByDay.set(e.entry_date, list);
+      }
+      for (const list of entriesByDay.values()) {
+        list.sort((a, b) => (a.entry_time ?? '').localeCompare(b.entry_time ?? ''));
+      }
     }
   } catch (e) {
     if (e instanceof ApiError) fetchError = `${e.status} · ${e.detail}`;
-    else fetchError = 'errore sconosciuto';
+    else fetchError = 'unknown error';
   }
 
-  const dateKey: 'day' | 'month' = view === 'monthly' ? 'month' : 'day';
+  const rowCount = view === 'monthly' ? monthlyRows.length : dailyRows.length;
   const csvHref = buildHref('/api/reports/mass-balance/csv', { view, from, to });
   const dailyHref = buildHref('/app/reports/mass-balance', { view: 'daily', from, to });
   const monthlyHref = buildHref('/app/reports/mass-balance', { view: 'monthly', from, to });
 
-  const totalInput = rows.reduce((s, r) => s + (Number(r.input_total_kg) || 0), 0);
-  const totalOutput = rows.reduce((s, r) => s + (Number(r.output_total_kg) || 0), 0);
+  const sumRows: { input_total_kg?: string | null; output_total_kg?: string | null }[] =
+    view === 'monthly' ? monthlyRows : dailyRows;
+  const totalInput = sumRows.reduce((s, r) => s + (Number(r.input_total_kg) || 0), 0);
+  const totalOutput = sumRows.reduce((s, r) => s + (Number(r.output_total_kg) || 0), 0);
 
   return (
     <div className="mx-auto max-w-editorial">
@@ -81,8 +121,8 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">Report</p>
         <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">Mass balance</h1>
         <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
-          Bilancio input/output {view === 'monthly' ? 'per mese' : 'per giorno'} · {rows.length} righe
-          {from || to ? ` · filtro ${from ?? '…'} → ${to ?? '…'}` : ''}
+          Input/output balance {view === 'monthly' ? 'by month' : 'by day'} · {rowCount} rows
+          {from || to ? ` · filter ${from ?? '…'} → ${to ?? '…'}` : ''}
         </p>
       </header>
 
@@ -96,7 +136,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
                 : 'border border-rule px-3 py-1.5 text-ink-soft hover:border-ink hover:text-ink'
             }
           >
-            Giornaliero
+            Daily
           </Link>
           <Link
             href={monthlyHref}
@@ -106,7 +146,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
                 : 'border border-rule px-3 py-1.5 text-ink-soft hover:border-ink hover:text-ink'
             }
           >
-            Mensile
+            Monthly
           </Link>
         </nav>
 
@@ -117,7 +157,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
         >
           <input type="hidden" name="view" value={view} />
           <label className="flex flex-col gap-1">
-            <span className="text-ink-mute">Da</span>
+            <span className="text-ink-mute">From</span>
             <input
               type="date"
               name="from"
@@ -126,7 +166,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-ink-mute">A</span>
+            <span className="text-ink-mute">To</span>
             <input
               type="date"
               name="to"
@@ -138,7 +178,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
             type="submit"
             className="border border-ink bg-ink px-3 py-1.5 text-bg hover:bg-ink-soft"
           >
-            Filtra
+            Filter
           </button>
           <Link
             href={`/app/reports/mass-balance?view=${view}`}
@@ -151,87 +191,256 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
             className="border border-olive-deep bg-olive-deep px-3 py-1.5 text-bg hover:bg-olive"
             download
           >
-            Esporta CSV
+            Export CSV
           </a>
         </form>
       </section>
 
       {fetchError && (
         <div className="mt-6 border border-rule bg-bg-soft p-4 font-mono text-[0.75rem] text-accent">
-          Errore caricamento: {fetchError}
+          Loading error: {fetchError}
         </div>
       )}
 
       <section className="mt-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <KpiTile
-            label="Periodo"
-            value={`${rows.length} ${view === 'monthly' ? 'mesi' : 'giorni'}`}
+            label="Period"
+            value={`${rowCount} ${view === 'monthly' ? 'months' : 'days'}`}
           />
-          <KpiTile label="Input totale" value={`${numFmt.format(totalInput)} kg`} />
-          <KpiTile label="Output totale" value={`${numFmt.format(totalOutput)} kg`} />
+          <KpiTile label="Total input" value={`${numFmt.format(totalInput)} kg`} />
+          <KpiTile label="Total output" value={`${numFmt.format(totalOutput)} kg`} />
         </div>
       </section>
 
-      <section className="mt-6 border border-rule bg-bg-soft overflow-x-auto">
-        <table className="w-full min-w-[1100px] border-collapse font-mono text-[0.72rem]">
-          <thead className="border-b border-rule bg-bg">
-            <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
-              <Th>{view === 'monthly' ? 'Mese' : 'Giorno'}</Th>
-              <ThNum>Input</ThNum>
-              {view === 'daily' && <ThNum>Kg → produzione</ThNum>}
-              <ThNum>EU</ThNum>
-              <ThNum>Plus</ThNum>
-              <ThNum>Carbon black</ThNum>
-              <ThNum>Metal scrap</ThNum>
-              <ThNum>H2O</ThNum>
-              <ThNum>Syngas</ThNum>
-              <ThNum>Losses</ThNum>
-              <ThNum>Output EU</ThNum>
-              <ThNum>Output totale</ThNum>
-              <ThNum>Closure %</ThNum>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && !fetchError && (
-              <tr>
-                <td
-                  colSpan={view === 'monthly' ? 12 : 13}
-                  className="px-3 py-6 text-center text-ink-mute"
-                >
-                  Nessun dato per il filtro selezionato.
-                </td>
-              </tr>
-            )}
-            {rows.map((r) => {
-              const dateVal = (r as Record<string, string>)[dateKey];
-              const closure = Number(r.closure_diff_pct);
-              const closureClass =
-                Number.isFinite(closure) && Math.abs(closure) >= 5 ? 'text-accent' : 'text-ink';
-              return (
-                <tr key={dateVal} className="border-b border-rule/60 last:border-b-0 hover:bg-bg">
-                  <Td className="text-ink">{dateVal}</Td>
-                  <TdNum>{fmtKg(r.input_total_kg)}</TdNum>
-                  {view === 'daily' && (
-                    <TdNum>{fmtKg((r as DailyRow).kg_to_production)}</TdNum>
-                  )}
-                  <TdNum>{fmtKg(r.eu_prod_kg)}</TdNum>
-                  <TdNum>{fmtKg(r.plus_prod_kg)}</TdNum>
-                  <TdNum>{fmtKg(r.carbon_black_kg)}</TdNum>
-                  <TdNum>{fmtKg(r.metal_scrap_kg)}</TdNum>
-                  <TdNum>{fmtKg(r.h2o_kg)}</TdNum>
-                  <TdNum>{fmtKg(r.gas_syngas_kg)}</TdNum>
-                  <TdNum>{fmtKg(r.losses_kg)}</TdNum>
-                  <TdNum>{fmtKg(r.output_eu_kg)}</TdNum>
-                  <TdNum>{fmtKg(r.output_total_kg)}</TdNum>
-                  <TdNum className={closureClass}>{fmtPct(r.closure_diff_pct)}</TdNum>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
+      {view === 'monthly' ? (
+        <MonthlyTable rows={monthlyRows} hasError={!!fetchError} />
+      ) : (
+        <DailyAccordion
+          rows={dailyRows}
+          entriesByDay={entriesByDay}
+          supplierMap={supplierMap}
+          certificateMap={certificateMap}
+          contractMap={contractMap}
+          hasError={!!fetchError}
+        />
+      )}
     </div>
+  );
+}
+
+function MonthlyTable({ rows, hasError }: { rows: MonthlyRow[]; hasError: boolean }) {
+  return (
+    <section className="mt-6 border border-rule bg-bg-soft overflow-x-auto">
+      <table className="w-full min-w-[1100px] border-collapse font-mono text-[0.72rem]">
+        <thead className="border-b border-rule bg-bg">
+          <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
+            <Th>Month</Th>
+            <ThNum>Input</ThNum>
+            <ThNum>EU</ThNum>
+            <ThNum>Plus</ThNum>
+            <ThNum>Carbon black</ThNum>
+            <ThNum>Metal scrap</ThNum>
+            <ThNum>H2O</ThNum>
+            <ThNum>Syngas</ThNum>
+            <ThNum>Losses</ThNum>
+            <ThNum>Output EU</ThNum>
+            <ThNum>Total output</ThNum>
+            <ThNum>Closure %</ThNum>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 && !hasError && (
+            <tr>
+              <td colSpan={12} className="px-3 py-6 text-center text-ink-mute">
+                No data for selected filter.
+              </td>
+            </tr>
+          )}
+          {rows.map((r) => {
+            const closure = Number(r.closure_diff_pct);
+            const closureClass =
+              Number.isFinite(closure) && Math.abs(closure) >= 5 ? 'text-accent' : 'text-ink';
+            return (
+              <tr key={r.month} className="border-b border-rule/60 last:border-b-0 hover:bg-bg">
+                <Td className="text-ink">{r.month}</Td>
+                <TdNum>{fmtKg(r.input_total_kg)}</TdNum>
+                <TdNum>{fmtKg(r.eu_prod_kg)}</TdNum>
+                <TdNum>{fmtKg(r.plus_prod_kg)}</TdNum>
+                <TdNum>{fmtKg(r.carbon_black_kg)}</TdNum>
+                <TdNum>{fmtKg(r.metal_scrap_kg)}</TdNum>
+                <TdNum>{fmtKg(r.h2o_kg)}</TdNum>
+                <TdNum>{fmtKg(r.gas_syngas_kg)}</TdNum>
+                <TdNum>{fmtKg(r.losses_kg)}</TdNum>
+                <TdNum>{fmtKg(r.output_eu_kg)}</TdNum>
+                <TdNum>{fmtKg(r.output_total_kg)}</TdNum>
+                <TdNum className={closureClass}>{fmtPct(r.closure_diff_pct)}</TdNum>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+function DailyAccordion({
+  rows,
+  entriesByDay,
+  supplierMap,
+  certificateMap,
+  contractMap,
+  hasError,
+}: {
+  rows: DailyRow[];
+  entriesByDay: Map<string, DailyInput[]>;
+  supplierMap: Map<number, Supplier>;
+  certificateMap: Map<number, Certificate>;
+  contractMap: Map<number, Contract>;
+  hasError: boolean;
+}) {
+  return (
+    <section className="mt-6 border border-rule bg-bg-soft overflow-x-auto">
+      <div className="min-w-[1280px]">
+        <div
+          style={{ gridTemplateColumns: DAILY_GRID_TEMPLATE }}
+          className="grid gap-x-3 border-b border-rule bg-bg px-3 py-2 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-ink-mute"
+        >
+          <span>Day</span>
+          <span className="text-right">Input</span>
+          <span className="text-right">Kg → production</span>
+          <span className="text-right">EU</span>
+          <span className="text-right">Plus</span>
+          <span className="text-right">Carbon black</span>
+          <span className="text-right">Metal scrap</span>
+          <span className="text-right">H2O</span>
+          <span className="text-right">Syngas</span>
+          <span className="text-right">Losses</span>
+          <span className="text-right">Output EU</span>
+          <span className="text-right">Output totale</span>
+          <span className="text-right">Closure %</span>
+        </div>
+
+        {rows.length === 0 && !hasError && (
+          <div className="px-3 py-6 text-center font-mono text-[0.72rem] text-ink-mute">
+            No data for selected filter.
+          </div>
+        )}
+
+        {rows.map((r, idx) => {
+          const closure = Number(r.closure_diff_pct);
+          const closureClass =
+            Number.isFinite(closure) && Math.abs(closure) >= 5 ? 'text-accent' : 'text-ink';
+          const dayEntries = entriesByDay.get(r.day) ?? [];
+          return (
+            <details
+              key={r.day}
+              open={idx === 0}
+              className="group border-b border-rule/60 last:border-b-0 open:bg-bg/40 open:border-l-4 open:border-l-olive-deep"
+            >
+              <summary
+                style={{ gridTemplateColumns: DAILY_GRID_TEMPLATE }}
+                className="grid cursor-pointer list-none gap-x-3 px-3 py-2 font-mono text-[0.72rem] text-ink hover:bg-bg group-open:bg-olive-deep group-open:text-bg group-open:font-medium [&::-webkit-details-marker]:hidden"
+              >
+                <span className="flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="inline-block w-2 text-ink-mute transition-transform group-open:rotate-90 group-open:text-bg"
+                  >
+                    ›
+                  </span>
+                  <span>{r.day}</span>
+                  <span className="text-ink-mute group-open:text-bg/70">· {dayEntries.length}</span>
+                </span>
+                <span className="text-right tabular-nums">{fmtKg(r.input_total_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.kg_to_production)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.eu_prod_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.plus_prod_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.carbon_black_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.metal_scrap_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.h2o_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.gas_syngas_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.losses_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.output_eu_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.output_total_kg)}</span>
+                <span className={`text-right tabular-nums ${closureClass} group-open:text-bg`}>
+                  {fmtPct(r.closure_diff_pct)}
+                </span>
+              </summary>
+
+              <div className="border-t-2 border-olive-deep bg-olive-deep/5 px-3 py-3">
+                {dayEntries.length === 0 ? (
+                  <p className="font-mono text-[0.7rem] text-ink-mute">
+                    No truck entries logged for this day.
+                  </p>
+                ) : (
+                  <table className="w-full border-collapse font-mono text-[0.7rem]">
+                    <thead>
+                      <tr className="border-b border-rule/60 text-left uppercase tracking-[0.1em] text-ink-mute">
+                        <th className="px-2 py-1.5 font-normal">Time</th>
+                        <th className="px-2 py-1.5 font-normal">Supplier</th>
+                        <th className="px-2 py-1.5 font-normal">Certificate</th>
+                        <th className="px-2 py-1.5 font-normal">Contract</th>
+                        <th className="px-2 py-1.5 font-normal">eRSV</th>
+                        <th className="px-2 py-1.5 text-right font-normal">CAR kg</th>
+                        <th className="px-2 py-1.5 text-right font-normal">TRUCK kg</th>
+                        <th className="px-2 py-1.5 text-right font-normal">SPECIAL kg</th>
+                        <th className="px-2 py-1.5 text-right font-normal">Total</th>
+                        <th className="px-2 py-1.5 text-right font-normal">Theor %</th>
+                        <th className="px-2 py-1.5 text-right font-normal">Manuf %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dayEntries.map((e) => {
+                        const sup = supplierMap.get(e.supplier_id);
+                        const cert =
+                          e.certificate_id != null ? certificateMap.get(e.certificate_id) : null;
+                        const contract =
+                          e.contract_id != null ? contractMap.get(e.contract_id) : null;
+                        return (
+                          <tr
+                            key={e.id}
+                            className="border-b border-rule/40 last:border-b-0 hover:bg-bg-soft/50"
+                          >
+                            <td className="px-2 py-1.5 text-ink">{fmtTime(e.entry_time)}</td>
+                            <td className="px-2 py-1.5 text-ink">
+                              {sup?.name ?? sup?.code ?? `#${e.supplier_id}`}
+                            </td>
+                            <td className="px-2 py-1.5 text-ink-soft">
+                              {cert?.cert_number ?? '—'}
+                            </td>
+                            <td className="px-2 py-1.5 text-ink-soft">{contract?.code ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-ink-soft">{e.ersv_number ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-right tabular-nums text-ink">
+                              {fmtKg(e.car_kg)}
+                            </td>
+                            <td className="px-2 py-1.5 text-right tabular-nums text-ink">
+                              {fmtKg(e.truck_kg)}
+                            </td>
+                            <td className="px-2 py-1.5 text-right tabular-nums text-ink">
+                              {fmtKg(e.special_kg)}
+                            </td>
+                            <td className="px-2 py-1.5 text-right tabular-nums font-medium text-ink">
+                              {fmtKg(e.total_input_kg)}
+                            </td>
+                            <td className="px-2 py-1.5 text-right tabular-nums text-ink-soft">
+                              {fmtPct(e.theor_veg_pct)}
+                            </td>
+                            <td className="px-2 py-1.5 text-right tabular-nums text-ink-soft">
+                              {fmtPct(e.manuf_veg_pct)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </details>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
