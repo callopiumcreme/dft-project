@@ -32,26 +32,6 @@ function fmtKg(v: string | null | undefined): string {
   return numFmt.format(n);
 }
 
-const compactNumFmt = new Intl.NumberFormat('en-GB', {
-  notation: 'compact',
-  maximumFractionDigits: 1,
-});
-
-function fmtKgCompact(v: string | null | undefined): string {
-  if (v === null || v === undefined) return '—';
-  const n = Number(v);
-  if (!Number.isFinite(n)) return '—';
-  if (Math.abs(n) < 1000) return numFmt.format(n);
-  return compactNumFmt.format(n);
-}
-
-function fmtKgExact(v: string | null | undefined): string {
-  if (v === null || v === undefined) return '';
-  const n = Number(v);
-  if (!Number.isFinite(n)) return '';
-  return `${numFmt.format(n)} kg`;
-}
-
 function fmtPct(v: string | null | undefined): string {
   if (v === null || v === undefined) return '—';
   const n = Number(v);
@@ -326,12 +306,8 @@ function MonthlyTable({ rows, hasError }: { rows: MonthlyRow[]; hasError: boolea
                   </span>
                   <span>{r.month}</span>
                 </span>
-                <span className="text-right tabular-nums" title={fmtKgExact(r.input_total_kg)}>
-                  {fmtKgCompact(r.input_total_kg)}
-                </span>
-                <span className="text-right tabular-nums" title={fmtKgExact(r.output_total_kg)}>
-                  {fmtKgCompact(r.output_total_kg)}
-                </span>
+                <span className="text-right tabular-nums">{fmtKg(r.input_total_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.output_total_kg)}</span>
                 <span className={`text-right tabular-nums ${closureClass} group-open:text-bg`}>
                   {fmtPct(r.closure_diff_pct)}
                 </span>
@@ -419,18 +395,8 @@ function DailyAccordion({
                   <span>{r.day}</span>
                   <span className="text-ink-mute group-open:text-bg/70">· {dayEntries.length}</span>
                 </span>
-                <span
-                  className="text-right tabular-nums"
-                  title={fmtKgExact(r.input_total_kg)}
-                >
-                  {fmtKgCompact(r.input_total_kg)}
-                </span>
-                <span
-                  className="text-right tabular-nums"
-                  title={fmtKgExact(r.output_total_kg)}
-                >
-                  {fmtKgCompact(r.output_total_kg)}
-                </span>
+                <span className="text-right tabular-nums">{fmtKg(r.input_total_kg)}</span>
+                <span className="text-right tabular-nums">{fmtKg(r.output_total_kg)}</span>
                 <span className={`text-right tabular-nums ${closureClass} group-open:text-bg`}>
                   {fmtPct(r.closure_diff_pct)}
                 </span>
@@ -459,13 +425,14 @@ function DailyAccordion({
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
-                  <table className="w-full min-w-[720px] border-collapse font-mono text-[0.7rem]">
+                  <table className="w-full min-w-[800px] border-collapse font-mono text-[0.7rem]">
                     <thead>
                       <tr className="border-b border-rule/60 text-left uppercase tracking-[0.1em] text-ink-mute">
                         <th className="px-2 py-1.5 font-normal">Time</th>
                         <th className="px-2 py-1.5 font-normal">Supplier</th>
                         <th className="px-2 py-1.5 font-normal">Cert / Contract</th>
                         <th className="px-2 py-1.5 font-normal">eRSV</th>
+                        <th className="px-2 py-1.5 font-normal">C14</th>
                         <th className="px-2 py-1.5 font-normal">Loaded</th>
                         <th className="px-2 py-1.5 text-right font-normal">Total kg</th>
                         <th className="px-2 py-1.5 text-right font-normal">Veg % (T / M)</th>
@@ -496,6 +463,20 @@ function DailyAccordion({
                             </td>
                             <td className="px-2 py-1.5 text-ink-soft">{e.ersv_number ?? '—'}</td>
                             <td className="px-2 py-1.5 text-ink-soft">
+                              {e.c14_analysis || e.c14_value != null ? (
+                                <>
+                                  <span className="block">{e.c14_analysis ?? '—'}</span>
+                                  {e.c14_value != null && (
+                                    <span className="block text-[0.62rem] text-ink-mute tabular-nums">
+                                      {fmtPct(e.c14_value)}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                            <td className="px-2 py-1.5 text-ink-soft">
                               {loaded.types.length === 0 ? (
                                 '—'
                               ) : (
@@ -506,17 +487,14 @@ function DailyAccordion({
                                       className="inline-flex items-center gap-1 border border-rule/60 bg-bg px-1.5 py-0.5 text-[0.6rem] uppercase tracking-[0.1em]"
                                     >
                                       <span className="text-ink-mute">{t.label}</span>
-                                      <span className="tabular-nums text-ink">{fmtKgCompact(t.value)}</span>
+                                      <span className="tabular-nums text-ink">{fmtKg(t.value)}</span>
                                     </span>
                                   ))}
                                 </span>
                               )}
                             </td>
-                            <td
-                              className="px-2 py-1.5 text-right tabular-nums font-medium text-ink"
-                              title={fmtKgExact(e.total_input_kg)}
-                            >
-                              {fmtKgCompact(e.total_input_kg)}
+                            <td className="px-2 py-1.5 text-right tabular-nums font-medium text-ink">
+                              {fmtKg(e.total_input_kg)}
                             </td>
                             <td className="px-2 py-1.5 text-right tabular-nums text-ink-soft">
                               {fmtPct(e.theor_veg_pct)} / {fmtPct(e.manuf_veg_pct)}
@@ -556,9 +534,7 @@ function BreakdownTile({
   return (
     <div className="border border-rule/60 bg-bg-soft px-2.5 py-2">
       <p className="text-[0.6rem] uppercase tracking-[0.12em] text-ink-mute">{label}</p>
-      <p className="mt-1 tabular-nums text-ink" title={fmtKgExact(value)}>
-        {fmtKgCompact(value)}
-      </p>
+      <p className="mt-1 tabular-nums text-ink">{fmtKg(value)}</p>
     </div>
   );
 }
