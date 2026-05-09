@@ -69,10 +69,10 @@ async def mass_balance_monthly(
     where = []
     params: dict = {}
     if date_from is not None:
-        where.append("month >= :date_from")
+        where.append("month >= CAST(date_trunc('month', CAST(:date_from AS date)) AS date)")
         params["date_from"] = date_from
     if date_to is not None:
-        where.append("month <= :date_to")
+        where.append("month <= CAST(date_trunc('month', CAST(:date_to AS date)) AS date)")
         params["date_to"] = date_to
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
     sql = text(
