@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
+import { MonthQuickPicker } from './month-quick-picker';
+import { buildMonthOptions } from './month-utils';
 
 type DailyRow = components['schemas']['MassBalanceDailyRow'];
 type MonthlyRow = components['schemas']['MassBalanceMonthlyRow'];
@@ -100,6 +102,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
 
   let dailyRows: DailyRow[] = [];
   let monthlyRows: MonthlyRow[] = [];
+  let allMonths: MonthlyRow[] = [];
   let entriesByDay: Map<string, DailyInput[]> = new Map();
   let supplierMap: Map<number, Supplier> = new Map();
   let certificateMap: Map<number, Certificate> = new Map();
@@ -107,12 +110,18 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
   let fetchError: string | null = null;
 
   try {
+    const allMonthsPromise = apiGet<MonthlyRow[]>('/reports/mass-balance/monthly', {});
     if (view === 'monthly') {
-      monthlyRows = await apiGet<MonthlyRow[]>('/reports/mass-balance/monthly', {
-        query: { date_from: from, date_to: to },
-      });
+      const [filtered, all] = await Promise.all([
+        apiGet<MonthlyRow[]>('/reports/mass-balance/monthly', {
+          query: { date_from: from, date_to: to },
+        }),
+        allMonthsPromise,
+      ]);
+      monthlyRows = filtered;
+      allMonths = all;
     } else {
-      const [daily, entries, suppliers, certs, contracts] = await Promise.all([
+      const [daily, entries, suppliers, certs, contracts, all] = await Promise.all([
         apiGet<DailyRow[]>('/reports/mass-balance/daily', {
           query: { date_from: from, date_to: to, limit: 3660 },
         }),
@@ -122,8 +131,10 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
         apiGet<Supplier[]>('/suppliers', { query: { active_only: 'false' } }),
         apiGet<Certificate[]>('/certificates'),
         apiGet<Contract[]>('/contracts'),
+        allMonthsPromise,
       ]);
       dailyRows = daily;
+      allMonths = all;
       supplierMap = new Map(suppliers.map((s) => [s.id, s]));
       certificateMap = new Map(certs.map((c) => [c.id, c]));
       contractMap = new Map(contracts.map((c) => [c.id, c]));
@@ -141,6 +152,8 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
     if (e instanceof ApiError) fetchError = `${e.status} · ${e.detail}`;
     else fetchError = 'unknown error';
   }
+
+  const monthOptions = buildMonthOptions(allMonths.map((m) => m.month));
 
   const rowCount = view === 'monthly' ? monthlyRows.length : dailyRows.length;
   const csvHref = buildHref('/api/reports/mass-balance/csv', { view, from, to });
@@ -193,6 +206,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
           className="flex flex-wrap items-end gap-3 font-mono text-[0.7rem] uppercase tracking-[0.14em]"
         >
           <input type="hidden" name="view" value={view} />
+          <MonthQuickPicker options={monthOptions} view={view} from={from} to={to} />
           <label className="flex flex-col gap-1">
             <span className="text-ink-mute">From</span>
             <input
