@@ -30,6 +30,26 @@ function fmtKg(v: string | null | undefined): string {
   return numFmt.format(n);
 }
 
+const compactNumFmt = new Intl.NumberFormat('en-GB', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+function fmtKgCompact(v: string | null | undefined): string {
+  if (v === null || v === undefined) return '—';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '—';
+  if (Math.abs(n) < 1000) return numFmt.format(n);
+  return compactNumFmt.format(n);
+}
+
+function fmtKgExact(v: string | null | undefined): string {
+  if (v === null || v === undefined) return '';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '';
+  return `${numFmt.format(n)} kg`;
+}
+
 function fmtPct(v: string | null | undefined): string {
   if (v === null || v === undefined) return '—';
   const n = Number(v);
@@ -40,6 +60,23 @@ function fmtPct(v: string | null | undefined): string {
 function fmtTime(v: string | null | undefined): string {
   if (!v) return '—';
   return v.length >= 5 ? v.slice(0, 5) : v;
+}
+
+function describeLoaded(
+  car: string | null | undefined,
+  truck: string | null | undefined,
+  special: string | null | undefined,
+): { types: { label: string; value: string }[] } {
+  const parts: { label: string; value: string }[] = [];
+  for (const [label, raw] of [
+    ['CAR', car],
+    ['TRUCK', truck],
+    ['SPECIAL', special],
+  ] as const) {
+    const n = Number(raw);
+    if (Number.isFinite(n) && n > 0) parts.push({ label, value: String(raw) });
+  }
+  return { types: parts };
 }
 
 function buildHref(base: string, params: Record<string, string | undefined>): string {
@@ -54,7 +91,7 @@ interface PageProps {
 }
 
 const DAILY_GRID_TEMPLATE =
-  '160px minmax(100px,1fr) minmax(120px,1fr) minmax(80px,1fr) minmax(80px,1fr) minmax(110px,1fr) minmax(100px,1fr) minmax(80px,1fr) minmax(90px,1fr) minmax(80px,1fr) minmax(100px,1fr) minmax(110px,1fr) minmax(90px,1fr)';
+  'minmax(180px,1.4fr) minmax(110px,1fr) minmax(110px,1fr) minmax(90px,0.8fr)';
 
 export default async function MassBalancePage({ searchParams }: PageProps) {
   const view = searchParams.view === 'monthly' ? 'monthly' : 'daily';
@@ -229,57 +266,82 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
   );
 }
 
+const MONTHLY_GRID_TEMPLATE =
+  'minmax(140px,1fr) minmax(110px,1fr) minmax(110px,1fr) minmax(90px,0.8fr)';
+
 function MonthlyTable({ rows, hasError }: { rows: MonthlyRow[]; hasError: boolean }) {
   return (
-    <section className="mt-6 border border-rule bg-bg-soft overflow-x-auto">
-      <table className="w-full min-w-[1100px] border-collapse font-mono text-[0.72rem]">
-        <thead className="border-b border-rule bg-bg">
-          <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
-            <Th>Month</Th>
-            <ThNum>Input</ThNum>
-            <ThNum>EU</ThNum>
-            <ThNum>Plus</ThNum>
-            <ThNum>Carbon black</ThNum>
-            <ThNum>Metal scrap</ThNum>
-            <ThNum>H2O</ThNum>
-            <ThNum>Syngas</ThNum>
-            <ThNum>Losses</ThNum>
-            <ThNum>Output EU</ThNum>
-            <ThNum>Total output</ThNum>
-            <ThNum>Closure %</ThNum>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 && !hasError && (
-            <tr>
-              <td colSpan={12} className="px-3 py-6 text-center text-ink-mute">
-                No data for selected filter.
-              </td>
-            </tr>
-          )}
-          {rows.map((r) => {
-            const closure = Number(r.closure_diff_pct);
-            const closureClass =
-              Number.isFinite(closure) && Math.abs(closure) >= 5 ? 'text-accent' : 'text-ink';
-            return (
-              <tr key={r.month} className="border-b border-rule/60 last:border-b-0 hover:bg-bg">
-                <Td className="text-ink">{r.month}</Td>
-                <TdNum>{fmtKg(r.input_total_kg)}</TdNum>
-                <TdNum>{fmtKg(r.eu_prod_kg)}</TdNum>
-                <TdNum>{fmtKg(r.plus_prod_kg)}</TdNum>
-                <TdNum>{fmtKg(r.carbon_black_kg)}</TdNum>
-                <TdNum>{fmtKg(r.metal_scrap_kg)}</TdNum>
-                <TdNum>{fmtKg(r.h2o_kg)}</TdNum>
-                <TdNum>{fmtKg(r.gas_syngas_kg)}</TdNum>
-                <TdNum>{fmtKg(r.losses_kg)}</TdNum>
-                <TdNum>{fmtKg(r.output_eu_kg)}</TdNum>
-                <TdNum>{fmtKg(r.output_total_kg)}</TdNum>
-                <TdNum className={closureClass}>{fmtPct(r.closure_diff_pct)}</TdNum>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <section className="mt-6 border border-rule bg-bg-soft">
+      <div>
+        <div
+          style={{ gridTemplateColumns: MONTHLY_GRID_TEMPLATE }}
+          className="grid gap-x-3 border-b border-rule bg-bg px-3 py-2 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-ink-mute"
+        >
+          <span>Month</span>
+          <span className="text-right">Input</span>
+          <span className="text-right">Output total</span>
+          <span className="text-right">Closure %</span>
+        </div>
+
+        {rows.length === 0 && !hasError && (
+          <div className="px-3 py-6 text-center font-mono text-[0.72rem] text-ink-mute">
+            No data for selected filter.
+          </div>
+        )}
+
+        {rows.map((r, idx) => {
+          const closure = Number(r.closure_diff_pct);
+          const closureClass =
+            Number.isFinite(closure) && Math.abs(closure) >= 5 ? 'text-accent' : 'text-ink';
+          return (
+            <details
+              key={r.month}
+              open={idx === 0}
+              className="group border-b border-rule/60 last:border-b-0 open:bg-bg/40 open:border-l-4 open:border-l-olive-deep"
+            >
+              <summary
+                style={{ gridTemplateColumns: MONTHLY_GRID_TEMPLATE }}
+                className="grid cursor-pointer list-none gap-x-3 px-3 py-2 font-mono text-[0.72rem] text-ink hover:bg-bg group-open:bg-olive-deep group-open:text-bg group-open:font-medium [&::-webkit-details-marker]:hidden"
+              >
+                <span className="flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="inline-block w-2 text-ink-mute transition-transform group-open:rotate-90 group-open:text-bg"
+                  >
+                    ›
+                  </span>
+                  <span>{r.month}</span>
+                </span>
+                <span className="text-right tabular-nums" title={fmtKgExact(r.input_total_kg)}>
+                  {fmtKgCompact(r.input_total_kg)}
+                </span>
+                <span className="text-right tabular-nums" title={fmtKgExact(r.output_total_kg)}>
+                  {fmtKgCompact(r.output_total_kg)}
+                </span>
+                <span className={`text-right tabular-nums ${closureClass} group-open:text-bg`}>
+                  {fmtPct(r.closure_diff_pct)}
+                </span>
+              </summary>
+
+              <div className="border-t-2 border-olive-deep bg-olive-deep/5 px-3 py-3">
+                <p className="mb-2 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-ink-mute">
+                  Production breakdown
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[0.7rem]">
+                  <BreakdownTile label="EU prod" value={r.eu_prod_kg} />
+                  <BreakdownTile label="Plus prod" value={r.plus_prod_kg} />
+                  <BreakdownTile label="Output EU" value={r.output_eu_kg} />
+                  <BreakdownTile label="Carbon black" value={r.carbon_black_kg} />
+                  <BreakdownTile label="Metal scrap" value={r.metal_scrap_kg} />
+                  <BreakdownTile label="H2O" value={r.h2o_kg} />
+                  <BreakdownTile label="Syngas" value={r.gas_syngas_kg} />
+                  <BreakdownTile label="Losses" value={r.losses_kg} />
+                </div>
+              </div>
+            </details>
+          );
+        })}
+      </div>
     </section>
   );
 }
@@ -300,24 +362,15 @@ function DailyAccordion({
   hasError: boolean;
 }) {
   return (
-    <section className="mt-6 border border-rule bg-bg-soft overflow-x-auto">
-      <div className="min-w-[1280px]">
+    <section className="mt-6 border border-rule bg-bg-soft">
+      <div>
         <div
           style={{ gridTemplateColumns: DAILY_GRID_TEMPLATE }}
           className="grid gap-x-3 border-b border-rule bg-bg px-3 py-2 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-ink-mute"
         >
           <span>Day</span>
           <span className="text-right">Input</span>
-          <span className="text-right">Kg → production</span>
-          <span className="text-right">EU</span>
-          <span className="text-right">Plus</span>
-          <span className="text-right">Carbon black</span>
-          <span className="text-right">Metal scrap</span>
-          <span className="text-right">H2O</span>
-          <span className="text-right">Syngas</span>
-          <span className="text-right">Losses</span>
-          <span className="text-right">Output EU</span>
-          <span className="text-right">Output totale</span>
+          <span className="text-right">Output total</span>
           <span className="text-right">Closure %</span>
         </div>
 
@@ -352,42 +405,56 @@ function DailyAccordion({
                   <span>{r.day}</span>
                   <span className="text-ink-mute group-open:text-bg/70">· {dayEntries.length}</span>
                 </span>
-                <span className="text-right tabular-nums">{fmtKg(r.input_total_kg)}</span>
-                <span className="text-right tabular-nums">{fmtKg(r.kg_to_production)}</span>
-                <span className="text-right tabular-nums">{fmtKg(r.eu_prod_kg)}</span>
-                <span className="text-right tabular-nums">{fmtKg(r.plus_prod_kg)}</span>
-                <span className="text-right tabular-nums">{fmtKg(r.carbon_black_kg)}</span>
-                <span className="text-right tabular-nums">{fmtKg(r.metal_scrap_kg)}</span>
-                <span className="text-right tabular-nums">{fmtKg(r.h2o_kg)}</span>
-                <span className="text-right tabular-nums">{fmtKg(r.gas_syngas_kg)}</span>
-                <span className="text-right tabular-nums">{fmtKg(r.losses_kg)}</span>
-                <span className="text-right tabular-nums">{fmtKg(r.output_eu_kg)}</span>
-                <span className="text-right tabular-nums">{fmtKg(r.output_total_kg)}</span>
+                <span
+                  className="text-right tabular-nums"
+                  title={fmtKgExact(r.input_total_kg)}
+                >
+                  {fmtKgCompact(r.input_total_kg)}
+                </span>
+                <span
+                  className="text-right tabular-nums"
+                  title={fmtKgExact(r.output_total_kg)}
+                >
+                  {fmtKgCompact(r.output_total_kg)}
+                </span>
                 <span className={`text-right tabular-nums ${closureClass} group-open:text-bg`}>
                   {fmtPct(r.closure_diff_pct)}
                 </span>
               </summary>
 
-              <div className="border-t-2 border-olive-deep bg-olive-deep/5 px-3 py-3">
+              <div className="border-t-2 border-olive-deep bg-olive-deep/5 px-3 py-3 space-y-4">
+                <div>
+                  <p className="mb-2 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-ink-mute">
+                    Production breakdown
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[0.7rem]">
+                    <BreakdownTile label="Kg → production" value={r.kg_to_production} />
+                    <BreakdownTile label="EU prod" value={r.eu_prod_kg} />
+                    <BreakdownTile label="Plus prod" value={r.plus_prod_kg} />
+                    <BreakdownTile label="Output EU" value={r.output_eu_kg} />
+                    <BreakdownTile label="Carbon black" value={r.carbon_black_kg} />
+                    <BreakdownTile label="Metal scrap" value={r.metal_scrap_kg} />
+                    <BreakdownTile label="H2O" value={r.h2o_kg} />
+                    <BreakdownTile label="Syngas" value={r.gas_syngas_kg} />
+                    <BreakdownTile label="Losses" value={r.losses_kg} />
+                  </div>
+                </div>
                 {dayEntries.length === 0 ? (
                   <p className="font-mono text-[0.7rem] text-ink-mute">
                     No truck entries logged for this day.
                   </p>
                 ) : (
-                  <table className="w-full border-collapse font-mono text-[0.7rem]">
+                  <div className="overflow-x-auto">
+                  <table className="w-full min-w-[720px] border-collapse font-mono text-[0.7rem]">
                     <thead>
                       <tr className="border-b border-rule/60 text-left uppercase tracking-[0.1em] text-ink-mute">
                         <th className="px-2 py-1.5 font-normal">Time</th>
                         <th className="px-2 py-1.5 font-normal">Supplier</th>
-                        <th className="px-2 py-1.5 font-normal">Certificate</th>
-                        <th className="px-2 py-1.5 font-normal">Contract</th>
+                        <th className="px-2 py-1.5 font-normal">Cert / Contract</th>
                         <th className="px-2 py-1.5 font-normal">eRSV</th>
-                        <th className="px-2 py-1.5 text-right font-normal">CAR kg</th>
-                        <th className="px-2 py-1.5 text-right font-normal">TRUCK kg</th>
-                        <th className="px-2 py-1.5 text-right font-normal">SPECIAL kg</th>
-                        <th className="px-2 py-1.5 text-right font-normal">Total</th>
-                        <th className="px-2 py-1.5 text-right font-normal">Theor %</th>
-                        <th className="px-2 py-1.5 text-right font-normal">Manuf %</th>
+                        <th className="px-2 py-1.5 font-normal">Loaded</th>
+                        <th className="px-2 py-1.5 text-right font-normal">Total kg</th>
+                        <th className="px-2 py-1.5 text-right font-normal">Veg % (T / M)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -397,6 +464,7 @@ function DailyAccordion({
                           e.certificate_id != null ? certificateMap.get(e.certificate_id) : null;
                         const contract =
                           e.contract_id != null ? contractMap.get(e.contract_id) : null;
+                        const loaded = describeLoaded(e.car_kg, e.truck_kg, e.special_kg);
                         return (
                           <tr
                             key={e.id}
@@ -407,33 +475,44 @@ function DailyAccordion({
                               {sup?.name ?? sup?.code ?? `#${e.supplier_id}`}
                             </td>
                             <td className="px-2 py-1.5 text-ink-soft">
-                              {cert?.cert_number ?? '—'}
+                              <span className="block">{cert?.cert_number ?? '—'}</span>
+                              <span className="block text-[0.62rem] text-ink-mute">
+                                {contract?.code ?? '—'}
+                              </span>
                             </td>
-                            <td className="px-2 py-1.5 text-ink-soft">{contract?.code ?? '—'}</td>
                             <td className="px-2 py-1.5 text-ink-soft">{e.ersv_number ?? '—'}</td>
-                            <td className="px-2 py-1.5 text-right tabular-nums text-ink">
-                              {fmtKg(e.car_kg)}
+                            <td className="px-2 py-1.5 text-ink-soft">
+                              {loaded.types.length === 0 ? (
+                                '—'
+                              ) : (
+                                <span className="flex flex-wrap gap-1">
+                                  {loaded.types.map((t) => (
+                                    <span
+                                      key={t.label}
+                                      className="inline-flex items-center gap-1 border border-rule/60 bg-bg px-1.5 py-0.5 text-[0.6rem] uppercase tracking-[0.1em]"
+                                    >
+                                      <span className="text-ink-mute">{t.label}</span>
+                                      <span className="tabular-nums text-ink">{fmtKgCompact(t.value)}</span>
+                                    </span>
+                                  ))}
+                                </span>
+                              )}
                             </td>
-                            <td className="px-2 py-1.5 text-right tabular-nums text-ink">
-                              {fmtKg(e.truck_kg)}
-                            </td>
-                            <td className="px-2 py-1.5 text-right tabular-nums text-ink">
-                              {fmtKg(e.special_kg)}
-                            </td>
-                            <td className="px-2 py-1.5 text-right tabular-nums font-medium text-ink">
-                              {fmtKg(e.total_input_kg)}
+                            <td
+                              className="px-2 py-1.5 text-right tabular-nums font-medium text-ink"
+                              title={fmtKgExact(e.total_input_kg)}
+                            >
+                              {fmtKgCompact(e.total_input_kg)}
                             </td>
                             <td className="px-2 py-1.5 text-right tabular-nums text-ink-soft">
-                              {fmtPct(e.theor_veg_pct)}
-                            </td>
-                            <td className="px-2 py-1.5 text-right tabular-nums text-ink-soft">
-                              {fmtPct(e.manuf_veg_pct)}
+                              {fmtPct(e.theor_veg_pct)} / {fmtPct(e.manuf_veg_pct)}
                             </td>
                           </tr>
                         );
                       })}
                     </tbody>
                   </table>
+                  </div>
                 )}
               </div>
             </details>
@@ -453,15 +532,19 @@ function KpiTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-3 py-2 font-normal">{children}</th>;
-}
-function ThNum({ children }: { children: React.ReactNode }) {
-  return <th className="px-3 py-2 text-right font-normal">{children}</th>;
-}
-function Td({ className = '', children }: { className?: string; children: React.ReactNode }) {
-  return <td className={`px-3 py-2 ${className}`}>{children}</td>;
-}
-function TdNum({ className = '', children }: { className?: string; children: React.ReactNode }) {
-  return <td className={`px-3 py-2 text-right tabular-nums ${className}`}>{children}</td>;
+function BreakdownTile({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null | undefined;
+}) {
+  return (
+    <div className="border border-rule/60 bg-bg-soft px-2.5 py-2">
+      <p className="text-[0.6rem] uppercase tracking-[0.12em] text-ink-mute">{label}</p>
+      <p className="mt-1 tabular-nums text-ink" title={fmtKgExact(value)}>
+        {fmtKgCompact(value)}
+      </p>
+    </div>
+  );
 }
