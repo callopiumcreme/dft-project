@@ -31,19 +31,19 @@ export default function LoginPage({ searchParams }: { searchParams: SearchParams
           DFT
         </Link>
         <p className="mt-2 mb-12 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">
-          Mass balance — accesso operatori
+          Mass balance — operator access
         </p>
         {expired && (
           <p
             role="status"
             className="mb-6 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-accent"
           >
-            Sessione scaduta · accedi di nuovo
+            Session expired · sign in again
           </p>
         )}
         <LoginForm next={next} />
         <p className="mt-12 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">
-          Sessione 8h · cookie httpOnly
+          8h session · httpOnly cookie
         </p>
       </div>
     </main>

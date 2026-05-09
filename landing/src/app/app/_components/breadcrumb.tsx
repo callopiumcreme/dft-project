@@ -6,13 +6,13 @@ import { ChevronRight } from 'lucide-react';
 
 const LABELS: Record<string, string> = {
   app: 'Dashboard',
-  reports: 'Report',
+  reports: 'Reports',
   'mass-balance': 'Mass balance',
-  'by-supplier': 'Per fornitore',
-  'closure-status': 'Chiusura',
-  suppliers: 'Fornitori',
-  certificates: 'Certificati',
-  contracts: 'Contratti',
+  'by-supplier': 'By supplier',
+  'closure-status': 'Closure',
+  suppliers: 'Suppliers',
+  certificates: 'Certificates',
+  contracts: 'Contracts',
 };
 
 export function Breadcrumb() {

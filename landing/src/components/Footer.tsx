@@ -57,12 +57,12 @@ export function Footer() {
               and RED&nbsp;II.
             </p>
 
-            <a
-              href="https://app.dft-project.com"
+            <Link
+              href="/login"
               className="mt-8 inline-flex items-center gap-3 font-mono text-[0.78rem] uppercase tracking-[0.16em] border border-ink px-5 h-10 hover:bg-ink hover:text-bg transition-colors"
             >
               Sign in to the app →
-            </a>
+            </Link>
           </div>
 
           {COLS.map((col) => (

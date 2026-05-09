@@ -18,8 +18,8 @@ const PALETTE = [
   '#857d6c',
 ];
 
-const numFmt = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 });
-const pctFmt = new Intl.NumberFormat('it-IT', {
+const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+const pctFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
@@ -28,7 +28,7 @@ export function SupplierPie({ data }: { data: PieSlice[] }) {
   if (data.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center font-mono text-[0.7rem] uppercase tracking-[0.14em] text-ink-mute">
-        Nessun fornitore nel periodo
+        No suppliers in period
       </div>
     );
   }

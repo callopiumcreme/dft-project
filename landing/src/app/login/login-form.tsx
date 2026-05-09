@@ -18,7 +18,7 @@ function SubmitButton() {
       disabled={pending}
       className="w-full"
     >
-      {pending ? 'Verifica…' : 'Entra'}
+      {pending ? 'Verifying…' : 'Sign in'}
     </Button>
   );
 }

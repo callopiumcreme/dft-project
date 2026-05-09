@@ -42,8 +42,8 @@ const BUCKET_ROW: Record<Bucket, string> = {
 export const dynamic = 'force-dynamic';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const numFmt = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 });
-const pctFmt = new Intl.NumberFormat('it-IT', {
+const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+const pctFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -96,7 +96,7 @@ export default async function ClosureStatusPage({ searchParams }: PageProps) {
     });
   } catch (e) {
     if (e instanceof ApiError) fetchError = `${e.status} · ${e.detail}`;
-    else fetchError = 'errore sconosciuto';
+    else fetchError = 'unknown error';
   }
 
   const counts: Record<Bucket, number> = {
@@ -123,11 +123,11 @@ export default async function ClosureStatusPage({ searchParams }: PageProps) {
       <header className="border-b border-rule pb-6">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">Report</p>
         <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">
-          Chiusura giornaliera
+          Daily closure
         </h1>
         <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
-          Semaforo bilancio per giorno · {total} giorni nel periodo
-          {from || to ? ` · filtro ${from ?? '…'} → ${to ?? '…'}` : ''}
+          Balance traffic light by day · {total} days in period
+          {from || to ? ` · filter ${from ?? '…'} → ${to ?? '…'}` : ''}
           {bucketFilter ? ` · bucket = ${BUCKET_LABEL[bucketFilter]}` : ''}
         </p>
       </header>
@@ -140,7 +140,7 @@ export default async function ClosureStatusPage({ searchParams }: PageProps) {
         >
           {bucketFilter && <input type="hidden" name="bucket" value={bucketFilter} />}
           <label className="flex flex-col gap-1">
-            <span className="text-ink-mute">Da</span>
+            <span className="text-ink-mute">From</span>
             <input
               type="date"
               name="from"
@@ -149,7 +149,7 @@ export default async function ClosureStatusPage({ searchParams }: PageProps) {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-ink-mute">A</span>
+            <span className="text-ink-mute">To</span>
             <input
               type="date"
               name="to"
@@ -161,7 +161,7 @@ export default async function ClosureStatusPage({ searchParams }: PageProps) {
             type="submit"
             className="border border-ink bg-ink px-3 py-1.5 text-bg hover:bg-ink-soft"
           >
-            Filtra
+            Filter
           </button>
           <Link
             href="/app/reports/closure-status"
@@ -174,14 +174,14 @@ export default async function ClosureStatusPage({ searchParams }: PageProps) {
             className="border border-olive-deep bg-olive-deep px-3 py-1.5 text-bg hover:bg-olive"
             download
           >
-            Esporta CSV
+            Export CSV
           </a>
         </form>
       </section>
 
       {fetchError && (
         <div className="mt-6 border border-rule bg-bg-soft p-4 font-mono text-[0.75rem] text-accent">
-          Errore caricamento: {fetchError}
+          Loading error: {fetchError}
         </div>
       )}
 
@@ -221,8 +221,8 @@ export default async function ClosureStatusPage({ searchParams }: PageProps) {
         <table className="w-full border-collapse font-mono text-[0.72rem]">
           <thead className="border-b border-rule bg-bg">
             <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
-              <Th>Giorno</Th>
-              <Th>Stato</Th>
+              <Th>Day</Th>
+              <Th>Status</Th>
               <ThNum>Input kg</ThNum>
               <ThNum>Output kg</ThNum>
               <ThNum>Closure %</ThNum>
@@ -232,7 +232,7 @@ export default async function ClosureStatusPage({ searchParams }: PageProps) {
             {filtered.length === 0 && !fetchError && (
               <tr>
                 <td colSpan={5} className="px-3 py-6 text-center text-ink-mute">
-                  Nessun giorno per il filtro selezionato.
+                  No days match the selected filter.
                 </td>
               </tr>
             )}

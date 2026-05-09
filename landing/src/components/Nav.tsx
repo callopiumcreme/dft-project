@@ -64,12 +64,12 @@ export function Nav() {
         </nav>
 
         <div className="flex items-center gap-4">
-          <a
-            href="https://app.dft-project.com"
+          <Link
+            href="/login"
             className="hidden sm:inline font-mono text-[0.72rem] uppercase tracking-[0.16em] text-ink-soft hover:text-ink transition-colors"
           >
             Sign in
-          </a>
+          </Link>
           <a
             href="#contact"
             className="inline-flex items-center font-mono text-[0.72rem] uppercase tracking-[0.16em] bg-ink text-bg h-9 px-4 hover:bg-olive-deep transition-colors"

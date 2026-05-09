@@ -26,7 +26,7 @@ export async function loginAction(_prev: LoginState, fd: FormData): Promise<Logi
   const next = safeNext(fd.get('next'));
 
   if (!email || !password) {
-    return { error: 'Email e password obbligatori' };
+    return { error: 'Email and password required' };
   }
 
   let token: string;
@@ -39,9 +39,9 @@ export async function loginAction(_prev: LoginState, fd: FormData): Promise<Logi
     token = res.access_token;
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) {
-      return { error: 'Credenziali non valide' };
+      return { error: 'Invalid credentials' };
     }
-    return { error: 'Errore di connessione al server' };
+    return { error: 'Server connection error' };
   }
 
   cookies().set(SESSION_COOKIE, token, {

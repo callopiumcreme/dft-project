@@ -39,12 +39,12 @@ export function AppShell({ children, user }: Props) {
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger
                 className="md:hidden -ml-1 grid h-9 w-9 place-items-center text-ink-soft hover:text-ink focus-visible:ring-2 focus-visible:ring-olive outline-none"
-                aria-label="Apri menu"
+                aria-label="Open menu"
               >
                 <Menu className="h-5 w-5" />
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
-                <SheetTitle className="sr-only">Navigazione</SheetTitle>
+                <SheetTitle className="sr-only">Navigation</SheetTitle>
                 <Link
                   href="/app"
                   onClick={() => setOpen(false)}

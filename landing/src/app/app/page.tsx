@@ -8,8 +8,8 @@ type ClosureRow = components['schemas']['ClosureStatusRow'];
 
 export const dynamic = 'force-dynamic';
 
-const numFmt = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 });
-const pctFmt = new Intl.NumberFormat('it-IT', {
+const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+const pctFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -70,32 +70,32 @@ export default async function AppHomePage() {
     <div className="mx-auto max-w-editorial">
       <header className="border-b border-rule pb-6">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">
-          Panoramica
+          Overview
         </p>
         <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">Dashboard</h1>
         <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
-          KPI mass balance — ultimi {sortedDaily.length} giorni
+          Mass balance KPI — last {sortedDaily.length} days
           {firstDay && lastDay ? ` (${firstDay} → ${lastDay})` : ''}.
         </p>
         {fetchFailed && (
           <p className="mt-3 inline-block border border-rule bg-bg-soft px-3 py-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-ink-mute">
-            Backend non raggiungibile · valori parziali
+            Backend unreachable · partial data
           </p>
         )}
       </header>
 
       <section className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Input totale" value={`${numFmt.format(totalInput)} kg`} />
-        <KpiCard label="Output totale" value={`${numFmt.format(totalOutput)} kg`} />
+        <KpiCard label="Total input" value={`${numFmt.format(totalInput)} kg`} />
+        <KpiCard label="Total output" value={`${numFmt.format(totalOutput)} kg`} />
         <KpiCard
-          label="Closure media"
+          label="Avg closure"
           value={`${pctFmt.format(avgClosure)} %`}
-          hint={closureValues.length === 0 ? 'Nessun dato' : `${closureValues.length} giorni`}
+          hint={closureValues.length === 0 ? 'No data' : `${closureValues.length} days`}
         />
         <KpiCard
-          label="Alert chiusura"
+          label="Closure alerts"
           value={numFmt.format(alertCount)}
-          hint={`su ${closureRows.length} giorni`}
+          hint={`of ${closureRows.length} days`}
           tone={alertCount > 0 ? 'alert' : 'neutral'}
         />
       </section>
@@ -103,10 +103,10 @@ export default async function AppHomePage() {
       <section className="mt-10 border border-rule bg-bg-soft p-5">
         <div className="flex items-baseline justify-between">
           <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-ink-mute">
-            Andamento input vs output
+            Input vs output trend
           </p>
           <p className="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-ink-mute">
-            kg / giorno
+            kg / day
           </p>
         </div>
         <div className="mt-3">
@@ -149,7 +149,7 @@ function KpiCard({
         {value}
       </p>
       <p className="mt-2 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-ink-mute">
-        {hint ?? 'Ultimi 30 giorni'}
+        {hint ?? 'Last 30 days'}
       </p>
     </Card>
   );

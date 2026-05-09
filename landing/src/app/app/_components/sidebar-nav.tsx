@@ -21,12 +21,12 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { href: '/app', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/app/reports/mass-balance', label: 'Mass balance', icon: Scale, group: 'Report' },
-  { href: '/app/reports/by-supplier', label: 'Per fornitore', icon: Users, group: 'Report' },
-  { href: '/app/reports/closure-status', label: 'Chiusura giornaliera', icon: Scale, group: 'Report' },
-  { href: '/app/suppliers', label: 'Fornitori', icon: Users, group: 'Anagrafiche' },
-  { href: '/app/certificates', label: 'Certificati', icon: Award, group: 'Anagrafiche' },
-  { href: '/app/contracts', label: 'Contratti', icon: FileText, group: 'Anagrafiche' },
+  { href: '/app/reports/mass-balance', label: 'Mass balance', icon: Scale, group: 'Reports' },
+  { href: '/app/reports/by-supplier', label: 'By supplier', icon: Users, group: 'Reports' },
+  { href: '/app/reports/closure-status', label: 'Daily closure', icon: Scale, group: 'Reports' },
+  { href: '/app/suppliers', label: 'Suppliers', icon: Users, group: 'Master data' },
+  { href: '/app/certificates', label: 'Certificates', icon: Award, group: 'Master data' },
+  { href: '/app/contracts', label: 'Contracts', icon: FileText, group: 'Master data' },
 ];
 
 function isActive(pathname: string, href: string): boolean {

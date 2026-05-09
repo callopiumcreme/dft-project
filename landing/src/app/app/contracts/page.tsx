@@ -6,8 +6,8 @@ type Supplier = components['schemas']['SupplierRead'];
 
 export const dynamic = 'force-dynamic';
 
-const numFmt = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 });
-const dateFmt = new Intl.DateTimeFormat('it-IT', { dateStyle: 'medium' });
+const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+const dateFmt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
 
 function fmtDate(v: string | null | undefined): string {
   if (!v) return '—';
@@ -51,7 +51,7 @@ export default async function ContractsPage({ searchParams }: PageProps) {
     suppliers = suppliersRes;
   } catch (e) {
     if (e instanceof ApiError) fetchError = `${e.status} · ${e.detail}`;
-    else fetchError = 'errore sconosciuto';
+    else fetchError = 'unknown error';
   }
 
   const supplierMap = new Map(suppliers.map((s) => [s.id, s]));
@@ -65,11 +65,11 @@ export default async function ContractsPage({ searchParams }: PageProps) {
     <div className="mx-auto max-w-editorial">
       <header className="border-b border-rule pb-6">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">
-          Anagrafica
+          Master data
         </p>
-        <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">Contratti</h1>
+        <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">Contracts</h1>
         <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
-          {rows.length} contratti
+          {rows.length} contracts
           {supplierId
             ? ` · supplier_id = ${supplierId}${
                 supplierMap.has(supplierId) ? ` (${supplierMap.get(supplierId)!.code})` : ''
@@ -85,13 +85,13 @@ export default async function ContractsPage({ searchParams }: PageProps) {
           className="flex flex-wrap items-end gap-3 font-mono text-[0.7rem] uppercase tracking-[0.14em]"
         >
           <label className="flex flex-col gap-1">
-            <span className="text-ink-mute">Fornitore</span>
+            <span className="text-ink-mute">Supplier</span>
             <select
               name="supplier_id"
               defaultValue={supplierId ?? ''}
               className="border border-rule bg-bg-soft px-2 py-1 text-ink"
             >
-              <option value="">— tutti —</option>
+              <option value="">— all —</option>
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.code} · {s.name}
@@ -103,7 +103,7 @@ export default async function ContractsPage({ searchParams }: PageProps) {
             type="submit"
             className="border border-ink bg-ink px-3 py-1.5 text-bg hover:bg-ink-soft"
           >
-            Filtra
+            Filter
           </button>
           <a
             href="/app/contracts"
@@ -116,34 +116,34 @@ export default async function ContractsPage({ searchParams }: PageProps) {
 
       {fetchError && (
         <div className="mt-6 border border-rule bg-bg-soft p-4 font-mono text-[0.75rem] text-accent">
-          Errore caricamento: {fetchError}
+          Loading error: {fetchError}
         </div>
       )}
 
       <section className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiTile label="Contratti" value={String(rows.length)} />
+        <KpiTile label="Contracts" value={String(rows.length)} />
         <KpiTile label="Placeholder" value={String(placeholders)} />
-        <KpiTile label="Volume totale" value={`${numFmt.format(totalCommitted)} kg`} />
+        <KpiTile label="Total volume" value={`${numFmt.format(totalCommitted)} kg`} />
       </section>
 
       <section className="mt-6 border border-rule bg-bg-soft overflow-x-auto">
         <table className="w-full border-collapse font-mono text-[0.72rem]">
           <thead className="border-b border-rule bg-bg">
             <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
-              <Th>Codice</Th>
-              <Th>Fornitore</Th>
-              <Th>Inizio</Th>
-              <Th>Fine</Th>
+              <Th>Code</Th>
+              <Th>Supplier</Th>
+              <Th>Start</Th>
+              <Th>End</Th>
               <ThNum>Volume kg</ThNum>
-              <Th>Tipo</Th>
-              <Th>Note</Th>
+              <Th>Type</Th>
+              <Th>Notes</Th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && !fetchError && (
               <tr>
                 <td colSpan={7} className="px-3 py-6 text-center text-ink-mute">
-                  Nessun contratto per il filtro selezionato.
+                  No contracts match the selected filter.
                 </td>
               </tr>
             )}
@@ -163,7 +163,7 @@ export default async function ContractsPage({ searchParams }: PageProps) {
                   <TdNum>{fmtKg(r.total_kg_committed)}</TdNum>
                   <Td>
                     <span className="text-ink-soft">
-                      {r.is_placeholder ? 'placeholder' : 'reale'}
+                      {r.is_placeholder ? 'placeholder' : 'real'}
                     </span>
                   </Td>
                   <Td className="text-ink-mute max-w-[20rem] truncate" title={r.notes ?? ''}>

@@ -8,8 +8,8 @@ type Row = components['schemas']['BySupplierRow'];
 export const dynamic = 'force-dynamic';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const numFmt = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 });
-const pctFmt = new Intl.NumberFormat('it-IT', {
+const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+const pctFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
@@ -43,7 +43,7 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
     });
   } catch (e) {
     if (e instanceof ApiError) fetchError = `${e.status} · ${e.detail}`;
-    else fetchError = 'errore sconosciuto';
+    else fetchError = 'unknown error';
   }
 
   const sorted = [...rows].sort((a, b) => Number(b.total_input_kg) - Number(a.total_input_kg));
@@ -65,10 +65,10 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
     <div className="mx-auto max-w-editorial">
       <header className="border-b border-rule pb-6">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">Report</p>
-        <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">Per fornitore</h1>
+        <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">By supplier</h1>
         <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
-          Distribuzione input per fornitore · {sorted.length} fornitori
-          {from || to ? ` · filtro ${from ?? '…'} → ${to ?? '…'}` : ''}
+          Input distribution by supplier · {sorted.length} suppliers
+          {from || to ? ` · filter ${from ?? '…'} → ${to ?? '…'}` : ''}
         </p>
       </header>
 
@@ -79,7 +79,7 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
           className="flex flex-wrap items-end gap-3 font-mono text-[0.7rem] uppercase tracking-[0.14em]"
         >
           <label className="flex flex-col gap-1">
-            <span className="text-ink-mute">Da</span>
+            <span className="text-ink-mute">From</span>
             <input
               type="date"
               name="from"
@@ -88,7 +88,7 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-ink-mute">A</span>
+            <span className="text-ink-mute">To</span>
             <input
               type="date"
               name="to"
@@ -100,7 +100,7 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
             type="submit"
             className="border border-ink bg-ink px-3 py-1.5 text-bg hover:bg-ink-soft"
           >
-            Filtra
+            Filter
           </button>
           <Link
             href="/app/reports/by-supplier"
@@ -113,27 +113,27 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
             className="border border-olive-deep bg-olive-deep px-3 py-1.5 text-bg hover:bg-olive"
             download
           >
-            Esporta CSV
+            Export CSV
           </a>
         </form>
       </section>
 
       {fetchError && (
         <div className="mt-6 border border-rule bg-bg-soft p-4 font-mono text-[0.75rem] text-accent">
-          Errore caricamento: {fetchError}
+          Loading error: {fetchError}
         </div>
       )}
 
       <section className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiTile label="Fornitori" value={String(sorted.length)} />
-        <KpiTile label="Input totale" value={`${numFmt.format(totalKg)} kg`} />
-        <KpiTile label="Entries totali" value={numFmt.format(totalEntries)} />
+        <KpiTile label="Suppliers" value={String(sorted.length)} />
+        <KpiTile label="Total input" value={`${numFmt.format(totalKg)} kg`} />
+        <KpiTile label="Total entries" value={numFmt.format(totalEntries)} />
       </section>
 
       <section className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-4">
         <div className="lg:col-span-2 border border-rule bg-bg-soft p-5">
           <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-ink-mute">
-            Quote input per fornitore
+            Input share by supplier
           </p>
           <div className="mt-3">
             <SupplierPie data={slices} />
@@ -145,19 +145,19 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
             <thead className="border-b border-rule bg-bg">
               <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
                 <Th>#</Th>
-                <Th>Codice</Th>
-                <Th>Nome</Th>
+                <Th>Code</Th>
+                <Th>Name</Th>
                 <ThNum>Input kg</ThNum>
                 <ThNum>%</ThNum>
                 <ThNum>Entries</ThNum>
-                <ThNum>Giorni</ThNum>
+                <ThNum>Days</ThNum>
               </tr>
             </thead>
             <tbody>
               {sorted.length === 0 && !fetchError && (
                 <tr>
                   <td colSpan={7} className="px-3 py-6 text-center text-ink-mute">
-                    Nessun fornitore nel periodo selezionato.
+                    No suppliers in selected period.
                   </td>
                 </tr>
               )}

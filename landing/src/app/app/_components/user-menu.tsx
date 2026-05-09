@@ -44,7 +44,7 @@ export function UserMenu({ email, role, fullName }: Props) {
         <ChevronDown className="h-3.5 w-3.5" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[14rem]">
-        <DropdownMenuLabel>Utente</DropdownMenuLabel>
+        <DropdownMenuLabel>User</DropdownMenuLabel>
         <div className="px-2 pb-2">
           <p className="font-display text-sm tracking-editorial text-ink truncate">{display}</p>
           <p className="mt-0.5 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-ink-mute truncate">
@@ -62,7 +62,7 @@ export function UserMenu({ email, role, fullName }: Props) {
             className="flex w-full items-center gap-2 px-2 py-1.5 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-ink-soft outline-none transition-colors hover:bg-bg-soft hover:text-accent focus:bg-bg-soft disabled:opacity-60"
           >
             <LogOut className="h-3.5 w-3.5" aria-hidden />
-            {pending ? 'Esco…' : 'Logout'}
+            {pending ? 'Signing out…' : 'Logout'}
           </button>
         </form>
       </DropdownMenuContent>

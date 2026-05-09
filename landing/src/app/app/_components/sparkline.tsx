@@ -9,19 +9,19 @@ export type SparkPoint = {
 };
 
 function fmtKg(n: number) {
-  return new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(n);
 }
 
 function fmtDay(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
 }
 
 export function Sparkline({ data }: { data: SparkPoint[] }) {
   if (data.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center font-mono text-[0.7rem] uppercase tracking-[0.14em] text-ink-mute">
-        Nessun dato disponibile
+        No data available
       </div>
     );
   }
