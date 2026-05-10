@@ -136,7 +136,8 @@ export interface paths {
         /** List Certificates */
         get: operations["list_certificates_certificates_get"];
         put?: never;
-        post?: never;
+        /** Create Certificate */
+        post: operations["create_certificate_certificates_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -154,6 +155,25 @@ export interface paths {
         get: operations["get_certificate_certificates__cert_id__get"];
         put?: never;
         post?: never;
+        /** Soft Delete Certificate */
+        delete: operations["soft_delete_certificate_certificates__cert_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Certificate */
+        patch: operations["update_certificate_certificates__cert_id__patch"];
+        trace?: never;
+    };
+    "/certificates/{cert_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Certificate */
+        post: operations["restore_certificate_certificates__cert_id__restore_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -460,6 +480,40 @@ export interface components {
             /** Days */
             days: number;
         };
+        /** CertificateCreate */
+        CertificateCreate: {
+            /** Cert Number */
+            cert_number: string;
+            /**
+             * Scheme
+             * @default ISCC EU
+             */
+            scheme: string;
+            /**
+             * Status
+             * @default active
+             * @enum {string}
+             */
+            status: "active" | "expired" | "revoked" | "placeholder";
+            /** Issued At */
+            issued_at?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /**
+             * Is Placeholder
+             * @default false
+             */
+            is_placeholder: boolean;
+            /** Document Url */
+            document_url?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Supplier Ids
+             * @default []
+             */
+            supplier_ids: number[];
+        };
         /** CertificateRead */
         CertificateRead: {
             /** Cert Number */
@@ -491,6 +545,11 @@ export interface components {
             /** Id */
             id: number;
             /**
+             * Supplier Ids
+             * @default []
+             */
+            supplier_ids: number[];
+            /**
              * Created At
              * Format: date-time
              */
@@ -502,6 +561,27 @@ export interface components {
             updated_at: string;
             /** Deleted At */
             deleted_at?: string | null;
+        };
+        /** CertificateUpdate */
+        CertificateUpdate: {
+            /** Cert Number */
+            cert_number?: string | null;
+            /** Scheme */
+            scheme?: string | null;
+            /** Status */
+            status?: ("active" | "expired" | "revoked" | "placeholder") | null;
+            /** Issued At */
+            issued_at?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Is Placeholder */
+            is_placeholder?: boolean | null;
+            /** Document Url */
+            document_url?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Supplier Ids */
+            supplier_ids?: number[] | null;
         };
         /** ClosureStatusRow */
         ClosureStatusRow: {
@@ -1353,6 +1433,7 @@ export interface operations {
         parameters: {
             query?: {
                 status?: string | null;
+                include_deleted?: boolean;
             };
             header?: never;
             path?: never;
@@ -1380,7 +1461,137 @@ export interface operations {
             };
         };
     };
+    create_certificate_certificates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CertificateCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_certificate_certificates__cert_id__get: {
+        parameters: {
+            query?: {
+                include_deleted?: boolean;
+            };
+            header?: never;
+            path: {
+                cert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    soft_delete_certificate_certificates__cert_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_certificate_certificates__cert_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CertificateUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_certificate_certificates__cert_id__restore_post: {
         parameters: {
             query?: never;
             header?: never;

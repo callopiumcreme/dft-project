@@ -19,7 +19,7 @@ from app.db.session import get_db
 from app.models.certificate import Certificate
 from app.models.contract import Contract
 from app.models.supplier import Supplier
-from app.schemas.certificate import CertificateRead
+from app.schemas.certificate import CertificateCreate, CertificateRead, CertificateUpdate
 from app.schemas.contract import ContractCreate, ContractRead, ContractUpdate
 from app.schemas.supplier import SupplierCreate, SupplierRead, SupplierUpdate
 from app.services.audit import model_snapshot, write_audit
@@ -193,6 +193,34 @@ async def restore_supplier(
 
 # ---------- CERTIFICATES ----------
 certificates_router = APIRouter(prefix="/certificates", tags=["certificates"])
+CERTIFICATES_TABLE = "certificates"
+
+
+async def _get_certificate_or_404(
+    db: AsyncSession, cert_id: int, *, include_deleted: bool = False
+) -> Certificate:
+    stmt = select(Certificate).where(Certificate.id == cert_id)
+    if not include_deleted:
+        stmt = stmt.where(Certificate.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    obj = result.scalar_one_or_none()
+    if obj is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Certificate not found")
+    return obj
+
+
+async def _resolve_suppliers(db: AsyncSession, ids: list[int]) -> list[Supplier]:
+    if not ids:
+        return []
+    stmt = select(Supplier).where(Supplier.id.in_(ids), Supplier.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    found = list(result.scalars().all())
+    if len(found) != len(set(ids)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="One or more supplier_ids invalid",
+        )
+    return found
 
 
 @certificates_router.get("", response_model=list[CertificateRead])
@@ -200,8 +228,11 @@ async def list_certificates(
     _: ViewerUser,
     db: DbDep,
     status_filter: str | None = Query(None, alias="status"),
+    include_deleted: bool = Query(False),
 ) -> list[Certificate]:
-    stmt = select(Certificate).where(Certificate.deleted_at.is_(None))
+    stmt = select(Certificate)
+    if not include_deleted:
+        stmt = stmt.where(Certificate.deleted_at.is_(None))
     if status_filter:
         stmt = stmt.where(Certificate.status == status_filter)
     stmt = stmt.order_by(Certificate.cert_number)
@@ -210,16 +241,142 @@ async def list_certificates(
 
 
 @certificates_router.get("/{cert_id}", response_model=CertificateRead)
-async def get_certificate(cert_id: int, _: ViewerUser, db: DbDep) -> Certificate:
-    result = await db.execute(
-        select(Certificate).where(
-            Certificate.id == cert_id, Certificate.deleted_at.is_(None)
-        )
+async def get_certificate(
+    cert_id: int,
+    _: ViewerUser,
+    db: DbDep,
+    include_deleted: bool = Query(False),
+) -> Certificate:
+    return await _get_certificate_or_404(db, cert_id, include_deleted=include_deleted)
+
+
+@certificates_router.post("", response_model=CertificateRead, status_code=status.HTTP_201_CREATED)
+async def create_certificate(
+    body: CertificateCreate,
+    user: AdminUser,
+    db: DbDep,
+) -> Certificate:
+    payload = body.model_dump()
+    supplier_ids = payload.pop("supplier_ids", []) or []
+    obj = Certificate(**payload)
+    if supplier_ids:
+        obj.suppliers = await _resolve_suppliers(db, supplier_ids)
+    db.add(obj)
+    try:
+        await db.flush()
+    except IntegrityError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Certificate number already exists",
+        ) from e
+    await db.refresh(obj)
+    await write_audit(
+        db,
+        table_name=CERTIFICATES_TABLE,
+        record_id=obj.id,
+        action="insert",
+        old_values=None,
+        new_values=model_snapshot(obj),
+        changed_by=user.id,
     )
-    c = result.scalar_one_or_none()
-    if c is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Certificate not found")
-    return c
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+@certificates_router.patch("/{cert_id}", response_model=CertificateRead)
+async def update_certificate(
+    cert_id: int,
+    body: CertificateUpdate,
+    user: AdminUser,
+    db: DbDep,
+) -> Certificate:
+    obj = await _get_certificate_or_404(db, cert_id)
+    old = model_snapshot(obj)
+    patch = body.model_dump(exclude_unset=True)
+    if not patch:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update"
+        )
+    supplier_ids = patch.pop("supplier_ids", None)
+    for k, v in patch.items():
+        setattr(obj, k, v)
+    if supplier_ids is not None:
+        obj.suppliers = await _resolve_suppliers(db, supplier_ids)
+    try:
+        await db.flush()
+    except IntegrityError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Certificate number already exists",
+        ) from e
+    await db.refresh(obj)
+    await write_audit(
+        db,
+        table_name=CERTIFICATES_TABLE,
+        record_id=obj.id,
+        action="update",
+        old_values=old,
+        new_values=model_snapshot(obj),
+        changed_by=user.id,
+    )
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+@certificates_router.delete("/{cert_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def soft_delete_certificate(
+    cert_id: int,
+    user: AdminUser,
+    db: DbDep,
+) -> None:
+    obj = await _get_certificate_or_404(db, cert_id)
+    old = model_snapshot(obj)
+    obj.deleted_at = datetime.utcnow()
+    await db.flush()
+    await db.refresh(obj)
+    await write_audit(
+        db,
+        table_name=CERTIFICATES_TABLE,
+        record_id=obj.id,
+        action="soft_delete",
+        old_values=old,
+        new_values=model_snapshot(obj),
+        changed_by=user.id,
+    )
+    await db.commit()
+
+
+@certificates_router.post("/{cert_id}/restore", response_model=CertificateRead)
+async def restore_certificate(
+    cert_id: int,
+    user: AdminUser,
+    db: DbDep,
+) -> Certificate:
+    obj = await _get_certificate_or_404(db, cert_id, include_deleted=True)
+    if obj.deleted_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Not deleted"
+        )
+    old = model_snapshot(obj)
+    obj.deleted_at = None
+    await db.flush()
+    await db.refresh(obj)
+    await write_audit(
+        db,
+        table_name=CERTIFICATES_TABLE,
+        record_id=obj.id,
+        action="restore",
+        old_values=old,
+        new_values=model_snapshot(obj),
+        changed_by=user.id,
+    )
+    await db.commit()
+    await db.refresh(obj)
+    return obj
 
 
 # ---------- CONTRACTS ----------

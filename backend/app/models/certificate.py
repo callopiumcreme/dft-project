@@ -36,3 +36,7 @@ class Certificate(Base):
     suppliers: Mapped[list["Supplier"]] = relationship(  # noqa: F821
         secondary="supplier_certificates", back_populates="certificates", lazy="selectin"
     )
+
+    @property
+    def supplier_ids(self) -> list[int]:
+        return [s.id for s in self.suppliers]
