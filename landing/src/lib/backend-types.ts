@@ -82,7 +82,8 @@ export interface paths {
         /** List Suppliers */
         get: operations["list_suppliers_suppliers_get"];
         put?: never;
-        post?: never;
+        /** Create Supplier */
+        post: operations["create_supplier_suppliers_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -100,6 +101,25 @@ export interface paths {
         get: operations["get_supplier_suppliers__supplier_id__get"];
         put?: never;
         post?: never;
+        /** Soft Delete Supplier */
+        delete: operations["soft_delete_supplier_suppliers__supplier_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Supplier */
+        patch: operations["update_supplier_suppliers__supplier_id__patch"];
+        trace?: never;
+    };
+    "/suppliers/{supplier_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Supplier */
+        post: operations["restore_supplier_suppliers__supplier_id__restore_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -849,6 +869,27 @@ export interface components {
             /** Closure Diff Pct */
             closure_diff_pct?: string | null;
         };
+        /** SupplierCreate */
+        SupplierCreate: {
+            /** Name */
+            name: string;
+            /** Code */
+            code: string;
+            /** Country */
+            country?: string | null;
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /**
+             * Is Aggregate
+             * @default false
+             */
+            is_aggregate: boolean;
+            /** Notes */
+            notes?: string | null;
+        };
         /** SupplierRead */
         SupplierRead: {
             /** Name */
@@ -883,6 +924,21 @@ export interface components {
             updated_at: string;
             /** Deleted At */
             deleted_at?: string | null;
+        };
+        /** SupplierUpdate */
+        SupplierUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Code */
+            code?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Active */
+            active?: boolean | null;
+            /** Is Aggregate */
+            is_aggregate?: boolean | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** TokenResponse */
         TokenResponse: {
@@ -1075,7 +1131,135 @@ export interface operations {
             };
         };
     };
+    create_supplier_suppliers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_supplier_suppliers__supplier_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                supplier_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    soft_delete_supplier_suppliers__supplier_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                supplier_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_supplier_suppliers__supplier_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                supplier_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_supplier_suppliers__supplier_id__restore_post: {
         parameters: {
             query?: never;
             header?: never;
