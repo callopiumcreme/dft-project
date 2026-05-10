@@ -13,6 +13,9 @@ const LABELS: Record<string, string> = {
   suppliers: 'Suppliers',
   certificates: 'Certificates',
   contracts: 'Contracts',
+  users: 'Users',
+  new: 'New',
+  edit: 'Edit',
 };
 
 export function Breadcrumb() {

@@ -38,6 +38,7 @@ app = FastAPI(title="DFT Mass Balance API", version="0.2.0", lifespan=lifespan)
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(admin.users_router)
 app.include_router(anagrafica.suppliers_router)
 app.include_router(anagrafica.certificates_router)
 app.include_router(anagrafica.contracts_router)

@@ -11,6 +11,7 @@ import {
   FileText,
   Truck,
   Factory,
+  UserCog,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -31,6 +32,7 @@ const NAV: NavItem[] = [
   { href: '/app/suppliers', label: 'Suppliers', icon: Users, group: 'Master data' },
   { href: '/app/certificates', label: 'Certificates', icon: Award, group: 'Master data' },
   { href: '/app/contracts', label: 'Contracts', icon: FileText, group: 'Master data' },
+  { href: '/app/users', label: 'Users', icon: UserCog, group: 'Admin' },
 ];
 
 function isActive(pathname: string, href: string): boolean {
