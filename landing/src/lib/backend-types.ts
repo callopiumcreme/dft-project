@@ -170,7 +170,8 @@ export interface paths {
         /** List Contracts */
         get: operations["list_contracts_contracts_get"];
         put?: never;
-        post?: never;
+        /** Create Contract */
+        post: operations["create_contract_contracts_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -188,6 +189,25 @@ export interface paths {
         get: operations["get_contract_contracts__contract_id__get"];
         put?: never;
         post?: never;
+        /** Soft Delete Contract */
+        delete: operations["soft_delete_contract_contracts__contract_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Contract */
+        patch: operations["update_contract_contracts__contract_id__patch"];
+        trace?: never;
+    };
+    "/contracts/{contract_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Contract */
+        post: operations["restore_contract_contracts__contract_id__restore_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -499,6 +519,26 @@ export interface components {
             /** Bucket */
             bucket: string;
         };
+        /** ContractCreate */
+        ContractCreate: {
+            /** Code */
+            code: string;
+            /** Supplier Id */
+            supplier_id?: number | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Total Kg Committed */
+            total_kg_committed?: number | string | null;
+            /**
+             * Is Placeholder
+             * @default false
+             */
+            is_placeholder: boolean;
+            /** Notes */
+            notes?: string | null;
+        };
         /** ContractRead */
         ContractRead: {
             /** Code */
@@ -532,6 +572,23 @@ export interface components {
             updated_at: string;
             /** Deleted At */
             deleted_at?: string | null;
+        };
+        /** ContractUpdate */
+        ContractUpdate: {
+            /** Code */
+            code?: string | null;
+            /** Supplier Id */
+            supplier_id?: number | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Total Kg Committed */
+            total_kg_committed?: number | string | null;
+            /** Is Placeholder */
+            is_placeholder?: boolean | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** DailyInputCreate */
         DailyInputCreate: {
@@ -1166,7 +1223,9 @@ export interface operations {
     };
     get_supplier_suppliers__supplier_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: never;
             path: {
                 supplier_id: number;
@@ -1356,6 +1415,7 @@ export interface operations {
         parameters: {
             query?: {
                 supplier_id?: number | null;
+                include_deleted?: boolean;
             };
             header?: never;
             path?: never;
@@ -1383,7 +1443,137 @@ export interface operations {
             };
         };
     };
+    create_contract_contracts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_contract_contracts__contract_id__get: {
+        parameters: {
+            query?: {
+                include_deleted?: boolean;
+            };
+            header?: never;
+            path: {
+                contract_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    soft_delete_contract_contracts__contract_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_contract_contracts__contract_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_contract_contracts__contract_id__restore_post: {
         parameters: {
             query?: never;
             header?: never;

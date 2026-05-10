@@ -20,7 +20,7 @@ from app.models.certificate import Certificate
 from app.models.contract import Contract
 from app.models.supplier import Supplier
 from app.schemas.certificate import CertificateRead
-from app.schemas.contract import ContractRead
+from app.schemas.contract import ContractCreate, ContractRead, ContractUpdate
 from app.schemas.supplier import SupplierCreate, SupplierRead, SupplierUpdate
 from app.services.audit import model_snapshot, write_audit
 
@@ -224,6 +224,20 @@ async def get_certificate(cert_id: int, _: ViewerUser, db: DbDep) -> Certificate
 
 # ---------- CONTRACTS ----------
 contracts_router = APIRouter(prefix="/contracts", tags=["contracts"])
+CONTRACTS_TABLE = "contracts"
+
+
+async def _get_contract_or_404(
+    db: AsyncSession, contract_id: int, *, include_deleted: bool = False
+) -> Contract:
+    stmt = select(Contract).where(Contract.id == contract_id)
+    if not include_deleted:
+        stmt = stmt.where(Contract.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    obj = result.scalar_one_or_none()
+    if obj is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
+    return obj
 
 
 @contracts_router.get("", response_model=list[ContractRead])
@@ -231,8 +245,11 @@ async def list_contracts(
     _: ViewerUser,
     db: DbDep,
     supplier_id: int | None = Query(None),
+    include_deleted: bool = Query(False),
 ) -> list[Contract]:
-    stmt = select(Contract).where(Contract.deleted_at.is_(None))
+    stmt = select(Contract)
+    if not include_deleted:
+        stmt = stmt.where(Contract.deleted_at.is_(None))
     if supplier_id is not None:
         stmt = stmt.where(Contract.supplier_id == supplier_id)
     stmt = stmt.order_by(Contract.code)
@@ -241,13 +258,132 @@ async def list_contracts(
 
 
 @contracts_router.get("/{contract_id}", response_model=ContractRead)
-async def get_contract(contract_id: int, _: ViewerUser, db: DbDep) -> Contract:
-    result = await db.execute(
-        select(Contract).where(
-            Contract.id == contract_id, Contract.deleted_at.is_(None)
-        )
+async def get_contract(
+    contract_id: int,
+    _: ViewerUser,
+    db: DbDep,
+    include_deleted: bool = Query(False),
+) -> Contract:
+    return await _get_contract_or_404(db, contract_id, include_deleted=include_deleted)
+
+
+@contracts_router.post("", response_model=ContractRead, status_code=status.HTTP_201_CREATED)
+async def create_contract(
+    body: ContractCreate,
+    user: AdminUser,
+    db: DbDep,
+) -> Contract:
+    obj = Contract(**body.model_dump())
+    db.add(obj)
+    try:
+        await db.flush()
+    except IntegrityError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Contract code already exists or supplier not found",
+        ) from e
+    await db.refresh(obj)
+    await write_audit(
+        db,
+        table_name=CONTRACTS_TABLE,
+        record_id=obj.id,
+        action="insert",
+        old_values=None,
+        new_values=model_snapshot(obj),
+        changed_by=user.id,
     )
-    c = result.scalar_one_or_none()
-    if c is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
-    return c
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+@contracts_router.patch("/{contract_id}", response_model=ContractRead)
+async def update_contract(
+    contract_id: int,
+    body: ContractUpdate,
+    user: AdminUser,
+    db: DbDep,
+) -> Contract:
+    obj = await _get_contract_or_404(db, contract_id)
+    old = model_snapshot(obj)
+    patch = body.model_dump(exclude_unset=True)
+    if not patch:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update"
+        )
+    for k, v in patch.items():
+        setattr(obj, k, v)
+    try:
+        await db.flush()
+    except IntegrityError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Contract code already exists or supplier not found",
+        ) from e
+    await db.refresh(obj)
+    await write_audit(
+        db,
+        table_name=CONTRACTS_TABLE,
+        record_id=obj.id,
+        action="update",
+        old_values=old,
+        new_values=model_snapshot(obj),
+        changed_by=user.id,
+    )
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+@contracts_router.delete("/{contract_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def soft_delete_contract(
+    contract_id: int,
+    user: AdminUser,
+    db: DbDep,
+) -> None:
+    obj = await _get_contract_or_404(db, contract_id)
+    old = model_snapshot(obj)
+    obj.deleted_at = datetime.utcnow()
+    await db.flush()
+    await db.refresh(obj)
+    await write_audit(
+        db,
+        table_name=CONTRACTS_TABLE,
+        record_id=obj.id,
+        action="soft_delete",
+        old_values=old,
+        new_values=model_snapshot(obj),
+        changed_by=user.id,
+    )
+    await db.commit()
+
+
+@contracts_router.post("/{contract_id}/restore", response_model=ContractRead)
+async def restore_contract(
+    contract_id: int,
+    user: AdminUser,
+    db: DbDep,
+) -> Contract:
+    obj = await _get_contract_or_404(db, contract_id, include_deleted=True)
+    if obj.deleted_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Not deleted"
+        )
+    old = model_snapshot(obj)
+    obj.deleted_at = None
+    await db.flush()
+    await db.refresh(obj)
+    await write_audit(
+        db,
+        table_name=CONTRACTS_TABLE,
+        record_id=obj.id,
+        action="restore",
+        old_values=old,
+        new_values=model_snapshot(obj),
+        changed_by=user.id,
+    )
+    await db.commit()
+    await db.refresh(obj)
+    return obj
