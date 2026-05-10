@@ -232,7 +232,6 @@ POST   /daily-entries
 GET    /daily-entries/{id}
 PATCH  /daily-entries/{id}
 DELETE /daily-entries/{id}      # soft delete
-POST   /daily-entries/bulk      # paste-from-excel parser
 
 GET    /reports/mass-balance/daily?from=&to=
 GET    /reports/mass-balance/monthly?year=
