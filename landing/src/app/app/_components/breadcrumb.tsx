@@ -14,6 +14,7 @@ const LABELS: Record<string, string> = {
   certificates: 'Certificates',
   contracts: 'Contracts',
   users: 'Users',
+  audit: 'Audit log',
   new: 'New',
   edit: 'Edit',
 };

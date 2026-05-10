@@ -1,17 +1,21 @@
-"""Admin endpoints — MV refresh, scheduler status, users CRUD. Admin role only."""
+"""Admin endpoints — MV refresh, scheduler status, users CRUD, audit log. Admin role only."""
 from __future__ import annotations
 
-from typing import Annotated, Any
+from datetime import date, datetime, time, timedelta, timezone
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from pydantic import BaseModel
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import AdminUser
 from app.core.security import hash_password
 from app.db.session import get_db
+from app.models.audit_log import AuditLog
 from app.models.user import User
+from app.schemas.audit_log import AuditLogRead
 from app.schemas.user import UserCreate, UserRead, UserUpdate
 from app.services.audit import model_snapshot, write_audit
 from app.services.mv_refresh import refresh_all_mvs
@@ -21,6 +25,8 @@ users_router = APIRouter(prefix="/users", tags=["users"])
 
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 USERS_TABLE = "users"
+
+AuditAction = Literal["insert", "update", "delete", "soft_delete", "restore"]
 
 
 @router.post("/refresh-mvs")
@@ -193,3 +199,89 @@ async def reactivate_user(user_id: int, user: AdminUser, db: DbDep) -> User:
     await db.commit()
     await db.refresh(obj)
     return obj
+
+
+class AuditLogEntry(AuditLogRead):
+    changed_by_email: str | None = None
+
+
+class AuditLogPage(BaseModel):
+    items: list[AuditLogEntry]
+    total: int
+    limit: int
+    offset: int
+
+
+@router.get("/audit-log/tables", response_model=list[str])
+async def list_audit_tables(_: AdminUser, db: DbDep) -> list[str]:
+    stmt = select(AuditLog.table_name).distinct().order_by(AuditLog.table_name)
+    result = await db.execute(stmt)
+    return [r[0] for r in result.all()]
+
+
+@router.get("/audit-log", response_model=AuditLogPage)
+async def list_audit_log(
+    _: AdminUser,
+    db: DbDep,
+    table_name: str | None = Query(default=None),
+    record_id: int | None = Query(default=None),
+    action: AuditAction | None = Query(default=None),
+    changed_by: int | None = Query(default=None),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> AuditLogPage:
+    base = select(AuditLog).order_by(AuditLog.changed_at.desc(), AuditLog.id.desc())
+    count_base = select(func.count()).select_from(AuditLog)
+
+    filters = []
+    if table_name:
+        filters.append(AuditLog.table_name == table_name)
+    if record_id is not None:
+        filters.append(AuditLog.record_id == record_id)
+    if action:
+        filters.append(AuditLog.action == action)
+    if changed_by is not None:
+        filters.append(AuditLog.changed_by == changed_by)
+    if date_from:
+        filters.append(
+            AuditLog.changed_at >= datetime.combine(date_from, time.min, tzinfo=timezone.utc)
+        )
+    if date_to:
+        filters.append(
+            AuditLog.changed_at
+            < datetime.combine(date_to + timedelta(days=1), time.min, tzinfo=timezone.utc)
+        )
+
+    for f in filters:
+        base = base.where(f)
+        count_base = count_base.where(f)
+
+    total_res = await db.execute(count_base)
+    total = int(total_res.scalar_one())
+
+    rows_res = await db.execute(base.limit(limit).offset(offset))
+    rows = list(rows_res.scalars().all())
+
+    user_ids = {r.changed_by for r in rows if r.changed_by is not None}
+    email_map: dict[int, str] = {}
+    if user_ids:
+        u_res = await db.execute(select(User.id, User.email).where(User.id.in_(user_ids)))
+        email_map = {uid: em for uid, em in u_res.all()}
+
+    items = [
+        AuditLogEntry(
+            id=r.id,
+            table_name=r.table_name,
+            record_id=r.record_id,
+            action=r.action,
+            old_values=r.old_values,
+            new_values=r.new_values,
+            changed_by=r.changed_by,
+            changed_at=r.changed_at,
+            changed_by_email=email_map.get(r.changed_by) if r.changed_by else None,
+        )
+        for r in rows
+    ]
+    return AuditLogPage(items=items, total=total, limit=limit, offset=offset)
