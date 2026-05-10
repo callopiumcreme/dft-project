@@ -3,20 +3,25 @@
 import { useFormState, useFormStatus } from 'react-dom';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createInputAction, type CreateInputState } from '@/lib/inputs-actions';
+import type { InputFormState } from '@/lib/inputs-actions';
 
-type Option = { id: number; label: string; supplier_id?: number | null };
+export type Option = { id: number; label: string; supplier_id?: number | null };
 
-interface Props {
+export type FormValues = Record<string, string>;
+
+export interface InputFormProps {
   suppliers: Option[];
   certificates: Option[];
   contracts: Option[];
-  defaultDate: string;
+  action: (prev: InputFormState, fd: FormData) => Promise<InputFormState>;
+  initialValues: FormValues;
+  submitLabel: string;
+  cancelHref: string;
 }
 
-const initialState: CreateInputState = {};
+const initialState: InputFormState = {};
 
-function SubmitButton() {
+function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -24,16 +29,24 @@ function SubmitButton() {
       disabled={pending}
       className="border border-ink bg-ink px-5 py-2 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-bg hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {pending ? 'Saving…' : 'Save input'}
+      {pending ? 'Saving…' : label}
     </button>
   );
 }
 
-export function InputForm({ suppliers, certificates, contracts, defaultDate }: Props) {
-  const [state, action] = useFormState(createInputAction, initialState);
+export function InputForm({
+  suppliers,
+  certificates,
+  contracts,
+  action,
+  initialValues,
+  submitLabel,
+  cancelHref,
+}: InputFormProps) {
+  const [state, formAction] = useFormState(action, initialState);
   const router = useRouter();
 
-  const v = state.values ?? {};
+  const v: FormValues = { ...initialValues, ...(state.values ?? {}) };
   const fe = state.fieldErrors ?? {};
 
   const [supplierId, setSupplierId] = useState<string>(v.supplier_id ?? '');
@@ -51,7 +64,7 @@ export function InputForm({ suppliers, certificates, contracts, defaultDate }: P
   }, [supplierId, contracts]);
 
   return (
-    <form action={action} noValidate className="space-y-8">
+    <form action={formAction} noValidate className="space-y-8">
       <Section title="Date & supplier">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Field label="Entry date" name="entry_date" error={fe.entry_date} required>
@@ -59,7 +72,7 @@ export function InputForm({ suppliers, certificates, contracts, defaultDate }: P
               type="date"
               id="entry_date"
               name="entry_date"
-              defaultValue={v.entry_date ?? defaultDate}
+              defaultValue={v.entry_date ?? ''}
               required
               className={inputCls(!!fe.entry_date)}
             />
@@ -253,10 +266,10 @@ export function InputForm({ suppliers, certificates, contracts, defaultDate }: P
       )}
 
       <div className="flex items-center gap-3 border-t border-rule pt-6">
-        <SubmitButton />
+        <SubmitButton label={submitLabel} />
         <button
           type="button"
-          onClick={() => router.push('/app/inputs')}
+          onClick={() => router.push(cancelHref)}
           className="border border-rule bg-bg-soft px-5 py-2 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-ink-soft hover:border-ink hover:text-ink"
         >
           Cancel

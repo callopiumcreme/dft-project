@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
-import { InputForm } from './input-form';
+import { InputForm } from '../_components/input-form';
+import { createInputAction } from '@/lib/inputs-actions';
 
 type Supplier = components['schemas']['SupplierRead'];
 type Certificate = components['schemas']['CertificateRead'];
@@ -77,7 +78,10 @@ export default async function NewInputPage() {
           suppliers={supplierOpts}
           certificates={certOpts}
           contracts={contractOpts}
-          defaultDate={today}
+          action={createInputAction}
+          initialValues={{ entry_date: today }}
+          submitLabel="Save input"
+          cancelHref="/app/inputs"
         />
       </div>
     </div>

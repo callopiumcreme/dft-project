@@ -2,16 +2,20 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { apiPost, ApiError } from './api';
+import { apiPost, apiPatch, apiDelete, ApiError } from './api';
 import type { components } from './backend-types';
 
-type Body = components['schemas']['DailyInputCreate'];
+type CreateBody = components['schemas']['DailyInputCreate'];
+type UpdateBody = components['schemas']['DailyInputUpdate'];
 
-export type CreateInputState = {
+export type InputFormState = {
   error?: string;
   fieldErrors?: Record<string, string>;
   values?: Record<string, string>;
 };
+
+// kept for backward-compat with existing imports
+export type CreateInputState = InputFormState;
 
 const TEXT_FIELDS = [
   'entry_date',
@@ -22,11 +26,7 @@ const TEXT_FIELDS = [
 ] as const;
 
 const NUM_FIELDS_REQUIRED_DEFAULT_ZERO = ['car_kg', 'truck_kg', 'special_kg'] as const;
-const NUM_FIELDS_OPTIONAL = [
-  'theor_veg_pct',
-  'manuf_veg_pct',
-  'c14_value',
-] as const;
+const NUM_FIELDS_OPTIONAL = ['theor_veg_pct', 'manuf_veg_pct', 'c14_value'] as const;
 
 function pickValues(fd: FormData): Record<string, string> {
   const out: Record<string, string> = {};
@@ -92,10 +92,26 @@ function parseOptionalId(raw: string): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-export async function createInputAction(
-  _prev: CreateInputState,
+type ParsedBody = {
+  entry_date: string;
+  entry_time: string | null;
+  supplier_id: number;
+  certificate_id: number | null;
+  contract_id: number | null;
+  ersv_number: string | null;
+  car_kg: string;
+  truck_kg: string;
+  special_kg: string;
+  theor_veg_pct: string | null;
+  manuf_veg_pct: string | null;
+  c14_analysis: string | null;
+  c14_value: string | null;
+  notes: string | null;
+};
+
+function parseAndValidate(
   fd: FormData,
-): Promise<CreateInputState> {
+): { ok: true; body: ParsedBody; values: Record<string, string> } | { ok: false; state: InputFormState } {
   const values = pickValues(fd);
   const errs: Record<string, string> = {};
 
@@ -125,40 +141,80 @@ export async function createInputAction(
   }
 
   if (Object.keys(errs).length > 0 || supplier_id === null) {
-    return { fieldErrors: errs, values };
+    return { ok: false, state: { fieldErrors: errs, values } };
   }
 
-  const entry_time = values.entry_time.trim() || null;
-  const ersv_number = values.ersv_number.trim() || null;
-  const c14_analysis = values.c14_analysis.trim() || null;
-  const notes = values.notes.trim() || null;
-
-  const body: Body = {
+  const body: ParsedBody = {
     entry_date,
-    entry_time,
+    entry_time: values.entry_time.trim() || null,
     supplier_id,
     certificate_id,
     contract_id,
-    ersv_number,
+    ersv_number: values.ersv_number.trim() || null,
     car_kg,
     truck_kg,
     special_kg,
     theor_veg_pct,
     manuf_veg_pct,
-    c14_analysis,
+    c14_analysis: values.c14_analysis.trim() || null,
     c14_value,
-    notes,
+    notes: values.notes.trim() || null,
   };
+  return { ok: true, body, values };
+}
+
+export async function createInputAction(
+  _prev: InputFormState,
+  fd: FormData,
+): Promise<InputFormState> {
+  const parsed = parseAndValidate(fd);
+  if (!parsed.ok) return parsed.state;
 
   try {
-    await apiPost('/daily-inputs', body);
+    await apiPost('/daily-inputs', parsed.body satisfies CreateBody);
   } catch (e) {
-    if (e instanceof ApiError) {
-      return { error: `${e.status} · ${e.detail}`, values };
-    }
-    return { error: 'Server connection error', values };
+    if (e instanceof ApiError) return { error: `${e.status} · ${e.detail}`, values: parsed.values };
+    return { error: 'Server connection error', values: parsed.values };
   }
 
   revalidatePath('/app/inputs');
   redirect('/app/inputs?created=1');
+}
+
+export async function updateInputAction(
+  id: number,
+  _prev: InputFormState,
+  fd: FormData,
+): Promise<InputFormState> {
+  const parsed = parseAndValidate(fd);
+  if (!parsed.ok) return parsed.state;
+
+  try {
+    await apiPatch(`/daily-inputs/${id}`, parsed.body satisfies UpdateBody);
+  } catch (e) {
+    if (e instanceof ApiError) return { error: `${e.status} · ${e.detail}`, values: parsed.values };
+    return { error: 'Server connection error', values: parsed.values };
+  }
+
+  revalidatePath('/app/inputs');
+  revalidatePath(`/app/inputs/${id}`);
+  redirect(`/app/inputs/${id}?updated=1`);
+}
+
+export async function deleteInputAction(fd: FormData): Promise<void> {
+  const idRaw = fd.get('id');
+  const id = typeof idRaw === 'string' ? Number.parseInt(idRaw, 10) : NaN;
+  if (!Number.isInteger(id) || id <= 0) {
+    redirect('/app/inputs?error=invalid_id');
+  }
+
+  try {
+    await apiDelete(`/daily-inputs/${id}`);
+  } catch (e) {
+    const detail = e instanceof ApiError ? `${e.status}_${e.detail}` : 'connection_error';
+    redirect(`/app/inputs/${id}?error=${encodeURIComponent(detail)}`);
+  }
+
+  revalidatePath('/app/inputs');
+  redirect('/app/inputs?deleted=1');
 }

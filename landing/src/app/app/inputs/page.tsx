@@ -14,6 +14,8 @@ interface PageProps {
     date_to?: string;
     supplier_id?: string;
     created?: string;
+    deleted?: string;
+    error?: string;
   };
 }
 
@@ -31,6 +33,8 @@ export default async function InputsPage({ searchParams }: PageProps) {
   const date_to = (searchParams.date_to ?? '').trim();
   const supplier_id = (searchParams.supplier_id ?? '').trim();
   const showCreated = searchParams.created === '1';
+  const showDeleted = searchParams.deleted === '1';
+  const showError = searchParams.error;
 
   let rows: Input[] = [];
   let suppliers: Supplier[] = [];
@@ -85,6 +89,22 @@ export default async function InputsPage({ searchParams }: PageProps) {
           className="mt-6 border border-olive-deep bg-olive-deep/5 px-3 py-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-olive-deep"
         >
           Input saved successfully
+        </p>
+      )}
+      {showDeleted && (
+        <p
+          role="status"
+          className="mt-6 border border-olive-deep bg-olive-deep/5 px-3 py-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-olive-deep"
+        >
+          Input deleted (soft)
+        </p>
+      )}
+      {showError && (
+        <p
+          role="alert"
+          className="mt-6 border border-accent bg-accent/5 px-3 py-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-accent"
+        >
+          {showError}
         </p>
       )}
 
@@ -160,12 +180,15 @@ export default async function InputsPage({ searchParams }: PageProps) {
               <Th className="text-right">Truck</Th>
               <Th className="text-right">Special</Th>
               <Th className="text-right">Total kg</Th>
+              <Th className="text-right">
+                <span className="sr-only">Open</span>
+              </Th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && !fetchError && (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-ink-mute">
+                <td colSpan={9} className="px-3 py-6 text-center text-ink-mute">
                   No inputs match the filter.
                 </td>
               </tr>
@@ -188,6 +211,15 @@ export default async function InputsPage({ searchParams }: PageProps) {
                   <Td className="text-right text-ink-soft">{fmtKg(r.special_kg)}</Td>
                   <Td className="text-right text-ink font-medium">
                     {fmtKg(r.total_input_kg)}
+                  </Td>
+                  <Td className="text-right">
+                    <Link
+                      href={`/app/inputs/${r.id}`}
+                      className="text-ink-soft hover:text-ink"
+                      aria-label={`Open input ${r.id}`}
+                    >
+                      →
+                    </Link>
                   </Td>
                 </tr>
               );
