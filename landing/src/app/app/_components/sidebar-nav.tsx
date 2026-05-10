@@ -9,6 +9,7 @@ import {
   Users,
   Award,
   FileText,
+  Truck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -21,6 +22,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { href: '/app', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/app/inputs', label: 'Daily inputs', icon: Truck, group: 'Operations' },
   { href: '/app/reports/mass-balance', label: 'Mass balance', icon: Scale, group: 'Reports' },
   { href: '/app/reports/by-supplier', label: 'By supplier', icon: Users, group: 'Reports' },
   { href: '/app/reports/closure-status', label: 'Daily closure', icon: Scale, group: 'Reports' },
