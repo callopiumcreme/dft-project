@@ -301,7 +301,6 @@ GET /health → {"status": "ok", "version": "0.1.0"}
 - Parser xlsx Girardot (pandas + openpyxl) → `scripts/ingest_xlsx.py`
 - Script one-shot dry-run + report errori
 - Endpoint `/reports/mass-balance`, `/reports/by-supplier`, `/reports/monthly`
-- Endpoint `/daily-entries/bulk` (paste-from-excel)
 
 ### Sprint 3 — Frontend dashboard ⏳ DA FARE
 

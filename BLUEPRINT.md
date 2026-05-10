@@ -289,7 +289,6 @@ GET    /audit-log               # admin only
 - `<ClosureGauge>` — semaforo visuale closure %
 - `<SupplierBreakdown>` — pie chart input per fornitore
 - `<PdfPreview>` — preview HTML pre-export
-- `<BulkPasteModal>` — incolla righe Excel → parse → preview → conferma
 
 ### UX guidelines
 

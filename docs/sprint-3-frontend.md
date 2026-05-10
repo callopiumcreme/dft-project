@@ -122,7 +122,7 @@ Già presenti: `@radix-ui/react-accordion`, `@radix-ui/react-label`, `@radix-ui/
 
 - CRUD anagrafiche (suppliers/contracts/certificates) — solo read in Sprint 3
 - Form daily_inputs / daily_production data entry
-- Bulk paste from Excel
+- ~~Bulk paste from Excel~~ (cancelled — workflow target è data entry diretta nell'app, non import paralleli da Excel)
 - PDF generation
 - Audit log viewer admin
 - i18n IT/EN switcher (UI EN-only per Sprint 3, IT solo per labels report già localizzate)
