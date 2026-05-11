@@ -137,6 +137,34 @@ def _is_byproduct_detail(row: list) -> bool:
     return all(_f(row[i]) is not None for i in (14, 15, 16, 17, 18))
 
 
+def _resolve_aggregate_date(
+    d: date, prev_date: date | None, row: list, productions: dict
+) -> date:
+    """When a date-row carries an embedded aggregate, decide whether it belongs
+    to d (the date label) or to prev_date. Heuristic: if prev_date has orphan
+    byproducts (no kg_to_production yet) whose sum matches this aggregate's
+    col O within 2 kg, the aggregate is actually for prev_date.
+
+    Background: in Girardot xlsx, day-6 byproducts (r42) sum to 43,897 which
+    matches col O of r49 (labeled '07 JAN 2025' but K+L+M+O actually belong to
+    day 6). Days with their own separate aggregate row do not trigger this."""
+    if prev_date is None or prev_date not in productions:
+        return d
+    prev = productions[prev_date]
+    if prev.kg_to_production is not None:
+        return d
+    by_sum = sum(
+        v for v in (
+            prev.carbon_black_kg, prev.metal_scrap_kg, prev.h2o_kg,
+            prev.gas_syngas_kg, prev.losses_kg,
+        ) if v is not None
+    )
+    if by_sum <= 0:
+        return d
+    agg_o = abs(float(row[14]))
+    return prev_date if abs(by_sum - agg_o) <= 2.0 else d
+
+
 def _find_monthly_total_row(ws) -> int:
     """Locate the 'TOTAL PROCESSED' header row that marks end-of-data per sheet.
     The row immediately above it is the month-aggregate row (K = sum of all
@@ -181,10 +209,12 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
             if isinstance(a, str):
                 d = _parse_date(a)
                 if d:
+                    prev_date = current_date
                     current_date = d
                     if _is_aggregate_prod(row):
+                        target = _resolve_aggregate_date(d, prev_date, row, productions)
                         prod = productions.setdefault(
-                            d, DailyProduction(prod_date=d, source_file=src, source_row=r)
+                            target, DailyProduction(prod_date=target, source_file=src, source_row=r)
                         )
                         _merge_aggregate(prod, row, r)
                     continue
