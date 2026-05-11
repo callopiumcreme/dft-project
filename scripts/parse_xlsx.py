@@ -137,6 +137,28 @@ def _is_byproduct_detail(row: list) -> bool:
     return all(_f(row[i]) is not None for i in (14, 15, 16, 17, 18))
 
 
+def _find_monthly_total_row(ws) -> int:
+    """Locate the 'TOTAL PROCESSED' header row that marks end-of-data per sheet.
+    The row immediately above it is the month-aggregate row (K = sum of all
+    daily K) and must not be parsed as a daily aggregate. Returns the row
+    number of the marker (exclusive upper bound) or ws.max_row + 1."""
+    for r in range(17, ws.max_row + 1):
+        for c in range(1, 23):
+            v = ws.cell(r, c).value
+            if isinstance(v, str) and "TOTAL PROCESSED" in v.upper():
+                # back up past the preceding aggregate-total row (typically 1 row up)
+                # and any TOTAL/blank rows above it
+                cutoff = r - 1
+                while cutoff > 17:
+                    above = [ws.cell(cutoff, c).value for c in range(1, 23)]
+                    if _is_aggregate_prod(above) and above[0] is None:
+                        cutoff -= 1
+                        continue
+                    break
+                return cutoff + 1
+    return ws.max_row + 1
+
+
 def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]:
     wb = load_workbook(path, data_only=True)
     inputs: list[DailyInput] = []
@@ -147,7 +169,8 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
         ws = wb[sheet_name]
         src = f"{path.name}#{sheet_name}"
         current_date: date | None = None
-        for r in range(17, ws.max_row + 1):
+        end_row = _find_monthly_total_row(ws)
+        for r in range(17, end_row):
             row = [ws.cell(r, c).value for c in range(1, 23)]
             if all(v is None or v == "" for v in row):
                 continue
