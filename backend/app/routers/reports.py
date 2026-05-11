@@ -32,29 +32,65 @@ async def mass_balance_daily(
     db: DbDep,
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
+    supplier_id: int | None = Query(None),
     limit: int = Query(366, ge=1, le=3660),
     offset: int = Query(0, ge=0),
 ) -> list[dict]:
-    where = []
     params: dict = {"limit": limit, "offset": offset}
-    if date_from is not None:
-        where.append("day >= :date_from")
-        params["date_from"] = date_from
-    if date_to is not None:
-        where.append("day <= :date_to")
-        params["date_to"] = date_to
-    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
-    sql = text(
-        f"""
-        SELECT day, input_total_kg, kg_to_production, eu_prod_kg, plus_prod_kg,
-               carbon_black_kg, metal_scrap_kg, h2o_kg, gas_syngas_kg,
-               losses_kg, output_eu_kg, output_total_kg, closure_diff_pct
-        FROM mv_mass_balance_daily
-        {where_sql}
-        ORDER BY day DESC
-        LIMIT :limit OFFSET :offset
-        """
-    )
+    if supplier_id is not None:
+        # Live aggregation from daily_inputs filtered by supplier. Production
+        # cols (eu_prod, output, closure) are not tracked per supplier → NULL.
+        where = ["di.deleted_at IS NULL", "di.supplier_id = :supplier_id"]
+        params["supplier_id"] = supplier_id
+        if date_from is not None:
+            where.append("di.entry_date >= :date_from")
+            params["date_from"] = date_from
+        if date_to is not None:
+            where.append("di.entry_date <= :date_to")
+            params["date_to"] = date_to
+        where_sql = "WHERE " + " AND ".join(where)
+        sql = text(
+            f"""
+            SELECT di.entry_date                AS day,
+                   SUM(di.total_input_kg)       AS input_total_kg,
+                   NULL::numeric                AS kg_to_production,
+                   NULL::numeric                AS eu_prod_kg,
+                   NULL::numeric                AS plus_prod_kg,
+                   NULL::numeric                AS carbon_black_kg,
+                   NULL::numeric                AS metal_scrap_kg,
+                   NULL::numeric                AS h2o_kg,
+                   NULL::numeric                AS gas_syngas_kg,
+                   NULL::numeric                AS losses_kg,
+                   NULL::numeric                AS output_eu_kg,
+                   NULL::numeric                AS output_total_kg,
+                   NULL::numeric                AS closure_diff_pct
+            FROM daily_inputs di
+            {where_sql}
+            GROUP BY di.entry_date
+            ORDER BY di.entry_date DESC
+            LIMIT :limit OFFSET :offset
+            """
+        )
+    else:
+        where = []
+        if date_from is not None:
+            where.append("day >= :date_from")
+            params["date_from"] = date_from
+        if date_to is not None:
+            where.append("day <= :date_to")
+            params["date_to"] = date_to
+        where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+        sql = text(
+            f"""
+            SELECT day, input_total_kg, kg_to_production, eu_prod_kg, plus_prod_kg,
+                   carbon_black_kg, metal_scrap_kg, h2o_kg, gas_syngas_kg,
+                   losses_kg, output_eu_kg, output_total_kg, closure_diff_pct
+            FROM mv_mass_balance_daily
+            {where_sql}
+            ORDER BY day DESC
+            LIMIT :limit OFFSET :offset
+            """
+        )
     result = await db.execute(sql, params)
     return [dict(row) for row in result.mappings().all()]
 
@@ -65,26 +101,58 @@ async def mass_balance_monthly(
     db: DbDep,
     date_from: date | None = Query(None, description="month start (e.g., 2025-01-01)"),
     date_to: date | None = Query(None),
+    supplier_id: int | None = Query(None),
 ) -> list[dict]:
-    where = []
     params: dict = {}
-    if date_from is not None:
-        where.append("month >= CAST(date_trunc('month', CAST(:date_from AS date)) AS date)")
-        params["date_from"] = date_from
-    if date_to is not None:
-        where.append("month <= CAST(date_trunc('month', CAST(:date_to AS date)) AS date)")
-        params["date_to"] = date_to
-    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
-    sql = text(
-        f"""
-        SELECT month, input_total_kg, eu_prod_kg, plus_prod_kg, carbon_black_kg,
-               metal_scrap_kg, h2o_kg, gas_syngas_kg, losses_kg, output_eu_kg,
-               output_total_kg, closure_diff_pct
-        FROM mv_mass_balance_monthly
-        {where_sql}
-        ORDER BY month DESC
-        """
-    )
+    if supplier_id is not None:
+        where = ["di.deleted_at IS NULL", "di.supplier_id = :supplier_id"]
+        params["supplier_id"] = supplier_id
+        if date_from is not None:
+            where.append("di.entry_date >= :date_from")
+            params["date_from"] = date_from
+        if date_to is not None:
+            where.append("di.entry_date <= :date_to")
+            params["date_to"] = date_to
+        where_sql = "WHERE " + " AND ".join(where)
+        sql = text(
+            f"""
+            SELECT DATE_TRUNC('month', di.entry_date)::date AS month,
+                   SUM(di.total_input_kg)                   AS input_total_kg,
+                   NULL::numeric                            AS eu_prod_kg,
+                   NULL::numeric                            AS plus_prod_kg,
+                   NULL::numeric                            AS carbon_black_kg,
+                   NULL::numeric                            AS metal_scrap_kg,
+                   NULL::numeric                            AS h2o_kg,
+                   NULL::numeric                            AS gas_syngas_kg,
+                   NULL::numeric                            AS losses_kg,
+                   NULL::numeric                            AS output_eu_kg,
+                   NULL::numeric                            AS output_total_kg,
+                   NULL::numeric                            AS closure_diff_pct
+            FROM daily_inputs di
+            {where_sql}
+            GROUP BY DATE_TRUNC('month', di.entry_date)
+            ORDER BY month DESC
+            """
+        )
+    else:
+        where = []
+        if date_from is not None:
+            where.append("month >= CAST(date_trunc('month', CAST(:date_from AS date)) AS date)")
+            params["date_from"] = date_from
+        if date_to is not None:
+            where.append("month <= CAST(date_trunc('month', CAST(:date_to AS date)) AS date)")
+            params["date_to"] = date_to
+        where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+        sql = text(
+            f"""
+            SELECT month, input_total_kg, eu_prod_kg, plus_prod_kg, carbon_black_kg,
+                   metal_scrap_kg, h2o_kg, gas_syngas_kg, losses_kg, output_eu_kg,
+                   output_total_kg, closure_diff_pct
+            FROM mv_mass_balance_monthly
+            {where_sql}
+            ORDER BY month DESC
+            """
+        )
     result = await db.execute(sql, params)
     return [dict(row) for row in result.mappings().all()]
 

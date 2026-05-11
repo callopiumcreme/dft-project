@@ -48,6 +48,12 @@ function sanitizeDate(v: string | null): string | undefined {
   return ISO_DATE_RE.test(v) ? v : undefined;
 }
 
+function sanitizeSupplierId(v: string | null): string | undefined {
+  if (!v) return undefined;
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? String(n) : undefined;
+}
+
 export async function GET(req: NextRequest) {
   const token = cookies().get(SESSION_COOKIE)?.value;
   if (!token) return NextResponse.json({ detail: 'unauthorized' }, { status: 401 });
@@ -55,17 +61,18 @@ export async function GET(req: NextRequest) {
   const view = req.nextUrl.searchParams.get('view') === 'monthly' ? 'monthly' : 'daily';
   const from = sanitizeDate(req.nextUrl.searchParams.get('from'));
   const to = sanitizeDate(req.nextUrl.searchParams.get('to'));
+  const supplierId = sanitizeSupplierId(req.nextUrl.searchParams.get('supplier_id'));
 
   try {
     let csv: string;
     if (view === 'monthly') {
       const rows = await apiGet<MonthlyRow[]>('/reports/mass-balance/monthly', {
-        query: { date_from: from, date_to: to },
+        query: { date_from: from, date_to: to, supplier_id: supplierId },
       });
       csv = rowsToCsv(rows, MONTHLY_COLS);
     } else {
       const rows = await apiGet<DailyRow[]>('/reports/mass-balance/daily', {
-        query: { date_from: from, date_to: to, limit: 3660 },
+        query: { date_from: from, date_to: to, supplier_id: supplierId, limit: 3660 },
       });
       csv = rowsToCsv(rows, DAILY_COLS);
     }

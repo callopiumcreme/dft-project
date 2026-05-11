@@ -25,6 +25,12 @@ function sanitizeDate(v: string | undefined): string | undefined {
   return ISO_DATE_RE.test(v) ? v : undefined;
 }
 
+function sanitizeSupplierId(v: string | undefined): string | undefined {
+  if (!v) return undefined;
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? String(n) : undefined;
+}
+
 function fmtKg(v: string | null | undefined): string {
   if (v === null || v === undefined) return '—';
   const n = Number(v);
@@ -69,7 +75,7 @@ function buildHref(base: string, params: Record<string, string | undefined>): st
 }
 
 interface PageProps {
-  searchParams: { view?: string; from?: string; to?: string };
+  searchParams: { view?: string; from?: string; to?: string; supplier_id?: string };
 }
 
 const DAILY_GRID_TEMPLATE =
@@ -79,6 +85,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
   const view = searchParams.view === 'monthly' ? 'monthly' : 'daily';
   const from = sanitizeDate(searchParams.from);
   const to = sanitizeDate(searchParams.to);
+  const supplierId = sanitizeSupplierId(searchParams.supplier_id);
 
   let dailyRows: DailyRow[] = [];
   let monthlyRows: MonthlyRow[] = [];
@@ -91,24 +98,29 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
 
   try {
     const allMonthsPromise = apiGet<MonthlyRow[]>('/reports/mass-balance/monthly', {});
+    const suppliersPromise = apiGet<Supplier[]>('/suppliers', {
+      query: { active_only: 'false' },
+    });
     if (view === 'monthly') {
-      const [filtered, all] = await Promise.all([
+      const [filtered, all, suppliers] = await Promise.all([
         apiGet<MonthlyRow[]>('/reports/mass-balance/monthly', {
-          query: { date_from: from, date_to: to },
+          query: { date_from: from, date_to: to, supplier_id: supplierId },
         }),
         allMonthsPromise,
+        suppliersPromise,
       ]);
       monthlyRows = filtered;
       allMonths = all;
+      supplierMap = new Map(suppliers.map((s) => [s.id, s]));
     } else {
       const [daily, entries, suppliers, certs, contracts, all] = await Promise.all([
         apiGet<DailyRow[]>('/reports/mass-balance/daily', {
-          query: { date_from: from, date_to: to, limit: 3660 },
+          query: { date_from: from, date_to: to, supplier_id: supplierId, limit: 3660 },
         }),
         apiGet<DailyInput[]>('/daily-inputs', {
-          query: { date_from: from, date_to: to, limit: 1000 },
+          query: { date_from: from, date_to: to, supplier_id: supplierId, limit: 1000 },
         }),
-        apiGet<Supplier[]>('/suppliers', { query: { active_only: 'false' } }),
+        suppliersPromise,
         apiGet<Certificate[]>('/certificates'),
         apiGet<Contract[]>('/contracts'),
         allMonthsPromise,
@@ -136,9 +148,31 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
   const monthOptions = buildMonthOptions(allMonths.map((m) => m.month));
 
   const rowCount = view === 'monthly' ? monthlyRows.length : dailyRows.length;
-  const csvHref = buildHref('/api/reports/mass-balance/csv', { view, from, to });
-  const dailyHref = buildHref('/app/reports/mass-balance', { view: 'daily', from, to });
-  const monthlyHref = buildHref('/app/reports/mass-balance', { view: 'monthly', from, to });
+  const csvHref = buildHref('/api/reports/mass-balance/csv', {
+    view,
+    from,
+    to,
+    supplier_id: supplierId,
+  });
+  const dailyHref = buildHref('/app/reports/mass-balance', {
+    view: 'daily',
+    from,
+    to,
+    supplier_id: supplierId,
+  });
+  const monthlyHref = buildHref('/app/reports/mass-balance', {
+    view: 'monthly',
+    from,
+    to,
+    supplier_id: supplierId,
+  });
+  const supplierLabel =
+    supplierId != null
+      ? (() => {
+          const s = supplierMap.get(Number(supplierId));
+          return s?.name ?? s?.code ?? `#${supplierId}`;
+        })()
+      : null;
 
   const sumRows: { input_total_kg?: string | null; output_total_kg?: string | null }[] =
     view === 'monthly' ? monthlyRows : dailyRows;
@@ -153,6 +187,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
         <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
           Input/output balance {view === 'monthly' ? 'by month' : 'by day'} · {rowCount} rows
           {from || to ? ` · filter ${from ?? '…'} → ${to ?? '…'}` : ''}
+          {supplierLabel ? ` · supplier ${supplierLabel}` : ''}
         </p>
       </header>
 
@@ -204,6 +239,25 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
               defaultValue={to ?? ''}
               className="border border-rule bg-bg-soft px-2 py-1 text-ink"
             />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-ink-mute">Supplier</span>
+            <select
+              name="supplier_id"
+              defaultValue={supplierId ?? ''}
+              className="border border-rule bg-bg-soft px-2 py-1 text-ink"
+            >
+              <option value="">All suppliers</option>
+              {Array.from(supplierMap.values())
+                .sort((a, b) =>
+                  (a.name ?? a.code ?? '').localeCompare(b.name ?? b.code ?? ''),
+                )
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name ?? s.code ?? `#${s.id}`}
+                  </option>
+                ))}
+            </select>
           </label>
           <button
             type="submit"
