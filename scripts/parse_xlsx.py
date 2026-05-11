@@ -198,7 +198,7 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
         src = f"{path.name}#{sheet_name}"
         current_date: date | None = None
         end_row = _find_monthly_total_row(ws)
-        for r in range(17, end_row):
+        for r in range(1, end_row):
             row = [ws.cell(r, c).value for c in range(1, 23)]
             if all(v is None or v == "" for v in row):
                 continue
