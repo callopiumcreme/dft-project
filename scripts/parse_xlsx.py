@@ -192,6 +192,12 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
                     continue
 
             if isinstance(e, str) and e.strip().upper() == "TOTAL":
+                if current_date is not None and _is_aggregate_prod(row):
+                    prod = productions.setdefault(
+                        current_date,
+                        DailyProduction(prod_date=current_date, source_file=src, source_row=r),
+                    )
+                    _merge_aggregate(prod, row, r)
                 continue
 
             t = _as_time(a)
