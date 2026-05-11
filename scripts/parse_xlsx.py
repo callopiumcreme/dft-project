@@ -156,6 +156,12 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
                 inputs.append(_make_input(current_date, t, row, src, r))
                 continue
 
+            if row[1] and current_date is not None:
+                sup_raw = str(row[1]).strip().upper()
+                if sup_raw in SUPPLIER_ALIAS:
+                    inputs.append(_make_input(current_date, None, row, src, r))
+                    continue
+
             if (a is None or a == "") and _f(k) is not None and current_date is not None:
                 prod = productions.setdefault(
                     current_date,
@@ -167,7 +173,7 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
     return inputs, list(productions.values())
 
 
-def _make_input(d: date, t: time, row: list, src: str, r: int) -> DailyInput:
+def _make_input(d: date, t: time | None, row: list, src: str, r: int) -> DailyInput:
     return DailyInput(
         entry_date=d,
         entry_time=t,
