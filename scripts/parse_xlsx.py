@@ -2,21 +2,34 @@
 
 Layout per sheet (22 cols A-V):
   R16          : 'LOADING SUMMARY' marker — content starts after.
-  Date row     : col A string 'DD MONTH YYYY' (1-2 digit day, English month, year).
-                 Optional STOCK marker in cols I/J.
-                 Combined form: date + aggregate fields (col K populated).
+  Date row     : col A string 'DD MONTH YYYY'. Optional STOCK marker in cols I/J
+                 (ignored — stock balance recomputed from inputs - production).
+                 May also carry aggregate prod fields (K+L+M+O populated).
   Header row   : col A = 'TIME'.
   Transaction  : col A = datetime.time, col B = supplier name.
-  TOTAL row    : col E = 'TOTAL'.
-  Aggregate row: col A empty, col K populated (kg_to_production).
+                 May co-carry per-day byproduct breakdown in cols O-S (first batch
+                 row of the day typically holds the full daily breakdown).
+  TOTAL row    : col E = 'TOTAL' — skipped.
+  Aggregate row: col A empty, K+L+M+O populated. On aggregate, O = SUM of
+                 byproducts (carbon + metal + H2O + gas + losses), NOT carbon alone.
+                 Used to set kg_to_production / eu_prod_kg / plus_prod_kg.
+  Detail row   : O+P+Q+R+S all populated = per-day byproduct breakdown.
+                 Co-occurs with transaction (A=time) or standalone (A=empty).
+                 Used to set carbon/metal/h2o/gas/losses individually.
+  Stock recov. : col A empty, K populated alone (no L/M/O detail). Internal
+                 accounting movement — skipped (stock recomputed downstream).
 
 Sign conventions (xlsx):
   kg_to_production and byproduct kg are negative in xlsx (loss accounting).
   Stored as positive (abs) — DB schema treats as positive quantities.
+
+When same date has multiple aggregate rows (e.g. r49 date-row + r62 A=None for
+day 7 in Girardot Jan-2025), LAST-WINS: later row supersedes earlier.
 """
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, time
 from pathlib import Path
@@ -113,10 +126,22 @@ def _as_time(v) -> time | None:
     return None
 
 
+def _is_aggregate_prod(row: list) -> bool:
+    """K + L + M + O all populated → daily aggregate row.
+    On aggregate, O is total byproducts (not carbon alone)."""
+    return all(_f(row[i]) is not None for i in (10, 11, 12, 14))
+
+
+def _is_byproduct_detail(row: list) -> bool:
+    """O + P + Q + R + S all populated → per-day byproduct breakdown."""
+    return all(_f(row[i]) is not None for i in (14, 15, 16, 17, 18))
+
+
 def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]:
     wb = load_workbook(path, data_only=True)
     inputs: list[DailyInput] = []
     productions: dict[date, DailyProduction] = {}
+    anomalies: list[str] = []
 
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
@@ -129,17 +154,16 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
 
             a = row[0]
             e = row[4]
-            k = row[10]
 
             if isinstance(a, str):
                 d = _parse_date(a)
                 if d:
                     current_date = d
-                    if _f(k) is not None:
+                    if _is_aggregate_prod(row):
                         prod = productions.setdefault(
                             d, DailyProduction(prod_date=d, source_file=src, source_row=r)
                         )
-                        _merge_production(prod, row, r)
+                        _merge_aggregate(prod, row, r)
                     continue
                 if a.strip().upper() == "TIME":
                     continue
@@ -151,24 +175,57 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
             if t is not None:
                 if current_date is None:
                     continue
-                if not row[1]:
-                    continue
-                inputs.append(_make_input(current_date, t, row, src, r))
+                if row[1]:
+                    inputs.append(_make_input(current_date, t, row, src, r))
+                if _is_byproduct_detail(row):
+                    prod = productions.setdefault(
+                        current_date,
+                        DailyProduction(prod_date=current_date, source_file=src, source_row=r),
+                    )
+                    _merge_byproducts(prod, row, r)
                 continue
 
             if row[1] and current_date is not None:
                 sup_raw = str(row[1]).strip().upper()
                 if sup_raw in SUPPLIER_ALIAS:
                     inputs.append(_make_input(current_date, None, row, src, r))
+                    if _is_byproduct_detail(row):
+                        prod = productions.setdefault(
+                            current_date,
+                            DailyProduction(prod_date=current_date, source_file=src, source_row=r),
+                        )
+                        _merge_byproducts(prod, row, r)
                     continue
 
-            if (a is None or a == "") and _f(k) is not None and current_date is not None:
-                prod = productions.setdefault(
-                    current_date,
-                    DailyProduction(prod_date=current_date, source_file=src, source_row=r),
-                )
-                _merge_production(prod, row, r)
-                continue
+            if (a is None or a == "") and current_date is not None:
+                if _is_aggregate_prod(row):
+                    prod = productions.setdefault(
+                        current_date,
+                        DailyProduction(prod_date=current_date, source_file=src, source_row=r),
+                    )
+                    _merge_aggregate(prod, row, r)
+                    continue
+                if _is_byproduct_detail(row):
+                    prod = productions.setdefault(
+                        current_date,
+                        DailyProduction(prod_date=current_date, source_file=src, source_row=r),
+                    )
+                    _merge_byproducts(prod, row, r)
+                    continue
+                if _f(row[10]) is not None:
+                    anomalies.append(
+                        f"{src} r{r} date={current_date} partial-prod-or-stock"
+                        f" K={row[10]} L={row[11]} M={row[12]} O={row[14]} P={row[15]}"
+                    )
+                    continue
+
+    if anomalies:
+        print(
+            f"\n!! Parser anomalies (skipped, {len(anomalies)} rows):",
+            file=sys.stderr,
+        )
+        for line in anomalies:
+            print(f"   {line}", file=sys.stderr)
 
     return inputs, list(productions.values())
 
@@ -192,50 +249,64 @@ def _make_input(d: date, t: time | None, row: list, src: str, r: int) -> DailyIn
     )
 
 
-def _merge_production(prod: DailyProduction, row: list, r: int) -> None:
-    if prod.kg_to_production is None:
-        prod.kg_to_production = _abs_or_none(row[10])
-    if prod.eu_prod_kg is None:
-        prod.eu_prod_kg = _abs_or_none(row[11])
-    if prod.plus_prod_kg is None:
-        prod.plus_prod_kg = _abs_or_none(row[12])
-    if prod.carbon_black_kg is None:
-        prod.carbon_black_kg = _abs_or_none(row[14])
-    if prod.metal_scrap_kg is None:
-        prod.metal_scrap_kg = _abs_or_none(row[15])
-    if prod.h2o_kg is None:
-        prod.h2o_kg = _abs_or_none(row[16])
-    if prod.gas_syngas_kg is None:
-        prod.gas_syngas_kg = _abs_or_none(row[17])
-    if prod.losses_kg is None:
-        prod.losses_kg = _abs_or_none(row[18])
-    if prod.output_eu_kg is None:
-        prod.output_eu_kg = _abs_or_none(row[19])
-    if prod.contract_ref is None and row[20]:
+def _merge_aggregate(prod: DailyProduction, row: list, r: int) -> None:
+    """Set K (input), L (EU), M (PLUS) from aggregate row. Last-wins on duplicate
+    aggregates per date. Skips O (total byproducts on aggregate)."""
+    new_kg = _abs_or_none(row[10])
+    if new_kg is not None:
+        prod.kg_to_production = new_kg
+    new_eu = _abs_or_none(row[11])
+    if new_eu is not None:
+        prod.eu_prod_kg = new_eu
+    new_plus = _abs_or_none(row[12])
+    if new_plus is not None:
+        prod.plus_prod_kg = new_plus
+    prod.source_row = r
+
+
+def _merge_byproducts(prod: DailyProduction, row: list, r: int) -> None:
+    """Set O/P/Q/R/S as carbon/metal/h2o/gas/losses respectively. Also T (output_eu),
+    U (contract_ref), V (pos_number) when present. Last-wins on duplicates."""
+    o = _abs_or_none(row[14])
+    if o is not None:
+        prod.carbon_black_kg = o
+    p = _abs_or_none(row[15])
+    if p is not None:
+        prod.metal_scrap_kg = p
+    q = _abs_or_none(row[16])
+    if q is not None:
+        prod.h2o_kg = q
+    gas = _abs_or_none(row[17])
+    if gas is not None:
+        prod.gas_syngas_kg = gas
+    loss = _abs_or_none(row[18])
+    if loss is not None:
+        prod.losses_kg = loss
+    out_eu = _abs_or_none(row[19])
+    if out_eu is not None and prod.output_eu_kg is None:
+        prod.output_eu_kg = out_eu
+    if row[20] and not prod.contract_ref:
         prod.contract_ref = str(row[20]).strip()
-    if prod.pos_number is None and row[21]:
+    if row[21] and not prod.pos_number:
         prod.pos_number = str(row[21]).strip()
 
 
 if __name__ == "__main__":
-    import sys
-
     p = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/tmp/girardot_enero_2025.xlsx")
     inputs, prods = parse_workbook(p)
     print(f"inputs:      {len(inputs)}")
     print(f"productions: {len(prods)}")
     if inputs:
-        print(f"first input:  {asdict(inputs[0])}")
-        print(f"last input:   {asdict(inputs[-1])}")
         dates = sorted({i.entry_date for i in inputs})
         print(f"date range:   {dates[0]} -> {dates[-1]}  ({len(dates)} unique days)")
         suppliers = sorted({i.supplier_code for i in inputs})
         print(f"suppliers:    {suppliers}")
-        certs = sorted({c for c in (i.cert_number for i in inputs) if c})
-        print(f"certs:        {certs}")
-        contracts = sorted({c for c in (i.contract_code for i in inputs) if c})
-        print(f"contracts:    {contracts}")
     if prods:
-        print(f"first prod:   {asdict(prods[0])}")
         n_with_eu = sum(1 for p in prods if p.eu_prod_kg)
-        print(f"prods w/ eu_prod: {n_with_eu}/{len(prods)}")
+        n_with_carbon = sum(1 for p in prods if p.carbon_black_kg)
+        n_with_metal = sum(1 for p in prods if p.metal_scrap_kg)
+        print(f"prods w/ eu: {n_with_eu}/{len(prods)}")
+        print(f"prods w/ carbon: {n_with_carbon}/{len(prods)}")
+        print(f"prods w/ metal_scrap: {n_with_metal}/{len(prods)}")
+        for p in sorted(prods, key=lambda x: x.prod_date)[:5]:
+            print(f"  {asdict(p)}")
