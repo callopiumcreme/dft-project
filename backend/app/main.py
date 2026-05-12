@@ -34,7 +34,11 @@ async def lifespan(app: FastAPI):
         scheduler.shutdown(wait=False)
 
 
-app = FastAPI(title="DFT Mass Balance API", version="0.2.0", lifespan=lifespan)
+_DOCS_KWARGS = (
+    {} if os.environ.get("ENABLE_DOCS") == "1"
+    else {"docs_url": None, "redoc_url": None, "openapi_url": None}
+)
+app = FastAPI(title="DFT Mass Balance API", version="0.2.0", lifespan=lifespan, **_DOCS_KWARGS)
 
 app.include_router(auth.router)
 app.include_router(admin.router)

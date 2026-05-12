@@ -4,9 +4,10 @@ import { jwtVerify, errors as joseErrors } from 'jose';
 const SESSION_COOKIE = 'dft_session';
 const ALG = 'HS256';
 
-const SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? 'changeme-dft-secret-key-2026',
-);
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET env var is required');
+}
+const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET);
 
 function isSafeNext(path: string): boolean {
   return path.startsWith('/') && !path.startsWith('//') && !path.startsWith('/\\');
