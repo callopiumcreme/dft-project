@@ -47,6 +47,16 @@ SUPPLIER_ALIAS = {
     "<=5 TON": "LE5TON",
     "<5 TON": "LE5TON",
 }
+NULL_TOKENS = {"-", "--", "SD", "N/A", "NA", "SELF DECL. ISCC", "SELF DECL ISCC"}
+
+
+def _str_or_null(v) -> str | None:
+    if v is None:
+        return None
+    s = str(v).strip()
+    if not s or s.upper() in NULL_TOKENS:
+        return None
+    return s
 
 
 @dataclass
@@ -118,11 +128,37 @@ def _abs_or_none(v) -> float | None:
     return abs(f) if f is not None else None
 
 
+_TIME_STR_RE = re.compile(
+    r"^\s*(\d{1,2})[:\.](\d{2})(?:[:\.](\d{2}))?[:\.\s]*([AP]M)?\s*$",
+    re.IGNORECASE,
+)
+
+
 def _as_time(v) -> time | None:
     if isinstance(v, time):
         return v
     if isinstance(v, datetime):
         return v.time()
+    if isinstance(v, str):
+        s = v.replace("O", "0").replace("o", "0")
+        m = _TIME_STR_RE.match(s)
+        if not m:
+            return None
+        h = int(m.group(1))
+        mn = int(m.group(2))
+        s = int(m.group(3)) if m.group(3) else 0
+        ampm = m.group(4)
+        if ampm:
+            ampm = ampm.upper()
+            if ampm == "PM" and h < 12:
+                h += 12
+            elif ampm == "AM" and h == 12:
+                h = 0
+        if 0 <= h <= 23 and 0 <= mn <= 59 and 0 <= s <= 59:
+            try:
+                return time(h, mn, s)
+            except ValueError:
+                return None
     return None
 
 
@@ -133,8 +169,10 @@ def _is_aggregate_prod(row: list) -> bool:
 
 
 def _is_byproduct_detail(row: list) -> bool:
-    """O + P + Q + R + S all populated → per-day byproduct breakdown."""
-    return all(_f(row[i]) is not None for i in (14, 15, 16, 17, 18))
+    """Any of P/Q/R/S populated → per-day byproduct breakdown row.
+    O is excluded from the trigger because it appears alone on aggregate rows
+    (lump total). _merge_byproducts merges per-field so partial rows are OK."""
+    return any(_f(row[i]) is not None for i in (15, 16, 17, 18))
 
 
 def _resolve_aggregate_date(
@@ -192,6 +230,13 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
     inputs: list[DailyInput] = []
     productions: dict[date, DailyProduction] = {}
     anomalies: list[str] = []
+    agg_o_by_date: dict[date, float] = {}
+    detail_seen: set[date] = set()
+
+    def _capture_agg_o(target: date, row: list) -> None:
+        o_val = _abs_or_none(row[14])
+        if o_val is not None:
+            agg_o_by_date[target] = o_val
 
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
@@ -217,6 +262,10 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
                             target, DailyProduction(prod_date=target, source_file=src, source_row=r)
                         )
                         _merge_aggregate(prod, row, r)
+                        _capture_agg_o(target, row)
+                        if _is_byproduct_detail(row):
+                            _merge_byproducts(prod, row, r)
+                            detail_seen.add(target)
                     continue
                 if a.strip().upper() == "TIME":
                     continue
@@ -228,6 +277,10 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
                         DailyProduction(prod_date=current_date, source_file=src, source_row=r),
                     )
                     _merge_aggregate(prod, row, r)
+                    _capture_agg_o(current_date, row)
+                    if _is_byproduct_detail(row):
+                        _merge_byproducts(prod, row, r)
+                        detail_seen.add(current_date)
                 continue
 
             t = _as_time(a)
@@ -242,6 +295,7 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
                         DailyProduction(prod_date=current_date, source_file=src, source_row=r),
                     )
                     _merge_byproducts(prod, row, r)
+                    detail_seen.add(current_date)
                 continue
 
             if row[1] and current_date is not None:
@@ -254,6 +308,7 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
                             DailyProduction(prod_date=current_date, source_file=src, source_row=r),
                         )
                         _merge_byproducts(prod, row, r)
+                        detail_seen.add(current_date)
                     continue
 
             if (a is None or a == "") and current_date is not None:
@@ -263,6 +318,10 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
                         DailyProduction(prod_date=current_date, source_file=src, source_row=r),
                     )
                     _merge_aggregate(prod, row, r)
+                    _capture_agg_o(current_date, row)
+                    if _is_byproduct_detail(row):
+                        _merge_byproducts(prod, row, r)
+                        detail_seen.add(current_date)
                     continue
                 if _is_byproduct_detail(row):
                     prod = productions.setdefault(
@@ -270,6 +329,7 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
                         DailyProduction(prod_date=current_date, source_file=src, source_row=r),
                     )
                     _merge_byproducts(prod, row, r)
+                    detail_seen.add(current_date)
                     continue
                 if _f(row[10]) is not None:
                     anomalies.append(
@@ -277,6 +337,13 @@ def parse_workbook(path: Path) -> tuple[list[DailyInput], list[DailyProduction]]
                         f" K={row[10]} L={row[11]} M={row[12]} O={row[14]} P={row[15]}"
                     )
                     continue
+
+    for d, o in agg_o_by_date.items():
+        if d in detail_seen or d not in productions:
+            continue
+        prod = productions[d]
+        if prod.carbon_black_kg is None:
+            prod.carbon_black_kg = o
 
     if anomalies:
         print(
@@ -294,15 +361,15 @@ def _make_input(d: date, t: time | None, row: list, src: str, r: int) -> DailyIn
         entry_date=d,
         entry_time=t,
         supplier_code=_norm_supplier(str(row[1])),
-        cert_number=str(row[2]).strip() if row[2] else None,
-        contract_code=str(row[3]).strip() if row[3] else None,
-        ersv_number=str(row[4]).strip() if row[4] else None,
+        cert_number=_str_or_null(row[2]),
+        contract_code=_str_or_null(row[3]),
+        ersv_number=_str_or_null(row[4]),
         car_kg=_f(row[5]) or 0.0,
         truck_kg=_f(row[6]) or 0.0,
         special_kg=_f(row[7]) or 0.0,
         theor_veg_pct=_f(row[8]),
         manuf_veg_pct=_f(row[9]),
-        c14_analysis=str(row[13]).strip() if row[13] else None,
+        c14_analysis=_str_or_null(row[13]),
         source_file=src,
         source_row=r,
     )
