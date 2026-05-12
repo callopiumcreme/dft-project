@@ -1,189 +1,189 @@
-# DfT RTFC 2025 — Action Plan
+# Piano d'azione DfT — RTFC 2025
 
-**Subject:** Crown Oil 2025 RTFC application — development diesel from EoL tyres (Colombia / OisteBio pathway).
-**Context:** DfT formal rejection letter received 9 March 2026 following meeting of 5 March 2026. Bundles RTFO-310125, RTFO-280225, RTFO-310325, RTFO-310725, RTFO-210825 scheduled for deletion 13 March 2026. Original ROS resubmission deadline: 14 May 2026.
-**Plan effective date:** 13 May 2026.
-**Plan owner:** Crown Oil (applicant) with OisteBio (producer) and digital ingest team supporting.
-**Document status:** working plan, version 1. Updates committed to git as plan evolves.
-
----
-
-## 1. Executive summary
-
-DfT has rejected the 2025 pathway in full citing three categories of failure: (a) inadequate ISCC chain of custody, (b) incomplete feedstock evidence and missing production conversion logs, (c) inconsistent and incremental submissions. The Unit has, however, explicitly left a door open: a coherent resubmission may be lodged on ROS by 14 May 2026, with verification permitted after that date subject to Unit consent.
-
-Two months have elapsed since the rejection with no formal communication to the Unit. The intervening period has been used to engage a digital ingest and audit specialist and rebuild the evidentiary base from primary source data. That work is sufficiently advanced to:
-
-- present a fully reconciled mass-balance for at least one month of 2025 at audit standard;
-- propose a defined eight-week remediation window with milestone delivery and interim checkpoint;
-- commit to a single coherent submission with no incremental or retrospective evidence.
-
-This plan defines the steps to execute the resubmission strategy. It runs on two tracks: an immediate extension request (Track A) and, in parallel, a structured remediation program (Track B) that proceeds regardless of the extension outcome and positions the pathway for 2026 forward.
+**Oggetto:** Applicazione RTFC 2025 Crown Oil — development diesel da pneumatici a fine vita (Colombia / OisteBio).
+**Contesto:** Lettera formale rigetto DfT ricevuta 9 marzo 2026 a seguito meeting del 5 marzo 2026. Bundle RTFO-310125, RTFO-280225, RTFO-310325, RTFO-310725, RTFO-210825 programmati cancellazione 13 marzo 2026. Deadline originale resubmission ROS: 14 maggio 2026.
+**Data piano:** 13 maggio 2026.
+**Owner piano:** Crown Oil (applicant) con OisteBio (produttore) e team digital ingest a supporto.
+**Stato documento:** piano operativo, versione 1. Aggiornamenti via commit git man mano che il piano evolve.
 
 ---
 
-## 2. Acceptance of DfT findings
+## 1. Sintesi esecutiva
 
-We do not contest the rejection. For each cited deficiency we acknowledge the substance and identify the remediation:
+DfT ha rigettato l'intera pathway 2025 citando tre categorie di carenze: (a) chain of custody ISCC inadeguata, (b) evidence feedstock incompleta e mancanza production log di conversione, (c) submission inconsistenti e incrementali. L'Unit ha però lasciato esplicitamente una porta aperta: una resubmission coerente può essere depositata su ROS entro 14 maggio 2026, con verifica permessa dopo tale data previo consenso Unit.
 
-| DfT finding | Acknowledged | Remediation track |
+Sono trascorsi due mesi dal rigetto senza comunicazione formale all'Unit. Il periodo è stato usato per ingaggiare specialista digital ingest e audit e ricostruire la base evidenziale a partire dati primari. Lavoro sufficientemente avanzato per:
+
+- presentare mass-balance pienamente riconciliato per almeno un mese 2025 a standard audit;
+- proporre finestra di rimedio definita 8 settimane con milestone delivery e checkpoint intermedio;
+- impegnarsi a submission unica e coerente senza evidence incrementale o retrospettiva.
+
+Il piano definisce gli step di esecuzione della strategia di resubmission. Si articola su due binari: richiesta estensione immediata (Track A) e, in parallelo, programma strutturato di rimedio (Track B) che procede indipendentemente dall'esito dell'estensione e posiziona la pathway per il 2026 in avanti.
+
+---
+
+## 2. Riconoscimento findings DfT
+
+Non contestiamo il rigetto. Per ciascuna carenza citata riconosciamo la sostanza e identifichiamo il rimedio:
+
+| Finding DfT | Riconosciuto | Track di rimedio |
 |---|---|---|
-| ISCC chain of custody not demonstrated | Yes | Retroactive PoS from each true collecting point, bound to specific input batches in the digital ingest system. |
-| Fuel not covered by valid ISCC certificates / PoSs | Yes | Cross-reference daily inputs against ISCC certificate validity periods; flag and remediate gaps before submission. |
-| Feedstock records incomplete or inconsistent | Yes | Mass-balance reports generated from primary database with daily closure to zero, exported as immutable PDF with cryptographic hash. |
-| Production conversion logs (kg → litres) not provided | Yes | Add `litres` column to production table; backfill from OisteBio production records; expose in mass-balance export. |
-| Most feedstock providers not registered to handle tyres | Yes | Obtain Colombian regulatory authorisations (ANLA / Ministerio de Ambiente) for each true collection point, with consular legalisation and certified EN translation. |
-| Submission was incremental | Yes | Single coherent body on 30 June 2026. No partial uploads. |
-| Inconsistencies in production site images, capacity, start dates | Yes | Site documentation pack consolidated from authoritative source; one signed version per item. |
-| Retrospective evidence | Yes | Every document submitted will pre-date the resubmission window and be independently sourced. |
+| Chain of custody ISCC non dimostrata | Sì | PoS retroattivo da ciascun vero collecting point, legato a batch di input specifici nel sistema digital ingest. |
+| Fuel non coperto da certificati ISCC / PoS validi | Sì | Cross-reference daily inputs contro periodi validità certificati ISCC; flag e rimedio gap prima della submission. |
+| Record feedstock incompleti o inconsistenti | Sì | Report mass-balance generati da database primario con closure giornaliera a zero, esportati come PDF immutabile con hash crittografico. |
+| Production log conversione (kg → litri) non forniti | Sì | Aggiungere colonna `litres` alla tabella production; backfill da record produzione OisteBio; esporre nell'export mass-balance. |
+| Maggior parte feedstock provider non registrati per gestione pneumatici | Sì | Ottenere autorizzazioni regolatorie Colombia (ANLA / Ministerio de Ambiente) per ciascun vero collecting point, con legalizzazione consolare e traduzione giurata EN. |
+| Submission incrementale | Sì | Body unico coerente al 30 giugno 2026. Nessun upload parziale. |
+| Inconsistenze su immagini sito produzione, capacità, date inizio | Sì | Pack documentazione sito consolidato da fonte autoritativa; una versione firmata per item. |
+| Evidence retrospettiva | Sì | Ogni documento sottomesso pre-datato finestra resubmission e fonte indipendente. |
 
 ---
 
-## 3. Two-track strategy
+## 3. Strategia a due binari
 
-### Track A — Extension request (immediate, low-cost, optional outcome)
+### Track A — Richiesta estensione (immediato, basso costo, esito opzionale)
 
-Submit a formal extension request to DfT LCF Delivery Unit on 13 May 2026 asking that the 14 May 2026 ROS deadline be extended to 30 June 2026 with an interim status checkpoint on 15 June 2026.
+Sottomettere richiesta formale estensione a DfT LCF Delivery Unit il 13 maggio 2026 chiedendo che la deadline ROS del 14 maggio 2026 sia estesa al 30 giugno 2026 con checkpoint status intermedio al 15 giugno 2026.
 
-The extension request is preceded by a courtesy telephone call to the named DfT contact on the morning of 13 May 2026 to signal intent before the written submission arrives.
+Richiesta estensione preceduta da telefonata di cortesia al contact DfT nominato la mattina del 13 maggio 2026 per segnalare intent prima dell'arrivo della submission scritta.
 
-The request is accompanied by an initial body of evidence (Annex A–E, see §6) demonstrating the standard at which the resubmission will be prepared.
+La richiesta è accompagnata da un body iniziale di evidence (Annex A–E, vedi §6) che dimostra lo standard a cui sarà preparata la resubmission.
 
-Probability of success is uncertain. The two-month silence and the prior rejection grounds weigh against; the substantive evidence already prepared and the limited scope of the request weigh in favour. The request is sent regardless because the cost is one day and the upside is recovery of five 2025 bundles.
+Probabilità successo incerta. I due mesi di silenzio e i precedenti motivi rigetto pesano contro; l'evidence sostanziale già preparata e lo scope limitato della richiesta pesano a favore. La richiesta è inviata comunque perché il costo è una giornata e l'upside è il recupero di cinque bundle 2025.
 
-### Track B — Structured remediation (independent of Track A outcome)
+### Track B — Rimedio strutturato (indipendente esito Track A)
 
-Whether or not DfT grants an extension, the remediation work proceeds. The deliverables Track B produces are:
+Indipendentemente dal fatto che DfT conceda o meno l'estensione, il lavoro di rimedio procede. I deliverable prodotti dal Track B sono:
 
-- functionally required for any future application under this pathway in 2026 or beyond;
-- required as inputs to the Track A resubmission if the extension is granted;
-- usable as foundation evidence if Crown Oil and OisteBio elect to engage an independent ISCC verifier (Bureau Veritas, SGS, DNV) for forward applications.
+- funzionalmente necessari per qualsiasi applicazione futura su questa pathway nel 2026 o oltre;
+- input richiesti per la resubmission Track A se estensione concessa;
+- utilizzabili come evidence fondazionale se Crown Oil e OisteBio decidono di ingaggiare un verifier ISCC indipendente (Bureau Veritas, SGS, DNV) per applicazioni forward.
 
-Track B is the value-creating work. Track A is the attempt to recover sunk 2025 applications.
+Track B è il lavoro che crea valore. Track A è il tentativo di recuperare le applicazioni 2025 perse.
 
 ---
 
 ## 4. Timeline
 
-All dates UK time.
+Tutte le date orario UK.
 
-### Day 0 — 2026-05-13 (today)
+### Day 0 — 2026-05-13 (oggi)
 
-| Time | Action | Owner |
+| Orario | Azione | Owner |
 |---|---|---|
-| Morning | Phone call Crown Oil → named DfT LCF Unit contact, signal intent | Crown Oil |
-| Morning–Afternoon | Generate Annex A–E from DFT digital ingest system | Ingest team |
-| Afternoon | Begin supplier rectification (replace mis-classified entities) | OisteBio + ingest team |
-| End of day | Email formal extension request with annexes attached, cc OisteBio compliance lead | Crown Oil |
+| Mattina | Telefonata Crown Oil → contact DfT LCF Unit nominato, segnalare intent | Crown Oil |
+| Mattina-Pomeriggio | Generare Annex A–E dal sistema digital ingest DFT | Team ingest |
+| Pomeriggio | Iniziare bonifica fornitori (sostituire entità mal classificate) | OisteBio + team ingest |
+| EOD | Email formale richiesta estensione con allegati, cc compliance lead OisteBio | Crown Oil |
 
-### Day 1 — 2026-05-14 (DfT original deadline)
+### Day 1 — 2026-05-14 (deadline originale DfT)
 
-- **No submission on ROS.** Submitting incomplete bundles would be rejected on the same grounds as the original investigation.
-- Continue supplier rectification work.
-- Await DfT response.
+- **Nessuna submission su ROS.** Sottomettere bundle incompleti = rigetto sugli stessi motivi della prima investigazione.
+- Continuare lavoro bonifica fornitori.
+- Attendere risposta DfT.
 
-### Days 2–4 — 2026-05-15 → 2026-05-17 (response window)
+### Day 2-4 — 2026-05-15 → 2026-05-17 (finestra risposta)
 
-- Confirm written response from DfT.
-- If extension granted: proceed Track B with binding deadline 30 June 2026.
-- If extension denied: continue Track B, reframe target to 2026 forward applications.
+- Confermare risposta scritta da DfT.
+- Se estensione concessa: procedere Track B con deadline vincolante 30 giugno 2026.
+- Se estensione rifiutata: continuare Track B, ri-targettare applicazioni 2026 forward.
 
-### Week 1 — 2026-05-19 → 2026-05-25
+### Settimana 1 — 2026-05-19 → 2026-05-25
 
-- Contact Litoplas, Biowaste, Esenttia compliance leads.
-- Formal written request for retroactive ISCC PoS covering Jan–Aug 2025.
-- Confirm appointed ISCC certifier (Bureau Veritas Colombia / SGS Colombia / other) and engage timeline.
-- Identify and document any feedstock providers wrongly classified in current records (see §5).
-- DFT system: implement `collection_points` table; implement `litres` column in production schema.
+- Contattare compliance lead Litoplas, Biowaste, Esenttia.
+- Richiesta scritta formale di PoS ISCC retroattivo per gennaio-agosto 2025.
+- Confermare certifier ISCC incaricato (Bureau Veritas Colombia / SGS Colombia / altro) e ingaggiare timeline.
+- Identificare e documentare feedstock provider mal classificati nei record attuali (vedi §5).
+- Sistema DFT: implementare tabella `collection_points`; implementare colonna `litres` nello schema production.
 
-### Week 2 — 2026-05-26 → 2026-06-01
+### Settimana 2 — 2026-05-26 → 2026-06-01
 
-- Receive draft retroactive PoS or follow-up on outstanding requests.
-- Initiate ANLA / Ministerio de Ambiente document requests for each collecting point.
-- DFT system: implement `feedstock_provider_registration` field in supplier schema.
-- DFT system: implement audit-grade PDF export endpoint for mass-balance with cryptographic hash.
+- Ricevere bozza PoS retroattivo o follow-up su richieste in sospeso.
+- Avviare richieste documenti ANLA / Ministerio de Ambiente per ciascun collecting point.
+- Sistema DFT: implementare campo `feedstock_provider_registration` nello schema supplier.
+- Sistema DFT: implementare endpoint export PDF mass-balance audit-grade con hash crittografico.
 
-### Week 3 — 2026-06-02 → 2026-06-08
+### Settimana 3 — 2026-06-02 → 2026-06-08
 
-- Consular legalisation of Colombian documents (UK consulate, Bogotá).
-- Certified English translations.
-- DFT system: implement end-to-end production log generation (kg input → kg processed → litres output).
-- Begin eRSV consistency reconciliation Jan–Apr 2025.
+- Legalizzazione consolare documenti Colombia (consolato UK, Bogotá).
+- Traduzioni giurate EN.
+- Sistema DFT: implementare generazione production log end-to-end (kg input → kg processed → litri output).
+- Iniziare riconciliazione consistency eRSV gennaio-aprile 2025.
 
-### Week 4 — 2026-06-09 → 2026-06-15 (Interim Checkpoint)
+### Settimana 4 — 2026-06-09 → 2026-06-15 (Checkpoint intermedio)
 
-- Compile production-to-litres records for all five bundle periods.
-- Generate consolidated mass-balance reports for all bundle periods.
-- **Submit written interim status report to DfT on 15 June 2026** (see §7 template).
+- Compilare record production-to-litres per tutti e cinque i periodi bundle.
+- Generare report mass-balance consolidati per tutti i periodi bundle.
+- **Sottomettere status report intermedio scritto a DfT il 15 giugno 2026** (vedi §7 template).
 
-### Week 5 — 2026-06-16 → 2026-06-22
+### Settimana 5 — 2026-06-16 → 2026-06-22
 
-- If engaged: kick-off independent ISCC certifier pre-audit.
-- Assemble final submission packages per bundle (see §8 structure).
-- Generate cryptographic snapshot of database state to underwrite the evidence trail.
+- Se ingaggiato: kick-off pre-audit certifier ISCC indipendente.
+- Assemblare pacchetti finali di submission per bundle (vedi §8 struttura).
+- Generare snapshot crittografico dello stato database per garantire audit trail evidence.
 
-### Week 6 — 2026-06-23 → 2026-06-29
+### Settimana 6 — 2026-06-23 → 2026-06-29
 
-- Internal audit of the assembled body.
-- Cross-reference: every kilogram in mass-balance ↔ ISCC PoS ↔ provider registration.
-- Final formatting per ROS requirements.
+- Audit interno del body assemblato.
+- Cross-reference: ogni chilogrammo in mass-balance ↔ PoS ISCC ↔ registrazione provider.
+- Formattazione finale per requisiti ROS.
 
 ### Day 30-of-window — 2026-06-30
 
-- **Submit on ROS.** Single coherent body, all five bundles.
-- Notify DfT named contact by email of submission.
+- **Submission su ROS.** Body unico coerente, tutti e cinque i bundle.
+- Notificare via email contact DfT nominato della submission.
 
 ### Post-submission — 2026-07 → 2026-08
 
-- Respond promptly to DfT verification questions. Never incrementally.
-- If approved: apply same standard going forward.
-- If rejected: pathway closed for 2025 bundles; Track B deliverables retained for 2026 forward applications.
+- Rispondere prontamente alle domande di verifica DfT. Mai incrementalmente.
+- Se approvato: applicare stesso standard d'ora in poi.
+- Se rifiutato: pathway chiusa per i bundle 2025; deliverable Track B trattenuti per applicazioni 2026 forward.
 
 ---
 
-## 5. Supplier and collecting-point rectification
+## 5. Bonifica fornitori e collecting point
 
-The current digital ingest system reflects seven supplier records: ESENTTIA, SANIMAX, LITOPLAS, CIECOGRAS, BIOWASTE, ECODIESEL (dormant), and an aggregate "≤5 TON" bucket for self-declared ISCC small batches. DfT's working understanding identifies only Litoplas, Biowaste, and Esenttia as collecting points.
+L'attuale sistema digital ingest riflette sette record supplier: ESENTTIA, SANIMAX, LITOPLAS, CIECOGRAS, BIOWASTE, ECODIESEL (dormant) e bucket aggregato "≤5 TON" per piccoli batch ISCC autodichiarati. La comprensione working di DfT identifica solo Litoplas, Biowaste ed Esenttia come collecting point.
 
-A surgical reclassification is being performed today to align supplier records with the true collecting-point structure. Principles:
+Una riclassificazione chirurgica viene eseguita oggi per allineare i record supplier alla vera struttura collecting-point. Princìpi:
 
-- **No hard delete.** Reclassified suppliers are soft-deleted with explanatory notes referencing the DfT investigation. Audit trail preserved.
-- **No silent rewrite.** Every reattribution of a daily input from a wrong supplier to the correct collecting point is logged in `audit_log` with `old_values` and `new_values`.
-- **Volumes preserved.** Kilogram totals per date remain unchanged. Only the attribution to the correct collecting point changes.
-- **Certificates preserved.** Original ISCC certificate records are retained even when reassigned; provenance of the historical record is auditable.
-- **Provenance reconstructible.** From any current state, the audit log permits reconstruction of the state immediately prior to rectification.
+- **Nessun hard delete.** Supplier riclassificati = soft-delete con note esplicative riferimento investigazione DfT. Audit trail preservato.
+- **Nessuna riscrittura silente.** Ogni riattribuzione di un daily input da fornitore sbagliato al collecting point corretto è loggata in `audit_log` con `old_values` e `new_values`.
+- **Volumi preservati.** Totali chilogrammo per data restano invariati. Cambia solo l'attribuzione al collecting point corretto.
+- **Certificati preservati.** Record originali certificato ISCC trattenuti anche se riassegnati; provenance del record storico auditabile.
+- **Provenance ricostruibile.** Da qualsiasi stato corrente, l'audit log permette ricostruzione dello stato immediatamente precedente la bonifica.
 
-The migration is recorded as `0005_supplier_rectification.py` (or equivalent operational SQL) and applied locally and on the production server with verification of mass-balance closure before and after.
+La migration è registrata come `0005_supplier_rectification.py` (o SQL operativo equivalente) e applicata localmente e sul server produzione con verifica closure mass-balance prima e dopo.
 
-The output of this rectification feeds directly into Annex B (supply chain diagram) and Annex C (evidence register).
+L'output di questa bonifica alimenta direttamente Annex B (diagramma supply chain) e Annex C (evidence register).
 
 ---
 
-## 6. Initial body of evidence (annexes to extension request)
+## 6. Body iniziale di evidence (allegati richiesta estensione)
 
-### Annex A — Sample reconciled mass-balance (July 2025)
+### Annex A — Sample mass-balance riconciliato (luglio 2025)
 
-A daily mass-balance for July 2025 generated from the OisteBio digital ingest system. Daily closure (input − production − by-products) equals zero across all 31 days. Includes per-day detail and monthly aggregate. Format: PDF, signed, with SHA-256 hash for integrity verification. This is the format in which all five bundle months will be re-presented.
+Mass-balance giornaliero per luglio 2025 generato dal sistema digital ingest OisteBio. Closure giornaliera (input − production − by-products) uguale a zero su tutti i 31 giorni. Include dettaglio per-giorno e aggregato mensile. Formato: PDF, firmato, con hash SHA-256 per verifica integrità. Questo è il formato in cui tutti e cinque i mesi bundle saranno ri-presentati.
 
-### Annex B — Supply chain diagram
+### Annex B — Diagramma supply chain
 
-A diagram showing four layers: origin points (where applicable), collecting points (ISCC-certified, post-rectification), OisteBio facility (receipt and conversion), and Crown Oil (UK end supplier). Includes the ISCC PoS issued at each transfer.
+Diagramma che mostra quattro layer: origin point (dove applicabile), collecting point (certificati ISCC, post-bonifica), facility OisteBio (ricezione e conversione) e Crown Oil (end supplier UK). Include il PoS ISCC emesso a ogni passaggio.
 
 ### Annex C — Evidence register
 
-A working table listing every document required for the resubmission, with current status (available, in progress, to collect), owner, and target completion date. Items already available include the digital mass-balance, the audit log, and the stock carry-over explanation. Items to be collected include retroactive ISCC PoS from each collecting point, Colombian regulatory authorisations, and OCR'd / digitised 2024 records.
+Tabella di lavoro che elenca ogni documento richiesto per la resubmission, con stato corrente (disponibile, in progress, da raccogliere), owner e data target completamento. Item già disponibili: mass-balance digitale, audit log, spiegazione stock carry-over. Item da raccogliere: PoS ISCC retroattivo da ciascun collecting point, autorizzazioni regolatorie Colombia, record 2024 OCR'd / digitalizzati.
 
-### Annex D — Stock carry-over explanation (January / February 2025)
+### Annex D — Spiegazione stock carry-over (gennaio / febbraio 2025)
 
-A written explanation of the apparent closure variance in January and February 2025, which represents a symmetric ±339,865 kg carry-over of feedstock stock from year-end 2024 to early 2025 inventory. The variance reconciles to zero across the two months and is reconstructible from primary source data.
+Spiegazione scritta della varianza apparente nella closure di gennaio e febbraio 2025, che rappresenta carry-over simmetrico ±339.865 kg di stock feedstock da fine-2024 a inventario inizio-2025. La varianza si riconcilia a zero attraverso i due mesi ed è ricostruibile dai dati sorgente primari.
 
-### Annex E — Milestone plan
+### Annex E — Piano milestone
 
-This document, summarised in tabular form for the extension request package.
+Questo documento, sintetizzato in forma tabellare per il pacchetto richiesta estensione.
 
 ---
 
-## 7. Interim checkpoint — 15 June 2026 (template)
+## 7. Checkpoint intermedio — 15 giugno 2026 (template)
 
 ```
 Subject: RTFO 2025 EoL Tyres Pathway — Interim Status Report (per extension agreement)
@@ -210,85 +210,88 @@ Confirmation: we remain on track for submission by 30 June 2026.
 [Signed, Crown Oil]
 ```
 
+(Template in inglese — destinatario DfT UK.)
+
 ---
 
-## 8. Final submission package structure — 30 June 2026
+## 8. Struttura pacchetto submission finale — 30 giugno 2026
 
-Per bundle (five bundles total):
+Per bundle (cinque bundle totali):
 
 ```
 bundle_RTFO-XXXXXX/
-├── 00_cover_letter.pdf                 (Crown Oil signed)
+├── 00_cover_letter.pdf                 (Crown Oil firmato)
 ├── 01_supply_chain_diagram.pdf         (origin → collecting point → OisteBio → Crown Oil)
-├── 02_mass_balance_monthly.pdf         (DFT system export, daily + monthly aggregate)
+├── 02_mass_balance_monthly.pdf         (export sistema DFT, giornaliero + aggregato mensile)
 ├── 03_iscc_pos_chain/
 │   ├── litoplas_pos_YYYY-MM.pdf
 │   ├── biowaste_pos_YYYY-MM.pdf
 │   ├── esenttia_pos_YYYY-MM.pdf
 │   └── oistebio_pos_to_crownoil_YYYY-MM.pdf
 ├── 04_feedstock_provider_authorisations/
-│   ├── litoplas_anla_permit.pdf        (legalised + EN translation)
+│   ├── litoplas_anla_permit.pdf        (legalizzato + traduzione EN)
 │   ├── biowaste_anla_permit.pdf
 │   └── esenttia_anla_permit.pdf
-├── 05_production_conversion_logs.pdf   (kg → litres, daily, signed)
-├── 06_audit_trail_export.csv           (from DFT audit_log table)
-├── 07_independent_audit_letter.pdf     (if ISCC certifier engaged)
-└── 08_evidence_index.pdf               (cross-reference docs ↔ DfT rejection points)
+├── 05_production_conversion_logs.pdf   (kg → litri, giornaliero, firmato)
+├── 06_audit_trail_export.csv           (da tabella DFT audit_log)
+├── 07_independent_audit_letter.pdf     (se certifier ISCC ingaggiato)
+└── 08_evidence_index.pdf               (cross-reference docs ↔ punti rigetto DfT)
 ```
 
-A consolidated cover letter accompanies the five bundle packages on ROS.
+Una cover letter consolidata accompagna i cinque pacchetti bundle su ROS.
 
 ---
 
-## 9. Commitments to the Unit
+## 9. Commitment all'Unit
 
-Conditional on the extension being granted, Crown Oil and OisteBio commit to:
+Subordinato alla concessione dell'estensione, Crown Oil e OisteBio si impegnano a:
 
-- **No further incremental submissions.** The submission on 30 June 2026 will be a single coherent body.
-- **No retrospective evidence.** All evidence will pre-date the assembly window and be independently sourced.
-- **Interim transparency.** A written status report will be provided on 15 June 2026.
-- **Independent verification on offer.** We are prepared to engage an independent ISCC certifier to pre-audit the body if the Unit considers this useful.
-- **Single point of contact.** All correspondence will route through one named Crown Oil contact to avoid the fragmented communication that contributed to the original rejection.
+- **Nessuna ulteriore submission incrementale.** Submission del 30 giugno 2026 sarà body unico coerente.
+- **Nessuna evidence retrospettiva.** Ogni evidence sarà pre-datata finestra di assemblaggio e fonte indipendente.
+- **Trasparenza intermedia.** Status report scritto fornito al 15 giugno 2026.
+- **Verifica indipendente in offerta.** Pronti a ingaggiare certifier ISCC indipendente per pre-audit del body se l'Unit lo ritiene utile.
+- **Single point of contact.** Tutta la corrispondenza passerà attraverso un contact Crown Oil nominato per evitare comunicazione frammentata che ha contribuito al rigetto originale.
 
 ---
 
-## 10. Risk register
+## 10. Registro rischi
 
-| Risk | Likelihood | Impact | Mitigation |
+| Rischio | Probabilità | Impatto | Mitigazione |
 |---|---|---|---|
-| DfT denies extension | Medium-High | High (2025 bundles lost) | Track B continues regardless; 2026 forward salvageable. |
-| Colombian regulatory authorisations not obtainable in window | Medium | High | Begin requests Week 1; escalate via Colombian consulate UK if delayed. |
-| Retroactive ISCC PoS not granted by certifier | Medium | High | Engage ISCC certifier formally Week 1; if refused, document refusal and submit non-ISCC chain evidence per RTFO fallback procedure. |
-| 2024 handwritten records unreadable | High (known) | Medium | OCR pipeline with manual verification; if unreadable, document the limitation and submit declaratively. |
-| eRSV duplicates Jan–Apr 2025 cannot be reconciled | Medium | Medium | Document the source-system limitation; provide reconciled view from primary data. |
-| Internal audit (Week 6) discovers further gaps | Medium | High | Daily standups Week 5–6 to surface gaps early; defer submission rather than submit incomplete. |
-| Submission rejected again | Medium | Final | Pathway closed for 2025. Retain Track B output for 2026 forward applications. |
+| DfT nega estensione | Medio-Alta | Alto (bundle 2025 persi) | Track B procede comunque; 2026 forward salvabile. |
+| Autorizzazioni regolatorie Colombia non ottenibili nella finestra | Media | Alto | Iniziare richieste settimana 1; escalation via consolato Colombia UK se ritardo. |
+| PoS ISCC retroattivo non concesso da certifier | Media | Alto | Ingaggiare certifier ISCC formalmente settimana 1; se rifiutato, documentare rifiuto e sottomettere evidence chain non-ISCC per procedura fallback RTFO. |
+| Record 2024 scritti a mano illeggibili | Alta (nota) | Medio | Pipeline OCR con verifica manuale; se illeggibili, documentare limitazione e sottomettere dichiarativamente. |
+| eRSV duplicates gennaio-aprile 2025 non riconciliabili | Media | Medio | Documentare limitazione sistema sorgente; fornire vista riconciliata da dati primari. |
+| Audit interno (settimana 6) scopre ulteriori gap | Media | Alto | Standup giornalieri settimana 5-6 per far emergere gap presto; preferire ritardo submission che submission incompleta. |
+| Submission rigettata di nuovo | Media | Finale | Pathway chiusa per 2025. Trattenere output Track B per applicazioni 2026 forward. |
 
 ---
 
 ## 11. Plan B — pathway 2026 forward
 
-If 2025 bundles are not recoverable, Track B output positions the pathway for 2026 forward applications. Deliverables that have lasting value:
+Se i bundle 2025 non sono recuperabili, l'output Track B posiziona la pathway per applicazioni 2026 forward. Deliverable a valore duraturo:
 
-- A digital ingest system with daily mass-balance closure to zero, audit log, and cryptographic export — directly addresses DfT's "information quality" critique for any future application.
-- A reconstructed supply chain with verified collecting points and ISCC certificate bindings — addresses the "ISCC chain of custody" critique.
-- Colombian regulatory authorisations for each collecting point — addresses the "feedstock provider registration" critique.
-- An offer of independent ISCC certifier pre-audit — addresses the "incremental and inconsistent submission" critique.
+- Sistema digital ingest con closure mass-balance giornaliera a zero, audit log ed export crittografico — affronta direttamente la critica DfT "information quality" per qualsiasi applicazione futura.
+- Supply chain ricostruita con collecting point verificati e binding certificati ISCC — affronta critica "ISCC chain of custody".
+- Autorizzazioni regolatorie Colombia per ciascun collecting point — affronta critica "feedstock provider registration".
+- Offerta pre-audit certifier ISCC indipendente — affronta critica "submission incrementale e inconsistente".
 
-A 2026 application built on this foundation enters with a markedly stronger evidentiary position than the 2025 applications did.
+Una applicazione 2026 costruita su questa base entra con posizione evidenziale marcatamente più forte di quanto facessero le applicazioni 2025.
 
 ---
 
-## 12. Plan ownership and updates
+## 12. Ownership piano e aggiornamenti
 
-- **Crown Oil:** applicant of record; all communication to DfT.
-- **OisteBio:** evidence assembly, supplier rectification, Colombian regulatory liaison.
-- **Digital ingest team:** DFT system implementation, mass-balance reports, audit trail, OCR pipeline.
+- **Crown Oil:** applicant di record; tutta comunicazione verso DfT.
+- **OisteBio:** assemblaggio evidence, bonifica fornitori, liaison regolatoria Colombia.
+- **Team digital ingest:** implementazione sistema DFT, report mass-balance, audit trail, pipeline OCR.
 
-This plan is committed to the repository under `docs/dft-action-plan-2026-05.md`. Updates are made via git commit with reference to the relevant section. Material changes (deadline extension granted/denied, scope adjustments, additional regulatory requirements) are reflected in a new version of this document with a changelog entry below.
+Questo piano è committato al repository sotto `docs/dft-action-plan-2026-05.md`. Aggiornamenti via commit git con riferimento alla sezione rilevante. Cambiamenti materiali (estensione concessa/rifiutata, aggiustamenti scope, requisiti regolatori aggiuntivi) riflessi in nuova versione del documento con changelog entry sotto.
 
 ---
 
 ## Changelog
 
-- **v1 — 2026-05-13:** Initial plan committed.
+- **v1 — 2026-05-13:** Piano iniziale committato (versione EN).
+- **v2 — 2026-05-13:** Traduzione IT del piano; template comunicazioni DfT mantenuti in EN.
