@@ -21,7 +21,7 @@ Annex B (supply chain diagram) and Annex C (evidence register) follow within 24 
 
 **From:** [Crown Oil compliance signatory]
 **To:** [Nominated DfT LCF Delivery Unit contact]
-**CC:** [OisteBio compliance lead — Andrea Olga; Crown Oil management]
+**CC:** [OisteBio compliance lead; Crown Oil management]
 **Subject:** RTFO 2025 EoL Tyres Pathway — Extension Request, January 2025 bundle (RTFO-310125)
 
 Dear [Name],
@@ -67,7 +67,7 @@ We acknowledge that the extension is sought close to the deadline, and we apprec
 
 **6. Communication**
 
-The primary point of contact for this request is [Crown Oil compliance lead, email, phone]. OisteBio's compliance lead, Andrea Olga (cc'd), is available to respond directly on technical questions concerning the mass-balance, the digital ingest system, or any annex.
+The primary point of contact for this request is [Crown Oil compliance lead, email, phone]. OisteBio (cc'd) is available to respond directly on technical questions concerning the mass-balance, the digital ingest system, or any annex.
 
 We remain at the Unit's disposal for a further call should it assist. We will revert with the interim status report on 30 May 2026 in any event, and would welcome confirmation that the extension to 13 June 2026 is granted at the Unit's earliest convenience.
 

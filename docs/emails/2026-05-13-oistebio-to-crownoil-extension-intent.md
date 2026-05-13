@@ -13,7 +13,7 @@
 ---
 
 **To:** [Crown Oil compliance lead]
-**CC:** [OisteBio internal: Andrea Olga + management]
+**CC:** [OisteBio internal: management]
 **Subject:** RTFO 2025 EoL Tyres — Proposed approach for extension request to DfT (action required today)
 
 Dear [Name],
@@ -54,4 +54,4 @@ We assess the probability of the extension being granted as uncertain. The two m
 Happy to call this morning to align on any of the above. Time-critical: phone call to DfT and formal email both need to happen today.
 
 Best regards,
-[OisteBio sender — Andrea Olga / management]
+[OisteBio sender — management]
