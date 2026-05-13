@@ -1,14 +1,15 @@
 # OisteBio → Crown Oil — Extension Request Intent (2026-05-13)
 
-**Purpose:** Internal briefing email to Crown Oil compliance lead aligning on the strategy to request a 30-day DfT extension for the RTFO-310125 (January 2025) bundle. Action items time-bound to today.
+**Purpose:** Internal briefing email to Crown Oil compliance lead aligning on the strategy to request a 30-day DfT extension covering the **complete 2025 project** (not a single bundle). The substantive change versus prior thinking is that the request will be supported by a live demonstration of the digital management system OisteBio has built since the last correspondence with DfT, rather than by spreadsheets and PDF folders.
 
 **Status:** Draft pending recipient names (Crown Oil compliance lead, DfT LCF Unit nominated contact).
 
 **Attachments to include when sending:**
-- Draft Crown Oil → DfT extension request (Step 3 — separate file)
-- Annex A (mass-balance Jan 2025, PDF + SHA-256) — EOD today
-- Annex D (stock carry-over 339.865 kg explanation) — EOD today
-- Annex B, C, E to follow within 24 h
+- Draft Crown Oil → DfT extension request (Step 3 — separate file, to be rewritten in line with the present strategy)
+- Sample screenshots from the OisteBio mass-balance / production management center (curated set, branded)
+- Annex E (milestone plan to delivery)
+
+Annex A–D continue to be assembled and will be available to DfT on the agreed delivery date; they are **not** the centrepiece of this request. The centrepiece is the platform.
 
 ---
 
@@ -18,38 +19,47 @@
 
 Dear [Name],
 
-Following the lapse of correspondence with DfT LCF Delivery Unit since March 2026 and the approaching 14 May 2026 ROS deadline for RTFO 2025 bundles, we have prepared a structured approach to request a 30-day extension limited to the **January 2025 bundle (RTFO-310125)**. This message sets out our reasoning, the proposed sequence, and what we ask of Crown Oil today.
+We are writing today, ahead of the 14 May 2026 ROS deadline, to propose the approach we believe Crown Oil and OisteBio should take with DfT for the 2025 RTFO bundles. We have evolved our thinking in the last weeks and would like to align before the courtesy call and formal request go out today.
 
-**1. Why scope is limited to January 2025**
+**1. What we propose to ask**
 
-Submitting the full 2025 bundle at this stage would replicate the "incremental and inconsistent submission" critique raised in the first investigation. Limiting the resubmission to a single, fully-reconciled month signals submission discipline. Further 2025 bundles (Feb–Aug) are deferred and will be considered for submission only after Jan 2025 is accepted, in line with the indication previously received.
+A single 30-day extension of the ROS deadline (from 14 May 2026 to **13 June 2026**) covering the **complete 2025 project** — January through August 2025 — to be delivered as one coherent submission. This is a deliberate departure from a month-by-month approach. We believe the right answer to the prior "incremental and inconsistent submission" critique is not a smaller scope; it is a fundamentally different *standard* of submission delivered all at once. We do not want to ask DfT for repeated extensions on a bundle-by-bundle cadence. One request, one delivery.
 
-**2. Two-track plan**
+**2. What has changed since the last DfT correspondence**
 
-- **Track A — Extension request.** Formal written request to DfT today (13 May 2026), preceded by a courtesy phone call from Crown Oil to the nominated DfT contact, asking that the ROS deadline of 14 May 2026 be extended to **13 June 2026** for the sole RTFO-310125 bundle, with an interim written status report on **30 May 2026**.
-- **Track B — Structured remediation.** Proceeds independently of the DfT response. Includes supplier remediation (Jan 2025 lots only), retroactive PoS ISCC from collecting points, evidence pack consolidation, and audit-grade digital infrastructure (audit log, cryptographic export, collecting-point schema, litres schema). Track B deliverables are usable regardless of whether the extension is granted.
+In the two months of apparent silence, OisteBio has been investing significant time and capital in building a proper **production and mass-balance management system** — not a spreadsheet folder, not an evidence binder, but a live digital platform with:
 
-**3. Evidence accompanying the extension request**
+- daily input ingest with full audit log (every change tracked with old/new values, no silent rewrites, no hard deletes);
+- mass-balance reconciliation engine (per-day, per-month, per-supplier);
+- production density schema (audit-grade litres conversion with time-effective densities);
+- collecting-point and supplier classification schema;
+- cryptographic export (PDF + SHA-256 hash) for audit-grade evidence delivery;
+- KPI dashboards, drill-down reports, CSV export, role-based access (admin, operator, viewer, certifier);
+- the architectural foundation to support ISCC EU and RTFO verification work going forward.
 
-A body of initial evidence is being assembled today by the OisteBio digital ingest team to demonstrate the standard at which the resubmission will be prepared:
+This is not the same product we were corresponding about a year ago, and it is not what DfT has seen so far in the investigation. The two months of silence have a substantive reason behind them: we were building this. We did not want to come back to DfT with the same material in a slightly different format. The pause was an investment, not a delay.
 
-- **Annex A** — Reconciled daily mass-balance for January 2025, PDF-signed, with SHA-256 hash for integrity verification.
-- **Annex B** — Supply chain diagram (origin → collecting point → OisteBio facility → Crown Oil), post-remediation.
-- **Annex C** — Evidence register: every document required for the Jan 2025 resubmission with current status, owner, and target completion date.
-- **Annex D** — Stock carry-over end-January 2025 explanation: 339.865 kg physical feedstock retained in inventory, documented per K-only row in the source spreadsheet. This explains the apparent January closure of −10.05% as inventory movement, not loss or under-declared input. **Mandatory** to pre-empt rejection on closure grounds.
-- **Annex E** — Milestone plan in tabular form.
+**3. How we propose to demonstrate it**
 
-Annex A and D will be ready by EOD today. Annex B, C, E will follow within 24 hours and can be attached to the extension request or sent as a follow-up if the DfT response window is tight.
+Rather than enclosing the same kinds of artefacts that have already been rejected once, we propose accompanying the extension request with **curated sample screenshots** from the management system — daily mass-balance view, monthly aggregate, supplier breakdown, audit log, evidence register — sufficient to show DfT that the work since March is a genuinely different category of deliverable. Screenshots, not exhaustive evidence; a signal, not a submission.
 
-**4. What we ask of Crown Oil today**
+The full evidence package (Annexes A–E) is then committed to DfT as the deliverable at the end of the 30-day window. Crown Oil and OisteBio reserve the 30 days as a **beta-test period** during which the platform is exercised against the complete 2025 dataset, supplier remediation is finalised, retroactive PoS ISCC documentation is consolidated, and the submission body is assembled at audit grade.
 
-- **Morning:** Phone call from Crown Oil to the nominated DfT LCF Delivery Unit contact to signal intent ahead of the written submission. Tone: disciplined, scope-limited, evidence-backed request for 30 days on Jan 2025 only.
-- **EOD:** Formal written extension request, sent by Crown Oil under your signature, with Annex A and D attached. A draft of this email is attached to the present message and ready for review.
+**4. Why we believe this is the right framing**
+
+DfT has been in dialogue with Crown Oil and OisteBio for roughly a year. The relationship is not new; the pathway is not unfamiliar. What we are asking for, in plain language, is one more opportunity — a final 30-day window in which we deliver something that changes the entire perspective on the file. We are not asking to repeat the kind of submission that was rejected. We are asking for the time to put in front of DfT a different category of deliverable: a single coherent 2025 submission, generated end-to-end by a system, with every kilogram of input traceable to its source via audit trail, supported by retroactive PoS ISCC, and exportable with cryptographic integrity verification.
+
+**5. What we ask of Crown Oil today**
+
+- **Morning:** Phone call from Crown Oil to the nominated DfT LCF Delivery Unit contact, signalling intent ahead of the written submission. Tone: substantive change in our position, 30 days for a single complete-2025 delivery, willingness to show the platform.
+- **EOD:** Formal written extension request, sent by Crown Oil under your signature, with the curated screenshots and Annex E (milestone plan) attached. A draft of this email is attached to the present message and ready for review; we have rewritten it from the earlier scope-limited draft to reflect the framing above.
 - Please confirm the nominated DfT contact (name + email) so we can finalise addressing.
 
-**5. Probability and rationale**
+**6. Probability and rationale**
 
-We assess the probability of the extension being granted as uncertain. The two months of silence and the prior rejection grounds weigh against; the substantive evidence already prepared, the scope-limited nature of the request, and the explicit discipline signal weigh in favour. The cost of submitting the request is one day of effort; the upside is the recovery of the January 2025 bundle and positioning for subsequent bundles. We recommend proceeding.
+We assess the probability of the extension being granted as uncertain, as before. The factors in favour have shifted: the work since the last correspondence is substantive and visible; the request is for one window rather than a cadence; the screenshots demonstrate that the deliverable is genuinely different in kind. The factors against are unchanged: two months of silence carry weight, and the prior rejection grounds remain on file. We believe the new framing — fewer asks, larger scope, materially different deliverable — gives the request its best chance.
+
+If the answer is no, we lose a day of effort. If the answer is yes, the full 2025 RTFO project is recoverable on a single timeline.
 
 Happy to call this morning to align on any of the above. Time-critical: phone call to DfT and formal email both need to happen today.
 
