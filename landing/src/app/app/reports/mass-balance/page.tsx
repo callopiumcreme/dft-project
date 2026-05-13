@@ -186,7 +186,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
   const totalOutput = sumRows.reduce((s, r) => s + (Number(r.output_total_kg) || 0), 0);
   const totalEuLitres = sumRows.reduce((s, r) => s + (Number(r.eu_prod_litres) || 0), 0);
   const totalPlusLitres = sumRows.reduce((s, r) => s + (Number(r.plus_prod_litres) || 0), 0);
-  const totalLitres = sumRows.reduce((s, r) => s + (Number(r.total_prod_litres) || 0), 0);
+  const totalLitres = totalEuLitres + totalPlusLitres;
 
   return (
     <div className="mx-auto max-w-editorial">
