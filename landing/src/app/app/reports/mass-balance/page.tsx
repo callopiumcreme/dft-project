@@ -184,8 +184,8 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
   }[] = view === 'monthly' ? monthlyRows : dailyRows;
   const totalInput = sumRows.reduce((s, r) => s + (Number(r.input_total_kg) || 0), 0);
   const totalOutput = sumRows.reduce((s, r) => s + (Number(r.output_total_kg) || 0), 0);
-  const totalEuLitres = sumRows.reduce((s, r) => s + (Number(r.eu_prod_litres) || 0), 0);
-  const totalPlusLitres = sumRows.reduce((s, r) => s + (Number(r.plus_prod_litres) || 0), 0);
+  const totalEuLitres = Math.round(sumRows.reduce((s, r) => s + (Number(r.eu_prod_litres) || 0), 0));
+  const totalPlusLitres = Math.round(sumRows.reduce((s, r) => s + (Number(r.plus_prod_litres) || 0), 0));
   const totalLitres = totalEuLitres + totalPlusLitres;
 
   return (
