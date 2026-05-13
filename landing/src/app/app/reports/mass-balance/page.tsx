@@ -177,10 +177,14 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
   const sumRows: {
     input_total_kg?: string | null;
     output_total_kg?: string | null;
+    eu_prod_litres?: string | null;
+    plus_prod_litres?: string | null;
     total_prod_litres?: string | null;
   }[] = view === 'monthly' ? monthlyRows : dailyRows;
   const totalInput = sumRows.reduce((s, r) => s + (Number(r.input_total_kg) || 0), 0);
   const totalOutput = sumRows.reduce((s, r) => s + (Number(r.output_total_kg) || 0), 0);
+  const totalEuLitres = sumRows.reduce((s, r) => s + (Number(r.eu_prod_litres) || 0), 0);
+  const totalPlusLitres = sumRows.reduce((s, r) => s + (Number(r.plus_prod_litres) || 0), 0);
   const totalLitres = sumRows.reduce((s, r) => s + (Number(r.total_prod_litres) || 0), 0);
 
   return (
@@ -292,13 +296,15 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
       )}
 
       <section className="mt-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <KpiTile
             label="Period"
             value={`${rowCount} ${view === 'monthly' ? 'months' : 'days'}`}
           />
           <KpiTile label="Total input" value={`${numFmt.format(totalInput)} kg`} />
           <KpiTile label="Total output" value={`${numFmt.format(totalOutput)} kg`} />
+          <KpiTile label="Total EU (L)" value={`${numFmt.format(totalEuLitres)} L`} />
+          <KpiTile label="Total Plus (L)" value={`${numFmt.format(totalPlusLitres)} L`} />
           <KpiTile label="Total prod (L)" value={`${numFmt.format(totalLitres)} L`} />
         </div>
       </section>
