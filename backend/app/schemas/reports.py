@@ -19,6 +19,9 @@ class MassBalanceDailyRow(BaseModel):
     gas_syngas_kg: Decimal | None = None
     losses_kg: Decimal | None = None
     output_eu_kg: Decimal | None = None
+    eu_prod_litres: Decimal | None = None
+    plus_prod_litres: Decimal | None = None
+    total_prod_litres: Decimal | None = None
     output_total_kg: Decimal | None = None
     closure_diff_pct: Decimal | None = None
 
@@ -34,6 +37,9 @@ class MassBalanceMonthlyRow(BaseModel):
     gas_syngas_kg: Decimal | None = None
     losses_kg: Decimal | None = None
     output_eu_kg: Decimal | None = None
+    eu_prod_litres: Decimal | None = None
+    plus_prod_litres: Decimal | None = None
+    total_prod_litres: Decimal | None = None
     output_total_kg: Decimal | None = None
     closure_diff_pct: Decimal | None = None
 

@@ -1101,6 +1101,12 @@ export interface components {
             losses_kg?: string | null;
             /** Output Eu Kg */
             output_eu_kg?: string | null;
+            /** Eu Prod Litres */
+            eu_prod_litres?: string | null;
+            /** Plus Prod Litres */
+            plus_prod_litres?: string | null;
+            /** Total Prod Litres */
+            total_prod_litres?: string | null;
             /** Output Total Kg */
             output_total_kg?: string | null;
             /** Closure Diff Pct */
@@ -1131,6 +1137,12 @@ export interface components {
             losses_kg?: string | null;
             /** Output Eu Kg */
             output_eu_kg?: string | null;
+            /** Eu Prod Litres */
+            eu_prod_litres?: string | null;
+            /** Plus Prod Litres */
+            plus_prod_litres?: string | null;
+            /** Total Prod Litres */
+            total_prod_litres?: string | null;
             /** Output Total Kg */
             output_total_kg?: string | null;
             /** Closure Diff Pct */

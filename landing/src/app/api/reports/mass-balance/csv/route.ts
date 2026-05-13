@@ -22,6 +22,9 @@ const DAILY_COLS: { key: keyof DailyRow; header: string }[] = [
   { key: 'gas_syngas_kg', header: 'gas_syngas_kg' },
   { key: 'losses_kg', header: 'losses_kg' },
   { key: 'output_eu_kg', header: 'output_eu_kg' },
+  { key: 'eu_prod_litres', header: 'eu_prod_litres' },
+  { key: 'plus_prod_litres', header: 'plus_prod_litres' },
+  { key: 'total_prod_litres', header: 'total_prod_litres' },
   { key: 'output_total_kg', header: 'output_total_kg' },
   { key: 'closure_diff_pct', header: 'closure_diff_pct' },
 ];
@@ -37,6 +40,9 @@ const MONTHLY_COLS: { key: keyof MonthlyRow; header: string }[] = [
   { key: 'gas_syngas_kg', header: 'gas_syngas_kg' },
   { key: 'losses_kg', header: 'losses_kg' },
   { key: 'output_eu_kg', header: 'output_eu_kg' },
+  { key: 'eu_prod_litres', header: 'eu_prod_litres' },
+  { key: 'plus_prod_litres', header: 'plus_prod_litres' },
+  { key: 'total_prod_litres', header: 'total_prod_litres' },
   { key: 'output_total_kg', header: 'output_total_kg' },
   { key: 'closure_diff_pct', header: 'closure_diff_pct' },
 ];

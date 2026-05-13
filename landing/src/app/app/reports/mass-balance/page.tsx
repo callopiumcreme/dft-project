@@ -174,10 +174,14 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
         })()
       : null;
 
-  const sumRows: { input_total_kg?: string | null; output_total_kg?: string | null }[] =
-    view === 'monthly' ? monthlyRows : dailyRows;
+  const sumRows: {
+    input_total_kg?: string | null;
+    output_total_kg?: string | null;
+    total_prod_litres?: string | null;
+  }[] = view === 'monthly' ? monthlyRows : dailyRows;
   const totalInput = sumRows.reduce((s, r) => s + (Number(r.input_total_kg) || 0), 0);
   const totalOutput = sumRows.reduce((s, r) => s + (Number(r.output_total_kg) || 0), 0);
+  const totalLitres = sumRows.reduce((s, r) => s + (Number(r.total_prod_litres) || 0), 0);
 
   return (
     <div className="mx-auto max-w-editorial">
@@ -288,13 +292,14 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
       )}
 
       <section className="mt-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiTile
             label="Period"
             value={`${rowCount} ${view === 'monthly' ? 'months' : 'days'}`}
           />
           <KpiTile label="Total input" value={`${numFmt.format(totalInput)} kg`} />
           <KpiTile label="Total output" value={`${numFmt.format(totalOutput)} kg`} />
+          <KpiTile label="Total prod (L)" value={`${numFmt.format(totalLitres)} L`} />
         </div>
       </section>
 
@@ -380,6 +385,14 @@ function MonthlyTable({ rows, hasError }: { rows: MonthlyRow[]; hasError: boolea
                   <BreakdownTile label="H2O" value={r.h2o_kg} />
                   <BreakdownTile label="Syngas" value={r.gas_syngas_kg} />
                   <BreakdownTile label="Losses" value={r.losses_kg} />
+                </div>
+                <p className="mt-3 mb-2 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-ink-mute">
+                  Volume (litres)
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[0.7rem]">
+                  <BreakdownTile label="EU prod" value={r.eu_prod_litres} unit="L" />
+                  <BreakdownTile label="Plus prod" value={r.plus_prod_litres} unit="L" />
+                  <BreakdownTile label="Total prod" value={r.total_prod_litres} unit="L" />
                 </div>
               </div>
             </details>
@@ -471,6 +484,14 @@ function DailyAccordion({
                     <BreakdownTile label="H2O" value={r.h2o_kg} />
                     <BreakdownTile label="Syngas" value={r.gas_syngas_kg} />
                     <BreakdownTile label="Losses" value={r.losses_kg} />
+                  </div>
+                  <p className="mt-3 mb-2 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-ink-mute">
+                    Volume (litres)
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[0.7rem]">
+                    <BreakdownTile label="EU prod" value={r.eu_prod_litres} unit="L" />
+                    <BreakdownTile label="Plus prod" value={r.plus_prod_litres} unit="L" />
+                    <BreakdownTile label="Total prod" value={r.total_prod_litres} unit="L" />
                   </div>
                 </div>
                 {dayEntries.length === 0 ? (
@@ -581,14 +602,20 @@ function KpiTile({ label, value }: { label: string; value: string }) {
 function BreakdownTile({
   label,
   value,
+  unit,
 }: {
   label: string;
   value: string | null | undefined;
+  unit?: 'kg' | 'L';
 }) {
+  const u = unit ?? 'kg';
   return (
     <div className="border border-rule/60 bg-bg-soft px-2.5 py-2">
       <p className="text-[0.6rem] uppercase tracking-[0.12em] text-ink-mute">{label}</p>
-      <p className="mt-1 tabular-nums text-ink">{fmtKg(value)}</p>
+      <p className="mt-1 tabular-nums text-ink">
+        {fmtKg(value)}
+        <span className="ml-1 text-[0.6rem] text-ink-mute">{u}</span>
+      </p>
     </div>
   );
 }

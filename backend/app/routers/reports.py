@@ -62,6 +62,9 @@ async def mass_balance_daily(
                    NULL::numeric                AS gas_syngas_kg,
                    NULL::numeric                AS losses_kg,
                    NULL::numeric                AS output_eu_kg,
+                   NULL::numeric                AS eu_prod_litres,
+                   NULL::numeric                AS plus_prod_litres,
+                   NULL::numeric                AS total_prod_litres,
                    NULL::numeric                AS output_total_kg,
                    NULL::numeric                AS closure_diff_pct
             FROM daily_inputs di
@@ -84,7 +87,9 @@ async def mass_balance_daily(
             f"""
             SELECT day, input_total_kg, kg_to_production, eu_prod_kg, plus_prod_kg,
                    carbon_black_kg, metal_scrap_kg, h2o_kg, gas_syngas_kg,
-                   losses_kg, output_eu_kg, output_total_kg, closure_diff_pct
+                   losses_kg, output_eu_kg,
+                   eu_prod_litres, plus_prod_litres, total_prod_litres,
+                   output_total_kg, closure_diff_pct
             FROM mv_mass_balance_daily
             {where_sql}
             ORDER BY day DESC
@@ -126,6 +131,9 @@ async def mass_balance_monthly(
                    NULL::numeric                            AS gas_syngas_kg,
                    NULL::numeric                            AS losses_kg,
                    NULL::numeric                            AS output_eu_kg,
+                   NULL::numeric                            AS eu_prod_litres,
+                   NULL::numeric                            AS plus_prod_litres,
+                   NULL::numeric                            AS total_prod_litres,
                    NULL::numeric                            AS output_total_kg,
                    NULL::numeric                            AS closure_diff_pct
             FROM daily_inputs di
@@ -147,6 +155,7 @@ async def mass_balance_monthly(
             f"""
             SELECT month, input_total_kg, eu_prod_kg, plus_prod_kg, carbon_black_kg,
                    metal_scrap_kg, h2o_kg, gas_syngas_kg, losses_kg, output_eu_kg,
+                   eu_prod_litres, plus_prod_litres, total_prod_litres,
                    output_total_kg, closure_diff_pct
             FROM mv_mass_balance_monthly
             {where_sql}
