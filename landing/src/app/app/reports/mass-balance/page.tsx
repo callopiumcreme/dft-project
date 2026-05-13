@@ -3,6 +3,7 @@ import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { MonthQuickPicker } from './month-quick-picker';
 import { buildMonthOptions } from './month-utils';
+import { KpiTileTooltip } from './kpi-tile-tooltip';
 
 type DailyRow = components['schemas']['MassBalanceDailyRow'];
 type MonthlyRow = components['schemas']['MassBalanceMonthlyRow'];
@@ -303,9 +304,21 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
           />
           <KpiTile label="Total input" value={`${numFmt.format(totalInput)} kg`} />
           <KpiTile label="Total output" value={`${numFmt.format(totalOutput)} kg`} />
-          <KpiTile label="Total EU (L)" value={`${numFmt.format(totalEuLitres)} L`} />
-          <KpiTile label="Total Plus (L)" value={`${numFmt.format(totalPlusLitres)} L`} />
-          <KpiTile label="Total prod (L)" value={`${numFmt.format(totalLitres)} L`} />
+          <KpiTileTooltip
+            label="Total EU (L)"
+            value={`${numFmt.format(totalEuLitres)} L`}
+            tooltip="Total output EU L."
+          />
+          <KpiTileTooltip
+            label="Total Plus (L)"
+            value={`${numFmt.format(totalPlusLitres)} L`}
+            tooltip="Total Plus output L."
+          />
+          <KpiTileTooltip
+            label="Total prod (L)"
+            value={`${numFmt.format(totalLitres)} L`}
+            tooltip="Total Prod output L."
+          />
         </div>
       </section>
 
