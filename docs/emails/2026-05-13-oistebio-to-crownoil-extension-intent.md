@@ -1,6 +1,6 @@
 # OisteBio → Crown Oil — Extension Request Intent (2026-05-13)
 
-**Purpose:** Internal briefing email to Crown Oil compliance lead aligning on the strategy to request a 30-day DfT extension covering the **complete 2025 project** (not a single bundle). The substantive change versus prior thinking is that the request will be supported by a live demonstration of the digital management system OisteBio has built since the last correspondence with DfT, rather than by spreadsheets and PDF folders.
+**Purpose:** Internal briefing email to Crown Oil compliance lead aligning on the strategy to request a 30-day DfT extension covering **production from January to August 2025** (not a single bundle). The substantive change versus prior thinking is that the request will be supported by a live demonstration of the digital management system OisteBio has built since the last correspondence with DfT, rather than by spreadsheets and PDF folders.
 
 **Status:** Draft pending recipient names (Crown Oil compliance lead, DfT LCF Unit nominated contact).
 
@@ -19,11 +19,11 @@ Annex A–D continue to be assembled and will be available to DfT on the agreed 
 
 Dear [Name],
 
-We are writing today, ahead of the 14 May 2026 ROS deadline, to propose the approach we believe Crown Oil and OisteBio should take with DfT for the 2025 RTFO bundles. We have evolved our thinking in the last weeks and would like to align before the courtesy call and formal request go out today.
+We are writing today, ahead of the 14 May 2026 ROS deadline, to propose the approach we believe Crown Oil and OisteBio should take with DfT for production from January to August 2025 under the RTFO End-of-Life Tyres pathway. We have evolved our thinking in the last weeks and would like to align before the courtesy call and formal request go out today.
 
 **1. What we propose to ask**
 
-A single 30-day extension of the ROS deadline (from 14 May 2026 to **13 June 2026**) covering the **complete 2025 project** — January through August 2025 — to be delivered as one coherent submission. This is a deliberate departure from a month-by-month approach. We believe the right answer to the prior "incremental and inconsistent submission" critique is not a smaller scope; it is a fundamentally different *standard* of submission delivered all at once. We do not want to ask DfT for repeated extensions on a bundle-by-bundle cadence. One request, one delivery.
+A single 30-day extension of the ROS deadline (from 14 May 2026 to **13 June 2026**) covering **production from January to August 2025**, to be delivered as one coherent submission. This is a deliberate departure from a month-by-month approach. We believe the right answer to the prior "incremental and inconsistent submission" critique is not a smaller scope; it is a fundamentally different *standard* of submission delivered all at once. We do not want to ask DfT for repeated extensions on a bundle-by-bundle cadence. One request, one delivery.
 
 **2. What has changed since the last DfT correspondence**
 
@@ -43,7 +43,7 @@ This is not the same product we were corresponding about a year ago, and it is n
 
 Rather than enclosing the same kinds of artefacts that have already been rejected once, we propose accompanying the extension request with **curated sample screenshots** from the management system — daily mass-balance view, monthly aggregate, supplier breakdown, audit log, evidence register — sufficient to show DfT that the work since March is a genuinely different category of deliverable. Screenshots, not exhaustive evidence; a signal, not a submission.
 
-The full evidence package (Annexes A–E) is then committed to DfT as the deliverable at the end of the 30-day window. Crown Oil and OisteBio reserve the 30 days as a **beta-test period** during which the platform is exercised against the complete 2025 dataset, supplier remediation is finalised, retroactive PoS ISCC documentation is consolidated, and the submission body is assembled at audit grade.
+The full evidence package (Annexes A–E) is then committed to DfT as the deliverable at the end of the 30-day window. Crown Oil and OisteBio reserve the 30 days as a **beta-test period** during which the platform is exercised against production from January to August 2025, supplier remediation is finalised, retroactive PoS ISCC documentation is consolidated, and the submission body is assembled at audit grade.
 
 **4. Why we believe this is the right framing**
 
@@ -59,7 +59,7 @@ DfT has been in dialogue with Crown Oil and OisteBio for roughly a year. The rel
 
 We assess the probability of the extension being granted as uncertain, as before. The factors in favour have shifted: the work since the last correspondence is substantive and visible; the request is for one window rather than a cadence; the screenshots demonstrate that the deliverable is genuinely different in kind. The factors against are unchanged: two months of silence carry weight, and the prior rejection grounds remain on file. We believe the new framing — fewer asks, larger scope, materially different deliverable — gives the request its best chance.
 
-If the answer is no, we lose a day of effort. If the answer is yes, the full 2025 RTFO project is recoverable on a single timeline.
+If the answer is no, we lose a day of effort. If the answer is yes, production from January to August 2025 is recoverable on a single timeline.
 
 Happy to call this morning to align on any of the above. Time-critical: phone call to DfT and formal email both need to happen today.
 

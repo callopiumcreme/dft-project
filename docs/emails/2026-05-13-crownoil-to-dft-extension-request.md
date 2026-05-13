@@ -1,6 +1,6 @@
 # Crown Oil → DfT — Formal Extension Request (2026-05-13)
 
-**Purpose:** Formal written extension request from Crown Oil (RTFO registrant) to DfT LCF Delivery Unit, requesting a single 30-day extension of the 14 May 2026 ROS deadline to cover the **complete 2025 RTFO project** (January–August 2025) as one coherent delivery.
+**Purpose:** Formal written extension request from Crown Oil (RTFO registrant) to DfT LCF Delivery Unit, requesting a single 30-day extension of the 14 May 2026 ROS deadline to cover **production from January to August 2025** as one coherent delivery.
 
 **Sequence:**
 1. Preceded by courtesy phone call from Crown Oil to nominated DfT contact (morning 13 May 2026).
@@ -21,25 +21,25 @@ Full evidence package (Annexes A–D, supplier remediation, retroactive PoS ISCC
 **From:** [Crown Oil compliance signatory]
 **To:** [Nominated DfT LCF Delivery Unit contact]
 **CC:** [OisteBio compliance lead; Crown Oil management]
-**Subject:** RTFO 2025 EoL Tyres Pathway — Extension Request, complete 2025 project (single coherent delivery)
+**Subject:** RTFO 2025 EoL Tyres Pathway — Extension Request, production from January to August 2025 (single coherent delivery)
 
 Dear [Name],
 
-Further to the telephone conversation earlier today, Crown Oil is writing to formally request an extension of the 14 May 2026 ROS submission deadline in respect of the **complete 2025 RTFO End-of-Life Tyres pathway** (bundles January through August 2025), to be delivered as one coherent submission rather than incrementally.
+Further to the telephone conversation earlier today, Crown Oil is writing to formally request an extension of the 14 May 2026 ROS submission deadline in respect of **production from January to August 2025** under the RTFO End-of-Life Tyres pathway, to be delivered as one coherent submission rather than incrementally.
 
 **1. Request**
 
-We respectfully request a single 30-day extension of the ROS deadline, from 14 May 2026 to **13 June 2026**, covering all 2025 bundles. We commit to providing a **written interim status report on 30 May 2026** against the milestone plan accompanying this letter, so that DfT may monitor progress at the halfway point.
+We respectfully request a single 30-day extension of the ROS deadline, from 14 May 2026 to **13 June 2026**, covering production from January to August 2025. We commit to providing a **written interim status report on 30 May 2026** against the milestone plan accompanying this letter, so that DfT may monitor progress at the halfway point.
 
 This is not a request for a bundle-by-bundle cadence of extensions. It is one request, for one window, in respect of one delivery.
 
 **2. Substantive change in approach**
 
-In the period since our last correspondence with the Unit in March 2026, Crown Oil and OisteBio have been working on a substantive change in the way the 2025 bundles are prepared. We acknowledge that this period appears as a gap in correspondence. We would like to explain what has been happening in it.
+In the period since our last correspondence with the Unit in March 2026, Crown Oil and OisteBio have been working on a substantive change in the way production from January to August 2025 is prepared for submission. We acknowledge that this period appears as a gap in correspondence. We would like to explain what has been happening in it.
 
 The principal critique of the previous submissions was that they were incremental, inconsistent, and unsupported by audit-grade infrastructure. Our reading of that feedback was that the right response is not a smaller, faster bundle in the same format; it is a fundamentally different category of deliverable, prepared on a different standard.
 
-To that end, OisteBio has invested significant time and capital in building a **production and mass-balance digital management system**. The two months of apparent silence reflect that build. Specifically, the system now provides:
+To that end, OisteBio has invested significant time and capital in building a **production and mass-balance digital management system**. The two months of apparent silence reflect that build. Specifically, the system now provides — for production from January to August 2025:
 
 - daily input ingest with full audit log — every modification tracked with old and new values, no silent rewrites, no hard deletes, regulator-replayable;
 - a mass-balance reconciliation engine producing per-day, per-month, and per-supplier closure with explicit treatment of stock carry-over and by-products;
@@ -62,8 +62,8 @@ We have deliberately not attached an early body of evidence in the format of pri
 
 The window from 13 May to 13 June 2026 is reserved as a structured **beta-test and consolidation period** during which:
 
-- the platform is exercised against the complete 2025 dataset, end to end, by OisteBio operations;
-- supplier remediation is finalised across all 2025 bundles (no hard deletes; every reattribution audit-logged);
+- the platform is exercised against production from January to August 2025, end to end, by OisteBio operations;
+- supplier remediation is finalised across production from January to August 2025 (no hard deletes; every reattribution audit-logged);
 - retroactive Proof-of-Sustainability (ISCC) is consolidated from each collecting point (Litoplas, Biowaste, Esenttia) for the 2025 lots, supported by written request and tracked in the platform's evidence register;
 - regulatory documentation from ANLA / Ministerio de Ambiente is gathered for each collecting point;
 - consular legalisation (UK Consulate Bogotá) and sworn EN translations are completed;
@@ -75,7 +75,7 @@ The interim status report on 30 May 2026 will give the Unit a checkpoint at the 
 
 Crown Oil and OisteBio have been in dialogue with DfT on this pathway for roughly a year. The relationship is not new; the pathway is familiar to both sides. What we are asking for, plainly, is one further opportunity — a final 30-day window in which we deliver something that genuinely changes the perspective on this file. We are not asking to repeat the kind of submission that has already been rejected. We are asking for the time to put in front of the Unit a different kind of deliverable: a single coherent 2025 submission, generated end-to-end by an audit-grade system, supported by retroactive PoS ISCC, and exportable with cryptographic integrity verification.
 
-If the Unit is willing to grant the extension, the 2025 RTFO project is recoverable on a single timeline. If the Unit is not, we accept that decision and will redirect the work to future pathway applications. We would, however, ask the Unit to consider the request on its current terms — a complete delivery in 30 days, with the system already built — rather than on the terms of what came before.
+If the Unit is willing to grant the extension, production from January to August 2025 is recoverable on a single timeline. If the Unit is not, we accept that decision and will redirect the work to future pathway applications. We would, however, ask the Unit to consider the request on its current terms — a complete delivery in 30 days, with the system already built — rather than on the terms of what came before.
 
 **6. Communication**
 
