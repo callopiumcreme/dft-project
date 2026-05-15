@@ -1,0 +1,324 @@
+/* Supply Chain Diagram — print stylesheet (A4 landscape, deterministic fonts).
+   Visual language matches templates/reports/mass_balance.css for consistency
+   across the RTFO-310125 submission bundle. */
+
+/* -------------------------------------------------------------------------
+   Page setup: A4 landscape, 18 mm margins, running footer.
+   ------------------------------------------------------------------------- */
+@page {
+    size: A4 landscape;
+    margin: 13mm 16mm 14mm 16mm;
+    @bottom-left {
+        content: "OisteBio GmbH — Oberneuhofstrasse 5, 6340 Baar, CH — MWSt CHE-234.625.162";
+        font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+        font-size: 7.5pt;
+        color: #555;
+    }
+    @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+        font-size: 7.5pt;
+        color: #555;
+    }
+}
+
+/* -------------------------------------------------------------------------
+   Base typography
+   ------------------------------------------------------------------------- */
+html, body {
+    font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+    font-size: 10pt;
+    line-height: 1.35;
+    color: #111;
+    margin: 0;
+    padding: 0;
+}
+
+p {
+    margin: 0 0 6pt 0;
+}
+
+.mono {
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-size: 9.5pt;
+}
+
+.muted {
+    color: #666;
+    font-size: 9pt;
+}
+
+/* -------------------------------------------------------------------------
+   Header chrome
+   ------------------------------------------------------------------------- */
+.header {
+    border-bottom: 1.5pt solid #1a3a5c;
+    padding-bottom: 5pt;
+    margin-bottom: 10pt;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.header > div {
+    display: table-cell;
+    vertical-align: bottom;
+}
+
+.header > div + div {
+    text-align: right;
+}
+
+.brand {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #1a3a5c;
+    letter-spacing: 0.4pt;
+}
+
+.brand-sub {
+    font-size: 8.5pt;
+    color: #555;
+    margin-top: 1pt;
+}
+
+.header-meta {
+    text-align: right;
+    font-size: 8.5pt;
+    color: #444;
+}
+
+.header-meta .ref {
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-weight: bold;
+    color: #1a3a5c;
+}
+
+.section-title {
+    font-size: 14pt;
+    color: #1a3a5c;
+    margin: 0 0 4pt 0;
+}
+
+.lede {
+    font-size: 9.5pt;
+    color: #333;
+    margin: 0 0 8pt 0;
+    max-width: 240mm;
+}
+
+/* -------------------------------------------------------------------------
+   Diagram: 4-layer flow rendered with a CSS table for deterministic sizing.
+   WeasyPrint handles table-cell vertical centring reliably; flex grow with
+   `flex: 1` on the cross axis blows the diagram across multiple pages.
+   ------------------------------------------------------------------------- */
+.diagram {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+    border-spacing: 0;
+    margin: 4pt 0 6pt 0;
+    page-break-inside: avoid;
+}
+
+.layer,
+.arrows {
+    display: table-cell;
+    vertical-align: middle;
+    padding: 0 2mm;
+}
+
+.layer {
+    width: 22%;
+}
+
+.arrows {
+    width: 4%;
+    padding: 0;
+}
+
+.layer-label {
+    font-size: 8pt;
+    color: #1a3a5c;
+    text-transform: uppercase;
+    letter-spacing: 0.6pt;
+    font-weight: bold;
+    margin: 0 0 4pt 0;
+    text-align: center;
+    border-bottom: 0.5pt solid #c9d2dd;
+    padding-bottom: 2pt;
+}
+
+.layer-stack {
+    display: block;
+}
+
+.layer-stack .node + .node {
+    margin-top: 4mm;
+}
+
+.node {
+    border: 0.6pt solid #1a3a5c;
+    border-radius: 3pt;
+    padding: 5pt 7pt;
+    background: #f7f9fb;
+    page-break-inside: avoid;
+}
+
+.node-origin {
+    background: #eef2f7;
+    border-color: #4a6986;
+}
+
+.node-collector {
+    background: #fff;
+    border-color: #2c5d8f;
+}
+
+.node-processor {
+    background: #1a3a5c;
+    color: #fff;
+    border-color: #1a3a5c;
+}
+
+.node-processor .node-cert,
+.node-processor .node-meta {
+    color: #d8e3f0;
+}
+
+.node-buyer {
+    background: #e7eef5;
+    border-color: #1a3a5c;
+}
+
+.node-name {
+    font-weight: bold;
+    font-size: 9.5pt;
+    margin-bottom: 2pt;
+}
+
+.node-loc {
+    font-size: 8.5pt;
+    color: #444;
+    margin-bottom: 2pt;
+}
+
+.node-processor .node-loc {
+    color: #d8e3f0;
+}
+
+.node-cert {
+    font-size: 8pt;
+    color: #555;
+    font-style: italic;
+}
+
+.node-meta {
+    font-size: 8pt;
+    color: #1a3a5c;
+    margin-top: 3pt;
+    font-weight: 600;
+}
+
+.node-role {
+    font-size: 8pt;
+    color: #1a3a5c;
+    font-weight: 600;
+    margin-top: 2pt;
+}
+
+/* -------------------------------------------------------------------------
+   Arrows between layers — sit in their own table-cells, vertically centred.
+   ------------------------------------------------------------------------- */
+.arrows {
+    text-align: center;
+    color: #1a3a5c;
+    font-size: 18pt;
+    line-height: 1;
+}
+
+.arrow {
+    margin: 6pt 0;
+}
+
+.arrows-stack .arrow {
+    display: block;
+    margin: 8pt 0;
+}
+
+.arrow-annot {
+    font-size: 7.5pt;
+    color: #555;
+    text-align: center;
+}
+
+/* -------------------------------------------------------------------------
+   Annotation / legend panel.
+   ------------------------------------------------------------------------- */
+.legend {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+    border-spacing: 4mm 0;
+    margin: 6pt -4mm 0 -4mm;
+    page-break-inside: avoid;
+}
+
+.legend-card {
+    display: table-cell;
+    vertical-align: top;
+    border: 0.5pt solid #c9d2dd;
+    border-left: 3pt solid #1a3a5c;
+    border-radius: 2pt;
+    padding: 6pt 8pt;
+    background: #fbfcfd;
+}
+
+.legend-card h3 {
+    font-size: 9.5pt;
+    color: #1a3a5c;
+    margin: 0 0 3pt 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+}
+
+.legend-card p,
+.legend-card li {
+    font-size: 8.5pt;
+    color: #333;
+    margin: 0 0 2pt 0;
+    line-height: 1.35;
+}
+
+.legend-card ul {
+    margin: 0;
+    padding-left: 12pt;
+}
+
+.legend-card .ref {
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-weight: bold;
+    color: #1a3a5c;
+}
+
+.legend-status-active {
+    color: #14532d;
+    font-weight: bold;
+}
+
+.legend-status-pending {
+    color: #6a4a00;
+    font-weight: bold;
+}
+
+/* -------------------------------------------------------------------------
+   End-stamp.
+   ------------------------------------------------------------------------- */
+.end-stamp {
+    margin-top: 6pt;
+    text-align: center;
+    font-size: 7pt;
+    color: #888;
+    letter-spacing: 1pt;
+    page-break-before: avoid;
+}

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Supply Chain Diagram — RTFO {{ submission_ref }}</title>
+    <link rel="stylesheet" href="supply_chain.css">
+</head>
+<body>
+
+<header class="header">
+    <div>
+        <div class="brand">OisteBio GmbH</div>
+        <div class="brand-sub">Recycled Carbon Fuels — DEV-P100 pyrolysis oil</div>
+    </div>
+    <div class="header-meta">
+        Submission Ref. <span class="ref">{{ submission_ref }}</span><br>
+        Production period: {{ period }}<br>
+        Generated: {{ generated_at }}
+    </div>
+</header>
+
+<h1 class="section-title">Supply chain diagram</h1>
+<p class="lede">
+    End-to-end traceability from end-of-life tyre (ELT) collection in Colombia
+    through pyrolysis processing at the OisteBio Girardot facility, to the UK
+    obligated supplier under the RTFO RCF pathway. All flows are governed under
+    a single ISCC EU mass-balance system boundary.
+</p>
+
+<section class="diagram">
+
+    <!-- Layer 1 — Origin -->
+    <div class="layer">
+        <div class="layer-label">1. Feedstock origin</div>
+        <div class="layer-stack">
+            <div class="node node-origin">
+                <div class="node-name">End-of-life tyres (ELT)</div>
+                <div class="node-loc">Colombia &mdash; multiple aggregated sources</div>
+                <div class="node-cert">Post-consumer waste (RCF-eligible)</div>
+                <div class="node-meta">UN 3077 / Annex IX Part A</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Arrows: origin -> collectors -->
+    <div class="arrows">
+        <div class="arrow">&rarr;</div>
+    </div>
+
+    <!-- Layer 2 — Collecting points -->
+    <div class="layer">
+        <div class="layer-label">2. Collecting points (Colombia)</div>
+        <div class="layer-stack">
+            {% for cp in collecting_points %}
+            <div class="node node-collector">
+                <div class="node-name">{{ cp.name }}</div>
+                <div class="node-loc">{{ cp.city }}</div>
+                <div class="node-cert">ANLA cert: {{ cp.anla_status }}</div>
+                {% if cp.volume %}<div class="node-meta">{{ cp.volume }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Arrows: collectors -> processor -->
+    <div class="arrows arrows-stack">
+        <div class="arrow">&rarr;</div>
+        <div class="arrow">&rarr;</div>
+        <div class="arrow">&rarr;</div>
+    </div>
+
+    <!-- Layer 3 — Processing -->
+    <div class="layer">
+        <div class="layer-label">3. Processing (pyrolysis)</div>
+        <div class="layer-stack">
+            <div class="node node-processor">
+                <div class="node-name">OisteBio Girardot SAS</div>
+                <div class="node-loc">Girardot, Cundinamarca &mdash; Colombia</div>
+                <div class="node-cert">Operator: OisteBio GmbH (CH)</div>
+                <div class="node-meta">Output: DEV-P100 refined pyrolysis oil</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Arrows: processor -> buyer -->
+    <div class="arrows">
+        <div class="arrow">&rarr;</div>
+    </div>
+
+    <!-- Layer 4 — Buyer -->
+    <div class="layer">
+        <div class="layer-label">4. Off-taker (UK)</div>
+        <div class="layer-stack">
+            <div class="node node-buyer">
+                <div class="node-name">Crown Oil Ltd</div>
+                <div class="node-loc">United Kingdom</div>
+                <div class="node-cert">RTFO obligated supplier</div>
+                <div class="node-role">Claims RTFCs against RCF volumes</div>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<section class="legend">
+
+    <div class="legend-card">
+        <h3>Compliance pathways</h3>
+        <ul>
+            <li>
+                ISCC EU mass balance &mdash;
+                <span class="legend-status-pending">pending certification</span>
+                (chain-of-custody application in progress).
+            </li>
+            <li>
+                UK RTFO RCF pathway &mdash;
+                <span class="legend-status-active">active</span>
+                (Track A pre-application).
+            </li>
+            <li>
+                Submission reference: <span class="ref">{{ submission_ref }}</span>
+                &mdash; UK DfT Low Carbon Fuels Delivery Unit.
+            </li>
+        </ul>
+    </div>
+
+    <div class="legend-card">
+        <h3>Feedstock &amp; product</h3>
+        <ul>
+            <li>Feedstock: end-of-life tyres (ELT), classified as RCF under UK RTFO Guidance, Chapter 9.</li>
+            <li>Process: catalytic pyrolysis &mdash; OisteBio Girardot SAS facility.</li>
+            <li>Output product: DEV-P100 refined pyrolysis oil (OisteBio brand).</li>
+            <li>Off-taker: Crown Oil Ltd (UK) &mdash; sole buyer for this submission.</li>
+        </ul>
+    </div>
+
+    <div class="legend-card">
+        <h3>Collecting points &mdash; ANLA</h3>
+        <ul>
+            <li>All three Colombian collecting points operate under pending ANLA legalisation; documentary evidence is held in section 03 of this bundle.</li>
+            <li>Aggregated volumes feed a single Girardot intake stream and are reconciled under one ISCC mass-balance group.</li>
+            <li>No EU-based collecting points or intermediate storage participate in this supply chain.</li>
+        </ul>
+    </div>
+
+</section>
+
+<div class="end-stamp">END OF DIAGRAM &mdash; {{ submission_ref }}</div>
+
+</body>
+</html>
