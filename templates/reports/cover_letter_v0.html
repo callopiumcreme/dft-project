@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cover Letter v0 — RTFO {{ submission_ref }}</title>
+    <link rel="stylesheet" href="cover_letter.css">
+    <style>
+        /* v0-only overrides: tighter margins + condensed type so the letter
+           plus the Outstanding Items block fit on two pages. Worker B's
+           sample template is unaffected (it uses cover_letter.css defaults). */
+        @page {
+            size: A4;
+            margin: 20mm 22mm;
+            @bottom-left {
+                content: "Bundle manifest: {{ manifest_hash_short }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        html, body { font-size: 9.5pt; line-height: 1.35; }
+        p { margin: 0 0 6pt 0; }
+        .letterhead { margin-bottom: 12pt; padding-bottom: 4pt; }
+        .meta { margin-bottom: 10pt; }
+        .addressee { margin-bottom: 10pt; line-height: 1.3; }
+        .subject { padding: 4pt 0; margin-bottom: 10pt; }
+        ul.attachments { margin: 0 0 6pt 0; padding-left: 16pt; }
+        ul.attachments li { margin-bottom: 2pt; }
+        ol.outstanding-list { margin: 4pt 0 8pt 0; }
+        ol.outstanding-list li { margin-bottom: 5pt; }
+        .signature { margin-top: 18pt; }
+        .signature .line { margin-top: 20pt; }
+    </style>
+</head>
+<body>
+
+<header class="letterhead">
+    <div class="brand">{{ submitter_company }}</div>
+    <div class="legal">
+        {{ submitter_address }} &middot; MWSt {{ submitter_vat }} &middot; {{ submitter_contact }}
+    </div>
+</header>
+
+<section class="meta">
+    <div class="row">
+        <div>{{ generated_at }}</div>
+        <div>Ref. <span class="ref">{{ submission_ref }}</span></div>
+    </div>
+    <div class="row">
+        <div class="muted">Draft revision: <strong>v0</strong> (Day 1 — {{ draft_status }})</div>
+        <div class="muted">Planned submission: {{ submission_date_label }}</div>
+    </div>
+</section>
+
+<section class="addressee">
+    <strong>UK Department for Transport</strong><br>
+    Low Carbon Fuels Delivery Unit<br>
+    Great Minster House, 33 Horseferry Road<br>
+    London SW1P 4DR, United Kingdom<br>
+    <span class="muted">c/o {{ intermediary_label }}</span>
+</section>
+
+<section class="subject">
+    Subject: Pre-application Track A submission &mdash; RTFO RCF pathway, production period {{ period }}
+</section>
+
+<section class="body">
+
+    <p>Dear Sir or Madam,</p>
+
+    <p>
+        On behalf of <strong>{{ submitter_company }}</strong> (Swiss GmbH, MWSt {{ submitter_vat }}),
+        operator of the pyrolysis facility located in Girardot (Cundinamarca, Colombia), we
+        hereby submit the present Pre-application bundle under the Renewable Transport Fuel
+        Obligation (RTFO) Track A process, in respect of the Recycled Carbon Fuel (RCF)
+        pathway. The submission covers production volumes of
+        <strong>{{ product }}</strong> derived from <strong>{{ feedstock }}</strong>
+        (end-of-life tyre material), processed during the
+        <strong>{{ rtfo_period }}</strong> reporting period
+        (production period {{ period }}). The feedstock is sourced exclusively from
+        post-consumer waste tyres and is classified as RCF under the UK RTFO Guidance,
+        Chapter 9.
+    </p>
+
+    <p>
+        The off-taker for the volumes covered by this submission is
+        <strong>{{ off_taker }}</strong>, which acts as the UK obligated supplier and
+        will subsequently claim Renewable Transport Fuel Certificates (RTFCs) against the
+        RCF volumes evidenced herein. Crown Oil Ltd is the sole UK buyer of the
+        OisteBio DEV-P100 product; no European intermediaries are involved in the
+        chain of custody for the period covered by this bundle.
+    </p>
+
+    <p>
+        Enclosed with this letter you will find the evidence pack listed in the
+        Evidence Index (Annex `09_evidence_index_v0.pdf`), which cross-references every
+        document to the specific DfT rejection point it addresses. The bundle is
+        cryptographically anchored via <span class="mono">MANIFEST.sha256</span> at the
+        root of the bundle directory; every individual artifact carries its own SHA-256
+        side-car.
+    </p>
+
+    <ul class="attachments">
+        <li><strong>Annex A &mdash; Mass Balance report</strong> (signed), period {{ period }}, with full daily detail and supplier breakdown;</li>
+        <li><strong>ROS export</strong> &mdash; Renewable Obligation Sustainability return draft, period {{ rtfo_period }};</li>
+        <li><strong>Supplier evidence pack</strong> &mdash; ISCC EU certificates, supply contracts, eRSV registry extracts, and Self-Declarations &le; 5 tonnes;</li>
+        <li><strong>Compliance pack</strong> &mdash; ISCC EU PoS (status pending — see Outstanding Items §1), RTFO pathway declaration, supply-chain diagram;</li>
+        <li><strong>Audit trail</strong> &mdash; cryptographic database snapshots and audit-log CSV;</li>
+        <li><strong>Annex D &mdash; Closing Stock Carry-over Declaration</strong>, declaring the {{ stock_carryover_kg }} kg physically retained at the Girardot facility at month-end.</li>
+    </ul>
+
+    <p>
+        The compliance basis for this submission rests on (i) ISCC EU certification of
+        the chain of custody from waste-tyre collection through pyrolysis to the
+        finished {{ product }} product, ensuring traceability and mass-balance
+        integrity in accordance with ISCC EU System Document 203, and (ii) the UK
+        RTFO RCF eligibility criteria as set out in the RTFO Guidance Part One
+        (Process Guidance) and Part Two (Carbon and Sustainability).
+    </p>
+
+</section>
+
+<section class="outstanding">
+    <h2 class="block-title">Outstanding items</h2>
+    <p class="block-note">
+        The following three items are formally disclosed as residual gaps at the time of
+        submission. Each item is documented in the bundle with its current status and
+        Crown Oil / OisteBio commitments for post-acceptance closure.
+    </p>
+
+    <ol class="outstanding-list">
+        <li>
+            <strong>Retrospective ISCC EU Proofs of Sustainability for January 2025
+            inputs.</strong> A formal request was submitted to the ISCC-accredited
+            certifier in Colombia on Day 1 ({{ generated_at }}); the response is
+            currently pending. Status documented in Annex
+            <span class="mono">03_iscc_pos_status.pdf</span>. Crown Oil and OisteBio
+            commit to forwarding the PoS chain to the Unit within 30 days of bundle
+            acceptance, or to documenting refusal and engaging the fallback evidence
+            procedure.
+        </li>
+        <li>
+            <strong>Feedstock provider regulatory authorisations (Colombia).</strong>
+            Spanish-language copies of ANLA / Ministerio de Ambiente permits for the
+            three principal feedstock providers are included in folder
+            <span class="mono">04_feedstock_provider_authorisations/</span>. Consular
+            legalisation (UK consulate, Bogot&aacute;) and sworn EN translations are in
+            progress; ETA TBD. Legalised originals will be transmitted within 30 days of
+            bundle acceptance.
+        </li>
+        <li>
+            <strong>Closing stock of {{ stock_carryover_kg }} kg
+            retained at Girardot.</strong> The closing inventory for January 2025 is
+            physically retained at the OisteBio Girardot facility, awaiting downstream
+            allocation. Composition (17 K-only rows from the JANUARY2025 production
+            workbook) is documented in
+            <span class="mono">07_stock_carryover_explanation.pdf</span> (Annex D).
+            This carry-over fully accounts for the closure delta in the Annex A mass
+            balance and is not a defect.
+        </li>
+    </ol>
+</section>
+
+<section class="body">
+    <p>
+        We kindly request the Low Carbon Fuels Delivery Unit to acknowledge receipt of
+        the present bundle and to confirm next procedural steps, including any
+        clarification requests, additional evidence to be supplied, or scheduling of
+        a technical pre-application meeting. Crown Oil Ltd, as obligated supplier, also
+        offers to engage an independent ISCC verifier (Bureau Veritas Colombia / SGS
+        Colombia) for a pre-audit of the January 2025 evidence pack, on request from
+        the Unit. We remain at your full disposal for any further information that may
+        be required.
+    </p>
+
+    <p>Yours faithfully,</p>
+</section>
+
+<section class="signature">
+    <div>For and on behalf of {{ submitter_company }}</div>
+    <div class="line">[CEO_NAME]<br>Chief Executive Officer</div>
+</section>
+
+</body>
+</html>
