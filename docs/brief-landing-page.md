@@ -2,7 +2,10 @@
 
 ## Cliente
 
-**OisteBio GmbH** (Germania)
+**OisteBio GmbH** (Svizzera)
+**Sede:** Oberneuhofstraße 5, 6340 Baar — Zug, Switzerland
+**Web:** www.oistebio.ch
+**MWSt:** CHE-234.625.162
 **Tagline:** "Fuel for your future"
 **Logo:** anello dorato + testo nero/blu/arancio
 **Palette suggerita:**
@@ -13,7 +16,9 @@
 
 ## Scopo
 
-Sito vetrina pubblico → presenta soluzione DFT (mass balance + tracciabilità ISCC per impianti pirolisi) a clienti potenziali (operatori impianti biofuel, raffinerie EU, certificatori).
+Sito vetrina pubblico → presenta soluzione DFT (mass balance + tracciabilità ISCC per impianti pirolisi) a clienti potenziali (operatori impianti biofuel, raffinerie UK, certificatori).
+
+**NOTA buyer**: per questo progetto unico buyer è **Crown Oil UK**. Europa esclusa. Landing copy deve riflettere asse UK (RTFO/DfT), non EU (Rotterdam/Antwerp/Genova).
 
 **NON è il login app.** App live su subdomain dedicato (es. `app.oistebio.com`), landing su root (`oistebio.com`).
 
@@ -22,7 +27,7 @@ Sito vetrina pubblico → presenta soluzione DFT (mass balance + tracciabilità 
 1. **Operatori impianto** — vogliono vedere se risolve problema mass balance/audit
 2. **Compliance officer** — cercano conformità ISCC + RED II
 3. **Decision maker** (CEO/CTO) — vogliono valore business + ROI
-4. **Raffinerie EU** — buyer biofuel, vogliono garanzia tracciabilità
+4. **Crown Oil UK** — unico buyer biofuel (UK), vuole garanzia tracciabilità RTFO/DfT
 
 ## Tono
 
@@ -74,7 +79,7 @@ Placeholder o "Contattaci" finché modello non definito
 - Lingue? — IT/EN
 
 ### 9. Footer
-Contatti OisteBio GmbH (sede DE), privacy GDPR, terms, link app login, social (LinkedIn)
+Contatti OisteBio GmbH (sede CH — Oberneuhofstraße 5, 6340 Baar — Zug; MWSt CHE-234.625.162; web www.oistebio.ch), privacy GDPR/nLPD, terms, link app login, social (LinkedIn)
 
 ## Stack landing
 
@@ -82,7 +87,7 @@ Diverso da app, ottimizzato SEO + speed:
 - **Next.js 14** (stesso ecosystem, SSG)
 - **Tailwind + shadcn/ui** (coerenza visuale con app)
 - **MDX** per blog/docs futuri
-- **Plausible** o **Umami** analytics (no Google, GDPR-friendly per cliente DE)
+- **Plausible** o **Umami** analytics (no Google, GDPR/nLPD-friendly per cliente CH)
 - **Vercel** o stesso server FastAPI
 
 ## Branding

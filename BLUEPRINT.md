@@ -105,8 +105,9 @@ CREATE TABLE daily_entries (
   manuf_veg_pct NUMERIC(5,2),
 
   -- production
+  -- NB: eu_prod_kg = kg di prodotto finale DEV-P100 (refined pyrolysis oil OisteBio, output certificato EU verso Crown Oil UK)
   kg_to_production NUMERIC(10,2),
-  eu_prod_kg NUMERIC(10,2),
+  eu_prod_kg NUMERIC(10,2),       -- DEV-P100 (refined pyrolysis oil) — bucket export certificato
   plus_prod_kg NUMERIC(10,2),
 
   -- analysis

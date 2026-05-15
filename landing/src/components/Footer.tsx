@@ -91,7 +91,7 @@ export function Footer() {
           <div className="flex flex-wrap gap-x-8 gap-y-2">
             <span>© {new Date().getFullYear()} DFT Project</span>
             <span>All rights reserved</span>
-            <span>Made for plants exporting to EU refineries</span>
+            <span>Made for plants exporting to UK refineries</span>
           </div>
           <div className="flex items-center gap-6">
             <span>Tenerife · ES</span>

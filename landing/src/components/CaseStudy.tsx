@@ -3,7 +3,7 @@ const FIGURES = [
     label: 'Total input · 2024',
     value: '8,011,725',
     unit: 'kg',
-    note: 'Mixed plastic · ESENTTIA · LITOPLAS · BIOWASTE',
+    note: 'End-of-life tyres · ESENTTIA · LITOPLAS · BIOWASTE',
   },
   {
     label: 'EU PROD',
@@ -39,12 +39,13 @@ export function CaseStudy() {
           </div>
           <div>
             <h2 className="text-balance text-[clamp(1.9rem,4.5vw,3.4rem)] font-light leading-[1.05]">
-              Eight million kilograms of mixed plastic.{' '}
+              Eight million kilograms of end-of-life tyres.{' '}
               <em className="not-italic text-olive">One ledger.</em>
             </h2>
             <p className="mt-6 max-w-reading text-pretty text-ink-soft text-lg leading-relaxed">
-              The BiNova plant in Girardot, Colombia, processes mixed plastic
-              waste into pyrolytic oil destined for European refineries.
+              OisteBio&apos;s Girardot plant in Colombia processes end-of-life
+              tyres (ELT) into <strong className="font-medium text-ink">DEV-P100</strong>,
+              a refined pyrolysis oil destined for Crown Oil in the UK.
               In year-end 2024, every load, every production batch and every
               gram exported was reconciled against the ISCC mass-balance.
             </p>
@@ -94,7 +95,7 @@ export function CaseStudy() {
               days.&rdquo;
             </p>
             <footer className="mt-4 eyebrow">
-              BiNova · plant operations · 2025
+              OisteBio · Girardot plant operations · 2025
             </footer>
           </blockquote>
           <a

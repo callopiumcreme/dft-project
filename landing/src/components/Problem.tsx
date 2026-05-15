@@ -17,7 +17,7 @@ const PROBLEMS = [
     n: '03',
     title: 'POS documents rebuilt by hand',
     body:
-      'Every shipment to a European refinery means re-keying tonnage, supplier and certificate references into a Word template. Each version is a new compliance liability.',
+      'Every shipment to the UK refinery means re-keying tonnage, supplier and certificate references into a Word template. Each version is a new compliance liability.',
     tag: 'POS · rework',
   },
 ];
@@ -37,9 +37,10 @@ export function Problem() {
               <em className="not-italic text-olive">survive an ISCC audit</em>.
             </h2>
             <p className="mt-6 max-w-reading text-pretty text-ink-soft text-lg leading-relaxed">
-              Pyrolysis plants exporting to European refineries operate under
-              one of the strictest sustainability regimes in the world. The
-              tooling most plants run today was not built for it.
+              Pyrolysis plants exporting to UK refineries operate under one of
+              the strictest sustainability regimes in the world — RTFO and the
+              UK Department for Transport. The tooling most plants run today
+              was not built for it.
             </p>
           </div>
         </div>

@@ -30,8 +30,8 @@ export function Hero() {
               <br />
               <span className="text-ink-soft">
                 For the plants that turn{' '}
-                <span className="italic font-light">waste plastic</span>{' '}
-                into European biofuel.
+                <span className="italic font-light">end-of-life tyres</span>{' '}
+                into refined pyrolysis oil for the UK market.
               </span>
             </h1>
 
@@ -42,7 +42,7 @@ export function Hero() {
               ISCC EU and RED&nbsp;II compliant traceability for industrial pyrolysis.
               Load-by-load chain of custody, automatic mass-balance closure,
               third-party C14 sign-off and immutable audit logs — built for plants
-              exporting to refineries in Rotterdam, Antwerp and Genova.
+              exporting to Crown Oil in the United Kingdom.
             </p>
 
             <div

@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     template: '%s · DFT',
   },
   description:
-    'ISCC EU and RED II compliant mass balance, load tracking, third-party C14 sign-off and immutable audit logs for industrial pyrolysis plants exporting biofuel to European refineries.',
+    'ISCC EU and RED II compliant mass balance, load tracking, third-party C14 sign-off and immutable audit logs for industrial pyrolysis plants exporting biofuel to UK refineries.',
   keywords: [
     'mass balance pyrolysis software',
     'ISCC compliance biofuel',

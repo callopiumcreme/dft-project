@@ -70,7 +70,7 @@ export default async function OpengraphImage() {
             display: 'flex',
           }}
         >
-          ISCC EU + RED II for industrial pyrolysis exporting biofuel to European refineries.
+          ISCC EU + RED II for industrial pyrolysis exporting biofuel to UK refineries.
         </div>
 
         {/* Bottom rule */}
