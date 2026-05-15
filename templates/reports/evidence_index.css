@@ -1,0 +1,190 @@
+/* Evidence Index — print stylesheet
+ *
+ * Visual language mirrors Worker F's mass_balance.css palette + chrome:
+ *   - Navy brand colour #1a3a5c for headings, table headers, accent rules
+ *   - Helvetica/Arial fallback, no web fonts (determinism)
+ *   - A4 / 22mm margins (slightly tighter than Annex A so the cross-reference
+ *     table fits on a single landscape-spirit page in portrait)
+ *   - Page-break + row chrome identical to Annex A's data-table
+ */
+
+@page {
+    size: A4;
+    margin: 14mm 14mm 16mm 14mm;
+    @bottom-left {
+        font-family: "Helvetica", "Arial", sans-serif;
+        font-size: 8pt;
+        color: #555;
+    }
+    @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: "Helvetica", "Arial", sans-serif;
+        font-size: 8pt;
+        color: #555;
+    }
+}
+
+html, body {
+    font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.35;
+    color: #111;
+    margin: 0;
+    padding: 0;
+}
+
+p { margin: 0 0 6pt 0; text-align: justify; }
+
+.mono {
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-size: 8.5pt;
+}
+
+.muted { color: #666; font-size: 9pt; }
+
+.letterhead {
+    border-bottom: 1.2pt solid #1a3a5c;
+    padding-bottom: 4pt;
+    margin-bottom: 10pt;
+}
+
+.letterhead .brand {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #1a3a5c;
+    letter-spacing: 0.4pt;
+}
+
+.letterhead .legal { font-size: 9pt; color: #444; margin-top: 2pt; }
+
+.meta { width: 100%; margin-bottom: 10pt; font-size: 9.5pt; }
+.meta .row { display: flex; justify-content: space-between; margin-bottom: 2pt; }
+.meta .ref { font-family: "Courier New", "Liberation Mono", monospace; font-weight: bold; }
+
+.subject {
+    font-weight: bold;
+    color: #1a3a5c;
+    border-top: 0.5pt solid #999;
+    border-bottom: 0.5pt solid #999;
+    padding: 5pt 0;
+    margin-bottom: 10pt;
+    font-size: 10.5pt;
+}
+
+.lede { font-size: 9.5pt; margin: 0 0 8pt 0; }
+
+/* -------------------------------------------------------------------------
+   Cross-reference table — same chrome conventions as Annex A data-table
+   ------------------------------------------------------------------------- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    margin: 4pt 0 10pt 0;
+    table-layout: fixed;
+}
+
+.data-table thead { display: table-header-group; }
+
+.data-table thead th {
+    background: #1a3a5c;
+    color: #fff;
+    text-align: left;
+    padding: 4pt 5pt;
+    font-weight: bold;
+    font-size: 8.5pt;
+    border-bottom: 0.5pt solid #1a3a5c;
+    vertical-align: top;
+}
+
+.data-table tbody td {
+    padding: 3pt 5pt;
+    border-bottom: 0.3pt solid #e2e2e2;
+    vertical-align: top;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.data-table tbody tr:nth-child(even) td { background: #f7f9fb; }
+
+.data-table tr.row-outstanding td { background: #fff4cc; }
+.data-table tr.row-outstanding:nth-child(even) td { background: #fff0b8; }
+
+.data-table tr { page-break-inside: avoid; }
+
+/* Column widths — fixed table-layout gives predictable pagination. */
+.col-path   { width: 28%; }
+.col-annex  { width: 14%; }
+.col-point  { width: 26%; }
+.col-hash   { width: 16%; }
+.col-status { width: 16%; }
+
+.data-table td.path { font-size: 8pt; }
+.data-table td.hash { font-size: 8pt; color: #444; }
+
+.status {
+    font-weight: bold;
+    font-size: 8pt;
+    text-align: center;
+    letter-spacing: 0.3pt;
+}
+
+/* Status palette — accessible contrast ratios on the row-stripe backgrounds. */
+.status-draft       { color: #6a4a00; }
+.status-v0          { color: #14532d; }
+.status-tbd         { color: #555;    }
+.status-outstanding { color: #7a1414; }
+.status-final       { color: #1a3a5c; }
+
+/* -------------------------------------------------------------------------
+   Legend
+   ------------------------------------------------------------------------- */
+.legend {
+    margin-top: 8pt;
+    border-top: 0.4pt solid #ccc;
+    padding-top: 6pt;
+}
+
+.legend-title {
+    font-weight: bold;
+    color: #1a3a5c;
+    font-size: 9.5pt;
+    margin-bottom: 4pt;
+}
+
+ul.legend-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 8.5pt;
+}
+
+ul.legend-list li { margin-bottom: 3pt; }
+
+.status-pill {
+    display: inline-block;
+    padding: 1pt 5pt;
+    font-weight: bold;
+    font-size: 7.5pt;
+    letter-spacing: 0.3pt;
+    border-radius: 2pt;
+    margin-right: 6pt;
+    min-width: 60pt;
+    text-align: center;
+}
+
+.status-pill.status-draft       { background: #fff4cc; color: #6a4a00; border: 0.5pt solid #d6a700; }
+.status-pill.status-v0          { background: #d6f0d6; color: #14532d; border: 0.5pt solid #6bb96b; }
+.status-pill.status-tbd         { background: #eee;    color: #444;    border: 0.5pt solid #bbb;    }
+.status-pill.status-outstanding { background: #f9d6d6; color: #7a1414; border: 0.5pt solid #c44848; }
+.status-pill.status-final       { background: #1a3a5c; color: #fff;    border: 0.5pt solid #1a3a5c; }
+
+/* -------------------------------------------------------------------------
+   Footer block
+   ------------------------------------------------------------------------- */
+.footer-block {
+    margin-top: 10pt;
+    border-top: 0.4pt solid #ccc;
+    padding-top: 6pt;
+    font-size: 9pt;
+}

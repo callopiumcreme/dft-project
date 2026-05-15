@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Evidence Index v0 — RTFO {{ submission_ref }}</title>
+    <link rel="stylesheet" href="evidence_index.css">
+    <style>
+        /* Inject the submission ref into the running footer slot. */
+        @page {
+            @bottom-left {
+                content: "Bundle: {{ submission_ref }} (v0)";
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="letterhead">
+    <div class="brand">{{ submitter_company }}</div>
+    <div class="legal">
+        {{ submitter_address }} &middot; MWSt {{ submitter_vat }}
+    </div>
+</header>
+
+<section class="meta">
+    <div class="row">
+        <div>{{ generated_at }}</div>
+        <div>Ref. <span class="ref">{{ submission_ref }}</span></div>
+    </div>
+    <div class="row">
+        <div class="muted">Draft revision: <strong>v0</strong> (Day 1)</div>
+        <div class="muted">Planned submission: {{ submission_date_label }}</div>
+    </div>
+</section>
+
+<section class="subject">
+    Evidence index &mdash; bundle <span class="mono">{{ submission_ref }}</span> (production period {{ period }})
+</section>
+
+<section class="body">
+    <p class="lede">
+        The table below cross-references every document in the submission bundle with the
+        DfT rejection point it addresses, plus the current SHA-256 digest and revision
+        status. Hashes marked <span class="mono">TBD</span> will be populated at
+        bundle-freeze (Day 7 EOD, {{ submission_date_label }}); rows marked
+        <strong>OUTSTANDING</strong> denote the three formally-disclosed gaps detailed
+        in the cover letter (&sect;5 of the 5-working-day activity plan).
+    </p>
+</section>
+
+<section>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th class="col-path">File / folder (bundle-relative)</th>
+                <th class="col-annex">Annex / section</th>
+                <th class="col-point">DfT rejection point addressed</th>
+                <th class="col-hash">SHA-256 (short)</th>
+                <th class="col-status">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr class="{{ row.row_class }}">
+                <td class="mono path">{{ row.path }}</td>
+                <td>{{ row.annex }}</td>
+                <td>{{ row.point }}</td>
+                <td class="mono hash">{{ row.hash_short }}</td>
+                <td class="status status-{{ row.status_class }}">{{ row.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="legend">
+    <div class="legend-title">Status legend</div>
+    <ul class="legend-list">
+        <li><span class="status-pill status-draft">DRAFT</span> &mdash; Day 1 draft, not yet circulated for review</li>
+        <li><span class="status-pill status-v0">v0</span> &mdash; Day-1 deliverable, baseline content</li>
+        <li><span class="status-pill status-tbd">TBD</span> &mdash; planned but not yet produced; hash populated at bundle freeze</li>
+        <li><span class="status-pill status-outstanding">OUTSTANDING</span> &mdash; declared gap, see cover letter Outstanding Items section</li>
+        <li><span class="status-pill status-final">FINAL</span> &mdash; sealed for submission, hash anchored in MANIFEST.sha256</li>
+    </ul>
+</section>
+
+<section class="footer-block">
+    <p class="muted">
+        Anchored at <span class="mono">MANIFEST.sha256</span> (bundle root). Recipient:
+        UK DfT &mdash; LCF Delivery Unit via {{ intermediary_label }}. Sole UK off-taker:
+        {{ off_taker }}. Feedstock: {{ feedstock }}. Product: {{ product }}.
+        Issued by {{ submitter_company }} ({{ submitter_address }}).
+    </p>
+</section>
+
+</body>
+</html>
