@@ -38,7 +38,7 @@ Compromesso accettato consapevolmente: probabilità accettazione inferiore al pi
 
 ## 3. Timeline giornaliera
 
-Tutte le date orario UK. Working days = Lun–Ven.
+Tutte le date orario UK. **7 giorni di calendario** lavorati consecutivamente — team OisteBio + ingest operativo anche sabato 16 e domenica 17 maggio. Working days ufficiali DfT (5 wd) = Lun–Ven; weekend lavorato è capacità extra del team, non riconosciuto formalmente da DfT ma usato per buffer e parallelizzazione.
 
 ### Day 1 — Venerdì 2026-05-15 (oggi)
 
@@ -53,38 +53,55 @@ Tutte le date orario UK. Working days = Lun–Ven.
 | OisteBio | Richiesta scritta formale a certifier ISCC Colombia per PoS retroattivo Gen 2025 | Email con timestamp (cc Crown Oil) |
 | Crown Oil | Draft cover letter v0 — dichiarazione scope Jan-only + gap residui formalizzati | `00_cover_letter_v0.md` |
 
-### Day 2 — Lunedì 2026-05-18
+### Day 2 — Sabato 2026-05-16 (weekend lavorato)
 
 | Owner | Attività | Output |
 |---|---|---|
 | Team ingest | Endpoint export PDF audit-grade con SHA-256 hash crittografico | Endpoint `/api/reports/mass-balance/export` + hash file |
-| Team ingest | Rigenerare Annex A (mass-balance) con hash crittografico finale | `02_mass_balance_january_2025.pdf` + `.sha256` |
+| Team ingest | Rigenerare Annex A (mass-balance) con hash crittografico finale v1 | `02_mass_balance_january_2025_v2.pdf` + `.sha256` |
 | Team ingest | Generare Annex D — explanation closing stock 339.865 kg | `07_stock_carryover_explanation.pdf` |
-| Team ingest | Production conversion log kg→litri Gennaio 2025 (firmato OisteBio) | `05_production_conversion_logs_january_2025.pdf` |
 | OisteBio | Bonifica fornitori limitata a lotti Gennaio 2025 (soft-delete riclassificazioni, audit log preservato) | Migration `0010_supplier_rectification_jan2025.py` applicata |
-| Crown Oil | Cover letter v1 — review legale interno | `00_cover_letter_v1.pdf` |
+| Team ingest | Verifica closure mass-balance pre/post bonifica fornitori (zero regressione tollerata) | Report comparativo, rollback se delta > 0.01% |
 
-### Day 3 — Martedì 2026-05-19
+### Day 3 — Domenica 2026-05-17 (weekend lavorato)
 
 | Owner | Attività | Output |
 |---|---|---|
+| Team ingest | Production conversion log kg→litri Gennaio 2025 (firmato OisteBio) | `05_production_conversion_logs_january_2025.pdf` |
 | Team ingest | Audit log export CSV Gennaio 2025 da tabella `audit_log` | `06_audit_trail_export_january_2025.csv` |
 | Team ingest | Supply chain diagram Gen 2025 (origin → collecting point → OisteBio → Crown Oil) | `01_supply_chain_diagram.pdf` |
 | OisteBio | Consolidare copie semplici autorizzazioni regolatorie + nota di stato legalizzazione in corso | `04_feedstock_provider_authorisations/` (copie + nota stato) |
-| Team ingest | Evidence index — cross-reference docs ↔ punti rigetto DfT | `09_evidence_index.pdf` |
-| Crown Oil | Cover letter v2 — incorporare evidence definitive + lista gap residui esatta | `00_cover_letter_v2.pdf` |
 
-### Day 4 — Mercoledì 2026-05-20
+### Day 4 — Lunedì 2026-05-18
+
+| Owner | Attività | Output |
+|---|---|---|
+| Crown Oil | Cover letter v1 — review legale interno | `00_cover_letter_v1.pdf` |
+| Team ingest | Evidence index — cross-reference docs ↔ punti rigetto DfT | `09_evidence_index.pdf` |
+| Team ingest | `03_iscc_pos_status.pdf` — documenta richiesta + eventuale risposta certifier ricevuta nel weekend | File firmato |
+| Team ingest + OisteBio | **Pre-audit interno parziale** — verifica completezza Annex A/B/C/D + production log + audit CSV | Checklist gap |
+| Crown Oil | Allineamento OisteBio su gap emersi pre-audit | Lista azioni Day 5 |
+
+### Day 5 — Martedì 2026-05-19
+
+| Owner | Attività | Output |
+|---|---|---|
+| Team ingest | Fix di gap emersi in pre-audit Day 4; rigenerare export se necessario | `02_mass_balance_january_2025_v3.pdf` + hash |
+| Crown Oil | Cover letter v2 — incorporare evidence definitive + lista gap residui esatta | `00_cover_letter_v2.pdf` |
+| OisteBio | Follow-up scritto a certifier ISCC se nessuna risposta entro lunedì sera | Email con timestamp |
+| Team ingest | Snapshot crittografico stato database post-bonifica preliminare | `db_snapshot_2026-05-19.sql.gz` + SHA-256 |
+
+### Day 6 — Mercoledì 2026-05-20
 
 | Owner | Attività | Output |
 |---|---|---|
 | Team ingest + OisteBio + Crown Oil | **Audit interno bundle completo** — cross-reference: ogni kg Gennaio in mass-balance ↔ daily_input ↔ supplier ↔ PoS o gap dichiarato | Checklist firmata |
-| Team ingest | Fix di gap emersi in audit interno; rigenerare export con hash finale | `02_mass_balance_january_2025_FINAL.pdf` + hash |
+| Team ingest | Fix finale gap emersi; rigenerare export con hash FINAL | `02_mass_balance_january_2025_FINAL.pdf` + hash |
 | Crown Oil | Cover letter FINAL firmata | `00_cover_letter.pdf` (firmato) |
-| Team ingest | Snapshot crittografico stato database post-bonifica | `db_snapshot_2026-05-20.sql.gz` + SHA-256 |
+| Team ingest | Snapshot crittografico stato database FINAL | `db_snapshot_2026-05-20.sql.gz` + SHA-256 |
 | Crown Oil | Dry-run formattazione bundle su requisiti ROS | Bundle in struttura `bundle_RTFO-310125/` |
 
-### Day 5 — Giovedì 2026-05-21
+### Day 7 — Giovedì 2026-05-21 (deadline DfT)
 
 | Orario UK | Owner | Attività |
 |---|---|---|
@@ -93,7 +110,7 @@ Tutte le date orario UK. Working days = Lun–Ven.
 | Pomeriggio | Crown Oil | **Submission bundle RTFO-310125 su ROS** |
 | EOD | Crown Oil | Email notifica formale al contact DfT confermando submission + lista allegati + hash file principale |
 
-**Buffer:** zero. Slittamento di un giorno = mancata deadline = pathway 2025 chiusa.
+**Buffer:** weekend (Day 2-3) usato per parallelizzare evidence operativa e bonifica fornitori; settimana lavorativa (Day 4-6) usata per cover letter cycles + audit interno + fix. Slittamento di un giorno su Day 6 ancora recuperabile mattina Day 7; slittamento Day 7 = mancata deadline = pathway 2025 chiusa.
 
 ---
 
@@ -123,13 +140,14 @@ Wording proposto per cover letter (sezione "Outstanding items"):
 
 | Rischio | Probabilità | Impatto | Mitigazione |
 |---|---|---|---|
-| Slittamento Day 1 (litres schema + backfill) | Media | Alto (a cascata su tutto) | Priorità assoluta oggi; pair-programming se necessario; rollback plan se backfill produce inconsistenze |
+| Slittamento Day 1 (litres schema + backfill) | Media | Alto (a cascata su tutto) | Priorità assoluta oggi; pair-programming se necessario; rollback plan se backfill produce inconsistenze; weekend Day 2-3 recupera parzialmente |
 | Certifier ISCC non risponde a richiesta PoS entro 20 maggio | Alta | Medio | Bundle non dipende da risposta; gap dichiarato in cover letter; risposta o sua assenza documentata in `03_iscc_pos_status.pdf` |
-| Bonifica fornitori (Day 2) introduce regressione closure mass-balance | Bassa | Alto | Eseguire query closure pre/post migration; rollback immediato se delta > tolerance; preferire scope ridotto (solo riclassificazioni non controverse) |
-| Hash crittografico finale (Day 4) cambia per fix audit interno | Alta | Basso | Cover letter cita hash come "manifest hash"; lista hash per file in evidence index `09_` |
+| Bonifica fornitori (Day 2 sabato) introduce regressione closure mass-balance | Bassa | Alto | Eseguire query closure pre/post migration; rollback immediato se delta > 0.01%; preferire scope ridotto (solo riclassificazioni non controverse) |
+| Hash crittografico FINAL (Day 6) cambia per fix audit interno | Alta | Basso | Cover letter cita hash come "manifest hash"; lista hash per file in evidence index `09_`; rigenerazione hash è veloce |
 | DfT rigetta nuovamente bundle | Media | Alto | Pathway 2025 chiusa per Gennaio; deliverable Track B trattenuti per applicazioni 2026 forward; lezioni applicate |
 | Cliente non risponde a item §1 entro fine 15 maggio | Media | Alto | Procedere su assunzioni di lavoro; flaggare ogni decisione critica nel commit log |
 | Bug bloccante in export PDF / migration `litres` | Bassa | Alto | Test E2E su sample Gennaio 2025 prima di applicare prod; fallback: export manuale da query SQL diretta |
+| Team OisteBio o ingest non disponibile sabato/domenica come previsto | Media | Medio | Ridistribuire task weekend su Day 4-5; rinunciare a snapshot DB preliminare Day 5; mantenere Day 6 audit interno e Day 7 submission |
 
 ---
 
@@ -159,3 +177,4 @@ Aggiornamenti via commit git con riferimento alla sezione rilevante. Per cambiam
 ## Changelog
 
 - **v1 — 2026-05-15:** Piano iniziale 5 working days. Sostituisce timeline §4 di `dft-action-plan-2026-05.md` v3 per la finestra 15-21 maggio 2026. Submission target: 21 maggio 2026 EOD, bundle RTFO-310125 (Gennaio 2025) singolo coerente. PoS retroattivo + legalizzazione consolare + pre-audit ISCC dichiarati come gap residui post-acceptance.
+- **v2 — 2026-05-15:** Timeline estesa a 7 giorni di calendario lavorati consecutivamente (sabato 16 + domenica 17 maggio inclusi come capacità team, non riconosciuti formalmente da DfT). Day 1-7 rinumerati: Day 2 sabato (export endpoint + hash + bonifica fornitori), Day 3 domenica (production log + audit CSV + supply chain + autorizzazioni). Working days DfT ufficiali Lun-Ven invariati. Risk register aggiornato con scenario weekend non disponibile.
