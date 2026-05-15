@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Annex A — Mass Balance Report — {{ submission_ref }} — {{ period_label }}</title>
+    <link rel="stylesheet" href="mass_balance.css">
+    <style>
+        /* Inject hash short prefix + submission ref into the running footer */
+        @page {
+            @top-right {
+                content: "Annex A — {{ submission_ref }} — {{ period_label }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+            @bottom-left {
+                content: "Hash: {{ annex_a_hash[:12] if annex_a_hash else '—' }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        @page cover {
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-right { content: ""; }
+        }
+    </style>
+</head>
+<body>
+
+{# =====================================================================
+   PAGE 1 — COVER
+   ===================================================================== #}
+<section class="cover page-cover">
+    <div class="cover-brand">{{ submitter_company }}</div>
+    <div class="cover-tagline">{{ submitter_address }}</div>
+
+    <div class="cover-stamp">Annex A</div>
+    <h1 class="cover-title">Mass Balance Report</h1>
+    <div class="cover-sub">{{ period_label }} &middot; {{ plant_name }}</div>
+
+    <table class="cover-meta">
+        <tr><td>Submission reference</td><td><span class="mono">{{ submission_ref }}</span></td></tr>
+        <tr><td>Reporting period</td><td>{{ period_label }} ({{ period }})</td></tr>
+        <tr><td>Plant</td><td>{{ plant_name }}</td></tr>
+        <tr><td>Feedstock</td><td>{{ feedstock }}</td></tr>
+        <tr><td>Product</td><td>{{ product }}</td></tr>
+        <tr><td>Off-taker</td><td>{{ off_taker }}</td></tr>
+        <tr><td>Regulator</td><td>{{ regulator }}</td></tr>
+        <tr><td>Generated</td><td>{{ generated_at }}</td></tr>
+    </table>
+
+    <div class="cover-signatory">
+        <div class="sig-label">Signed for and on behalf of {{ submitter_company }}</div>
+        <div class="sig-line">[CEO_NAME]<br>Chief Executive Officer</div>
+        <div class="sig-date">Date: ____________________</div>
+    </div>
+</section>
+
+{# =====================================================================
+   PAGE 2 — EXECUTIVE SUMMARY (totals + closure semaforo)
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="summary">
+
+    <h2 class="section-title">Executive Summary</h2>
+
+    <p class="lede">
+        This Annex A presents the monthly mass balance for the
+        <strong>{{ period_label }}</strong> production period at the
+        {{ plant_name }} pyrolysis facility, operated by
+        <strong>{{ submitter_company }}</strong>. Input feedstock is
+        <strong>{{ feedstock }}</strong>; output product is
+        <strong>{{ product }}</strong>, supplied to <strong>{{ off_taker }}</strong>
+        under the {{ regulator }} reporting framework.
+    </p>
+
+    <h3 class="block-title">Monthly aggregate</h3>
+    <table class="kpi-table">
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th class="num">Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Total input (ELT)</td>
+                <td class="num">{{ totals.input_kg | fmt_kg }}</td>
+            </tr>
+            <tr>
+                <td>EU-grade product (DEV-P100)</td>
+                <td class="num">
+                    {{ totals.eu_prod_kg | fmt_kg }}
+                    <span class="muted">/ {{ totals.eu_prod_litres | fmt_l }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>PLUS-grade product</td>
+                <td class="num">
+                    {{ totals.plus_prod_kg | fmt_kg }}
+                    <span class="muted">/ {{ totals.plus_prod_litres | fmt_l }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>C14 biogenic fraction</td>
+                <td class="num">{{ totals.c14_pct | fmt_pct }}</td>
+            </tr>
+            <tr class="row-closure">
+                <td>Closure (output − input)</td>
+                <td class="num">
+                    {{ totals.closure_diff_kg | fmt_kg_signed }}
+                    <span class="muted">({{ totals.closure_diff_pct | fmt_pct_signed }})</span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 class="block-title">Mass balance closure</h3>
+    {% set abs_pct = (totals.closure_diff_pct | abs) %}
+    {% if abs_pct < 1 %}
+        {% set sem_class = "semaforo-green" %}
+        {% set sem_label = "GREEN — within tolerance" %}
+        {% set sem_note = "|closure| < 1% — passes ISCC EU mass-balance integrity threshold without remediation." %}
+    {% elif abs_pct < 3 %}
+        {% set sem_class = "semaforo-yellow" %}
+        {% set sem_label = "YELLOW — review recommended" %}
+        {% set sem_note = "1% ≤ |closure| < 3% — within ISCC EU acceptance band but warrants inspection of daily rows." %}
+    {% else %}
+        {% set sem_class = "semaforo-red" %}
+        {% set sem_label = "RED — exceeds tolerance" %}
+        {% set sem_note = "|closure| ≥ 3% — outside ISCC EU acceptance band; mass-balance reconciliation required prior to submission." %}
+    {% endif %}
+    <div class="semaforo {{ sem_class }}">
+        <div class="semaforo-dot"></div>
+        <div class="semaforo-text">
+            <div class="semaforo-label">{{ sem_label }}</div>
+            <div class="semaforo-note">{{ sem_note }}</div>
+        </div>
+    </div>
+
+</section>
+
+{# =====================================================================
+   PAGES 3-N — DAILY DETAIL TABLE
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="detail">
+
+    <h2 class="section-title">Daily Detail — {{ period_label }}</h2>
+
+    <p class="block-note">
+        Daily mass-balance rows, sorted by date ascending. Closure shown as
+        output minus input. Densities applied: EU 0.78 kg/L, PLUS 0.856 kg/L.
+    </p>
+
+    <table class="data-table daily-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th class="num">Input (kg)</th>
+                <th class="num">EU (kg)</th>
+                <th class="num">PLUS (kg)</th>
+                <th class="num">EU (L)</th>
+                <th class="num">PLUS (L)</th>
+                <th class="num">C14 (%)</th>
+                <th class="num">Closure (kg)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in daily_rows %}
+            <tr>
+                <td class="mono">{{ row.date }}</td>
+                <td class="num">{{ row.input_kg | fmt_num }}</td>
+                <td class="num">{{ row.eu_prod_kg | fmt_num }}</td>
+                <td class="num">{{ row.plus_prod_kg | fmt_num }}</td>
+                <td class="num">{{ row.eu_prod_litres | fmt_num }}</td>
+                <td class="num">{{ row.plus_prod_litres | fmt_num }}</td>
+                <td class="num">{{ row.c14_pct | fmt_num }}</td>
+                <td class="num">{{ row.closure_diff_kg | fmt_num_signed }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th>Total</th>
+                <th class="num">{{ totals.input_kg | fmt_num }}</th>
+                <th class="num">{{ totals.eu_prod_kg | fmt_num }}</th>
+                <th class="num">{{ totals.plus_prod_kg | fmt_num }}</th>
+                <th class="num">{{ totals.eu_prod_litres | fmt_num }}</th>
+                <th class="num">{{ totals.plus_prod_litres | fmt_num }}</th>
+                <th class="num">{{ totals.c14_pct | fmt_num }}</th>
+                <th class="num">{{ totals.closure_diff_kg | fmt_num_signed }}</th>
+            </tr>
+        </tfoot>
+    </table>
+
+</section>
+
+{# =====================================================================
+   PAGE N+1 — SUPPLIER BREAKDOWN
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="suppliers">
+
+    <h2 class="section-title">Supplier Breakdown — ELT Feedstock</h2>
+
+    <p class="block-note">
+        Distribution of inbound feedstock by ISCC EU certified supplier. Shares
+        computed as supplier total divided by aggregate monthly input.
+    </p>
+
+    <table class="data-table supplier-table">
+        <thead>
+            <tr>
+                <th>Supplier</th>
+                <th>ISCC EU ref.</th>
+                <th class="num">Total (kg)</th>
+                <th class="num">Share</th>
+                <th class="bar-col">Proportion</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sup in suppliers %}
+            <tr>
+                <td>{{ sup.name }}</td>
+                <td class="mono">{{ sup.cert_iscc_ref }}</td>
+                <td class="num">{{ sup.total_kg | fmt_num }}</td>
+                <td class="num">{{ sup.share_pct | fmt_pct }}</td>
+                <td class="bar-col">
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: {{ sup.share_pct | round(2) }}%;"></div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="2">Total</th>
+                <th class="num">{{ totals.input_kg | fmt_num }}</th>
+                <th class="num">100.00 %</th>
+                <th class="bar-col"></th>
+            </tr>
+        </tfoot>
+    </table>
+
+</section>
+
+{# =====================================================================
+   LAST PAGE — METHODOLOGY FOOTER
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="methodology">
+
+    <h2 class="section-title">Methodology &amp; References</h2>
+
+    <p>
+        Mass balance reconciliation per <strong>ISCC EU</strong> (System Document 203,
+        chain-of-custody mass-balance method) combined with the <strong>UK RTFO RCF
+        pathway</strong> (Renewable Transport Fuel Obligation Guidance, Part One —
+        Process, and Part Two — Carbon and Sustainability). Feedstock is
+        <strong>{{ feedstock }}</strong>, classified as
+        <strong>100 % fossil</strong> end-of-life material under ISCC EU 203 (Recycled
+        Carbon Fuel category, Annex II); the C14 biogenic fraction reported above
+        reflects radiocarbon analysis of representative production samples and is
+        used solely as an integrity cross-check.
+    </p>
+
+    <p>
+        Volumetric conversions apply nominal product densities at 15&nbsp;°C:
+        <strong>EU-grade 0.78&nbsp;kg/L</strong> and
+        <strong>PLUS-grade 0.856&nbsp;kg/L</strong>, consistent with the operator
+        product specifications and the densities registered in the platform
+        <span class="mono">product_densities</span> table.
+    </p>
+
+    <p>
+        Closure is defined as <em>(EU output + PLUS output) − input</em> at constant
+        product density and rounded to the kilogram. Per ISCC EU practice, monthly
+        deviations below 1&nbsp;% are accepted without remediation; deviations
+        between 1&nbsp;% and 3&nbsp;% are inspected; deviations of 3&nbsp;% or more
+        trigger a full reconciliation review prior to release of the submission
+        bundle. The closure semaforo on page&nbsp;2 reflects this tiering.
+    </p>
+
+    <p>
+        This Annex A is cryptographically anchored to the cover letter of the
+        submission bundle via the SHA-256 digest reported in the running footer
+        (short prefix <span class="mono">{{ annex_a_hash[:12] if annex_a_hash else '—' }}</span>).
+    </p>
+
+    <div class="end-stamp">— End of Annex A —</div>
+
+</section>
+
+</body>
+</html>
