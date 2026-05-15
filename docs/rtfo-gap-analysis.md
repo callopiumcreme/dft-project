@@ -1,10 +1,12 @@
 # RTFO Gap Analysis — DFT Project vs UK RTFO Requirements
 
-> Date: 2026-05-12
-> Source DFT: `BLUEPRINT.md` + `backend/app/models/` + 3 alembic migrations (0001 schema, 0002 seed, 0003 mvs)
+> Date: 2026-05-12 (rev. 2026-05-15)
+> Source DFT: `BLUEPRINT.md` + `backend/app/models/` + 5 alembic migrations (0001 schema, 0002 seed, 0003 mvs, 0004 drop stock markers, 0005 product_densities)
 > Source RTFO: `docs/rtfo-essential-guide.md` (DfT essential guide, fetched 2026-05-12)
-> Plant: Girardot (Colombia) — pyrolysis of plastic / tyre / rubber wastes → liquid + char + gas
+> Plant: Girardot (Colombia) — pyrolysis of **ELT (end-of-life tyres)** → DEV-P100 refined pyrolysis oil + carbon black + metal scrap + H₂O + syngas + losses
+> Confirmed off-taker: **Crown Oil UK** (single project buyer, Europe excluded)
 > Current certification scheme tracked: **ISCC EU only** (`Certificate.scheme` defaults `"ISCC EU"`)
+> Cross-ref: `docs/dft-action-plan-2026-05.md`, `docs/dft-5wd-activity-plan.md`
 
 ---
 
@@ -14,9 +16,9 @@ The DFT system today is an **input/output mass-balance tracker** designed around
 
 The UK **RTFO** is a parallel obligation regime that issues tradeable **RTFCs** per litre of sustainable renewable fuel *supplied into UK transport*, with a separate **dRTFC** track for **Development Fuels** (RFNBO, RCF, double-counting wastes) carrying a 1.619% sub-target on top of the 14.054% main obligation (2025 values).
 
-For the Girardot plant to participate in RTFO (assuming the resulting pyrolysis oil reaches UK transport via a registered supplier), the DFT system needs additions in **six areas**: (1) GHG carbon-intensity per batch, (2) feedstock classification per the RTFO list, (3) RTFC inventory, (4) ROS-shaped reporting export, (5) carry-over + buy-out ledger, (6) verifier workflow. None of these exist today. The mass-balance core, supplier/certificate registry, and audit log already in place are reusable foundations — they do not need to be replaced, only extended.
+For the Girardot plant to participate in RTFO via **Crown Oil UK** (already identified as DEV-P100 buyer), the DFT system needs additions in **six areas**: (1) GHG carbon-intensity per batch, (2) feedstock classification per the RTFO list, (3) RTFC inventory, (4) ROS-shaped reporting export, (5) carry-over + buy-out ledger, (6) verifier workflow. None of these exist today. The mass-balance core, supplier/certificate registry, and audit log already in place are reusable foundations — they do not need to be replaced, only extended.
 
-Crucially: **plastic / tyre / rubber pyrolysis output is most likely classified as a Recycled Carbon Fuel (RCF) under RTFO**, which earns **1 dRTFC per litre** (not 2×, no biogenic double-count) and uses the **Annex D counterfactual GHG methodology** — fundamentally different from ISCC EU's biogenic-content + lifecycle approach. This shapes most of the recommendations below.
+Crucially: **feedstock = ELT (end-of-life tyres) → pyrolysis output is classified as Recycled Carbon Fuel (RCF) under RTFO**, earning **1 dRTFC per litre** (no biogenic double-count) and using the **Annex D counterfactual GHG methodology** — fundamentally different from ISCC EU's biogenic-content + lifecycle approach. ELT is 100% fossil-origin material (synthetic rubber), so there is no biogenic share to split: the entire DEV-P100 stream sits on the RCF path. This shapes most of the recommendations below.
 
 ---
 
@@ -42,13 +44,9 @@ Per `docs/rtfo-essential-guide.md` §6:
 - **RCF (Recycled Carbon Fuel):** fuel made from a fossil waste that cannot be recycled, reused or prevented, AND designated as relevant feedstock by the LCF Delivery Unit. Uses **Annex D counterfactual GHG methodology**. Awarded **1 dRTFC per litre** equivalent. No double-count.
 - **Double-counting waste / residue (general dRTFC):** typically biogenic — used cooking oil, animal fats, agricultural residues. **2× dRTFCs per litre**.
 
-End-of-life **tyres**, **mixed plastic waste**, and **synthetic rubber** are fossil-origin → **RCF route, not biogenic double-counting**, unless the input is genuinely biomass (e.g. lignin, biomass-derived rubber). Today DFT has `c14_value` on `daily_inputs` (C14 analysis indicating biogenic share) — this is the field that mechanically tells biogenic vs fossil for each truck.
+**ELT (end-of-life tyres)** is fossil-origin material (synthetic rubber + carbon black + steel) → **RCF route**, **1 dRTFC/litre**, **Annex D GHG**. No biogenic share expected; C14 analyses on `daily_inputs` confirm fossil dominance. The "biogenic vs fossil split" concept — useful for mixed feedstocks like lignin or biomass-derived rubber — does not apply to the pure-ELT case.
 
-**Implication:** for RTFO, two product streams need to be tracked separately by mass-balance:
-1. **Biogenic-share output** (proportional to C14-confirmed bio fraction of inputs) → potentially **2× general or dRTFC** depending on feedstock.
-2. **Fossil-share output** (the majority for plastic/tyre pyrolysis) → **RCF, 1 dRTFC** per litre, Annex D GHG.
-
-DFT today has `theor_veg_pct` + `manuf_veg_pct` + `c14_value` per truck but no per-batch product split downstream. The pyrolysis oil leaves the plant as one stream; the RTFO-relevant split is currently not preserved.
+**Implication:** for RTFO the DEV-P100 stream is single-class **RCF**. The original two-stream model (biogenic vs fossil) degenerates: the entire volume sits on the Annex D / 1 dRTFC path. `theor_veg_pct` + `manuf_veg_pct` + `c14_value` remain useful as physical "no biogenic" evidence for ISCC + DfT inspections, not as a product-split driver.
 
 ---
 
@@ -99,7 +97,7 @@ DFT today has `theor_veg_pct` + `manuf_veg_pct` + `c14_value` per truck but no p
 |---|---|---|
 | Independent verifier identity per RTFC application | not tracked | **MISSING** |
 | Recognised voluntary scheme link (ISCC EU is one route) | `Certificate.scheme` field — already a string | **PARTIAL** — string-typed, no enum, no DfT-recognised-list check |
-| Buyer = UK obligated supplier | suppliers table is *upstream* (raw-material suppliers), not downstream off-takers | **MISSING** — no `customer` / `off_taker` entity |
+| Buyer = UK obligated supplier | **Crown Oil UK identified** as sole project off-taker (Europe excluded) — not yet modelled in schema | **MISSING** — no `customer` / `off_taker` entity in schema, but counterparty known |
 
 **Recommendation:**
 - New `off_takers` table for downstream UK suppliers receiving the pyrolysis oil.
@@ -111,7 +109,8 @@ DFT today has `theor_veg_pct` + `manuf_veg_pct` + `c14_value` per truck but no p
 | What RTFO needs | DFT today | Gap |
 |---|---|---|
 | Volume submission via **ROS** (RTFO Operating System) validated against HMRC duty data | xlsx import only; no UK transport supply tracking | **MISSING** |
-| Per-batch traceability from feedstock → final UK transport supply | mass-balance ends at plant gate | **MISSING last-mile** |
+| Per-product volumes in **litres** (ROS unit) | **AVAILABLE**: `mv_mass_balance_monthly.eu_prod_litres` + `plus_prod_litres` via `product_densities` lookup (EU 0.78, PLUS 0.856 kg/L — EAD-confirmed 2026-05-13) — migration 0005 | **UNBLOCKED** |
+| Per-batch traceability from feedstock → final UK transport supply | mass-balance ends at plant gate | **MISSING last-mile** — DFT→Crown Oil UK chain still to model |
 | Independent verification artefact bundle (PDF + supporting data) | ISCC PDF cert generation planned | **PARTIAL** — adapt the planned PDF generator to also produce an ROS-compatible report |
 
 **Recommendation:**
@@ -120,13 +119,15 @@ DFT today has `theor_veg_pct` + `manuf_veg_pct` + `c14_value` per truck but no p
 
 ### 3.6 Sustainability criteria (land / forest / soil carbon)
 
+**Status: N/A confirmed for ELT-only scope.** Feedstock = end-of-life tyres = post-consumer fossil material. RTFO land/forest/soil-carbon criteria apply only to biogenic feedstocks (energy crops, agri residues, forest biomass). For the ELT → RCF stream this section is benign and requires no schema storage.
+
 | What RTFO needs | DFT today | Gap |
 |---|---|---|
-| Land criteria (no high-biodiversity / high-carbon-stock conversion) | not tracked | **MISSING** — but only relevant for biogenic feedstocks; for fossil-waste RCF this section does not apply |
-| Forest criteria | not tracked | **MISSING** (n/a for plastic/tyre RCF) |
-| Soil carbon (agri waste) | not tracked | **MISSING** (n/a for plastic/tyre RCF) |
+| Land criteria | not tracked | **N/A** for ELT/RCF |
+| Forest criteria | not tracked | **N/A** for ELT/RCF |
+| Soil carbon | not tracked | **N/A** for ELT/RCF |
 
-**Recommendation:** add a `feedstock.sustainability_attestation_url` for the cases where the feedstock IS biogenic (lignin pellets, biomass char). For pure RCF stream this gap is benign.
+**Recommendation:** keep benign. Only if a biogenic feedstock (lignin, biomass char) ever enters the plant would `feedstock.sustainability_attestation_url` become needed.
 
 ### 3.7 Obligation lifecycle & deadlines
 
@@ -147,7 +148,8 @@ These elements need extension but not redesign:
 - **`audit_log`** — already records who/when/what for daily_entries; extends naturally to RTFC awards/redeems/sells.
 - **`source_file` + `source_row` traceability** — every input/production row pointable back to original xlsx; an RTFO verifier inspection would value this.
 - **Soft delete (`deleted_at`) discipline** — no destructive history rewrites; required posture for ISCC audits and equally for RTFO verification.
-- **C14 analysis fields** (`c14_value`, `c14_analysis`) — direct physical evidence of biogenic share, useful both for ISCC and for any biogenic/RCF split argument under RTFO.
+- **C14 analysis fields** (`c14_value`, `c14_analysis`) — direct physical evidence of biogenic share, useful both for ISCC and to prove to DfT that the ELT stream is ~100% fossil (RCF classification precondition).
+- **`product_densities` (migration 0005)** + `eu_prod_litres` / `plus_prod_litres` columns in `mv_mass_balance_monthly` — kg→litres conversion ready, ROS-compatible unit.
 
 ---
 
@@ -183,10 +185,11 @@ These elements need extension but not redesign:
 
 ## 7. Open questions for the client
 
-1. Is any current or near-term off-taker a UK obligated supplier (≥ 450 kL/yr into UK transport)?
-2. What fraction of Girardot output is biogenic-share vs fossil-share by C14? (Drives the dRTFC class allocation.)
-3. Has the plastic/tyre/rubber feedstock mix been formally designated by the LCF Delivery Unit as an RCF-eligible feedstock? If not, designation request is the precondition for any RTFC award.
-4. Is the off-taker contracting on a *physical* (segregated) or *mass-balance* basis? RTFO accepts mass-balance, but the per-batch GHG and class flags must follow the volume.
+1. ~~Is any current or near-term off-taker a UK obligated supplier?~~ **RESOLVED 2026-05-13:** Crown Oil UK confirmed as sole project buyer, Europe excluded. Actual volume ≥ 450 kL/yr UK to be verified with them.
+2. ~~What fraction of output is biogenic vs fossil?~~ **RESOLVED:** ELT feedstock = 100% fossil (synthetic rubber/carbon black/steel). No biogenic split, single RCF stream.
+3. **OPEN:** Has ELT (end-of-life tyres) been formally designated by the LCF Delivery Unit as an RCF-eligible feedstock? If not, designation request is the precondition for any RTFC award. (Action plan 2026-05: Track A = retro-eligibility bundle Jan 2025 with designation request.)
+4. **OPEN:** Does Crown Oil contract on a *physical* (segregated) or *mass-balance* basis? Clarify pre/post Crown Oil meeting.
+5. **OPEN (new):** which RTFO-recognised independent verifier will be appointed for the DEV-P100 bundle? (Saybolt NL handles C14 ISCC but is not a UK RTFO verifier.)
 
 ---
 
@@ -195,3 +198,21 @@ These elements need extension but not redesign:
 - Re-read source guide on each yearly obligation-percentage update (next: 2026 values, published ahead of obligation period 2026).
 - Cross-check against `docs/rtfo-essential-guide.md` after any DfT essential-guide revision.
 - Keep this gap doc in sync with schema migrations: each new RTFO-supporting migration should reference the gap section it closes.
+
+---
+
+## 9. Changelog
+
+**v2 — 2026-05-15**
+- Header: feedstock corrected from "plastic/tyre/rubber" to **ELT (end-of-life tyres) only**; migration count 3→5; added Crown Oil UK as confirmed off-taker.
+- §0: realigned to ELT-only scope and known buyer.
+- §2: removed two-stream model (biogenic/fossil); simplified to single-class RCF.
+- §3.4: Crown Oil UK identified (schema entity still missing).
+- §3.5: added "volumes in litres AVAILABLE" row via `product_densities` + `mv_mass_balance_monthly` (migration 0005).
+- §3.6: N/A status confirmed for ELT-only scope.
+- §4: added `product_densities` + litres in materialised views as ready asset.
+- §7: Q1 and Q2 resolved; Q3/Q4 open; Q5 new (RTFO verifier).
+- Cross-refs added to `dft-action-plan-2026-05.md` and `dft-5wd-activity-plan.md`.
+
+**v1 — 2026-05-12**
+- Initial version, ISCC EU baseline + 6 gap areas.
