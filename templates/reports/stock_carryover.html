@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Annex D — Closing Stock Carry-over Declaration — {{ submission_ref }} — {{ period_label }}</title>
+    <link rel="stylesheet" href="stock_carryover.css">
+    <style>
+        /* Inject hash short prefix + submission ref into the running footer.
+           Cover page suppresses these via the named "cover" @page block. */
+        @page {
+            @top-right {
+                content: "Annex D — {{ submission_ref }} — {{ period_label }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+            @bottom-left {
+                content: "Hash: {{ annex_d_hash[:12] if annex_d_hash else '—' }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        @page cover {
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-right { content: ""; }
+        }
+    </style>
+</head>
+<body>
+
+{# =====================================================================
+   PAGE 1 — COVER
+   ===================================================================== #}
+<section class="cover page-cover">
+    <div class="cover-brand">{{ submitter_company }}</div>
+    <div class="cover-tagline">{{ submitter_address }}</div>
+
+    <div class="cover-stamp">Annex D</div>
+    <h1 class="cover-title">Closing Stock Carry-over Declaration</h1>
+    <div class="cover-sub">{{ period_label }} &middot; {{ plant_name }}</div>
+
+    <table class="cover-meta">
+        <tr><td>Submission reference</td><td><span class="mono">{{ submission_ref }}</span></td></tr>
+        <tr><td>Reporting period</td><td>{{ period_label }} ({{ period }})</td></tr>
+        <tr><td>Plant</td><td>{{ plant_name }}</td></tr>
+        <tr><td>Feedstock class</td><td>{{ feedstock }}</td></tr>
+        <tr><td>Material category</td><td>{{ material_category }}</td></tr>
+        <tr><td>Closing stock (month-end)</td><td><strong>{{ closing_stock_kg | fmt_kg }}</strong></td></tr>
+        <tr><td>Regulator</td><td>{{ regulator }}</td></tr>
+        <tr><td>Generated</td><td>{{ generated_at }}</td></tr>
+    </table>
+
+    <div class="legal-block">
+        <div class="legal-name">{{ legal_name }}</div>
+        <div>{{ legal_address }}</div>
+        <div>VAT / MWSt: <span class="mono">{{ legal_vat }}</span></div>
+        <div class="muted">Jurisdiction: {{ legal_jurisdiction }}</div>
+    </div>
+</section>
+
+{# =====================================================================
+   PAGE 2 — DECLARATION + COMPOSITION TABLE
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="declaration">
+
+    <h2 class="section-title">Declaration of Physically Retained Stock</h2>
+
+    <p class="lede">
+        Pursuant to the {{ regulator }} reporting framework and the chain-of-custody
+        provisions of ISCC EU System Document 203,
+        <strong>{{ submitter_company }}</strong> hereby declares that, at the close
+        of <strong>{{ period_label }}</strong>, the material identified below was
+        physically retained at the <strong>{{ plant_name }}</strong> facility and
+        forms the opening stock of the subsequent reporting period.
+    </p>
+
+    <div class="callout">
+        Closing stock at month-end:
+        <span class="qty">{{ closing_stock_kg | fmt_kg }}</span>
+        of {{ feedstock }} ({{ material_category }}), physically segregated and
+        available for inspection on reasonable notice to the operator.
+    </div>
+
+    <p>
+        The stock has been entered into the mass-balance ledger under the
+        chain-of-custody method described in the Annex A methodology
+        (submission <span class="mono">{{ submission_ref }}</span>). No
+        production allocation (L, M, O) has been applied to this quantity;
+        it remains a K-class aggregate intermediate.
+    </p>
+
+    <h3 class="block-title">Composition — K-only aggregate rows (source: {{ source_workbook }})</h3>
+
+    <p class="block-note">
+        Quantities reproduce the K-column aggregate entries of the January 2025
+        workbook, identified by their physical row position. Where a calendar
+        day could not be unambiguously bound, the entry is marked
+        <span class="mono">RANGE_JANUARY_2025</span>; the xlsx row number
+        remains the audit hook.
+    </p>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>xlsx row</th>
+                <th>Date</th>
+                <th class="num">Quantity (kg)</th>
+                <th>Supplier reference</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in composition_rows %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td class="mono">{{ row.xlsx_row }}</td>
+                <td class="mono">{{ row.date_label }}</td>
+                <td class="num">{{ row.kg | fmt_num }}</td>
+                <td class="mono">{{ row.supplier_ref }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="3">Total — closing stock</th>
+                <th class="num">{{ composition_total_kg | fmt_num }}</th>
+                <th></th>
+            </tr>
+        </tfoot>
+    </table>
+
+
+</section>
+
+{# =====================================================================
+   PAGE 3 — METHODOLOGY + SIGNATURE
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="methodology">
+
+    <h2 class="section-title">Methodology, References &amp; Signature</h2>
+
+    <p>
+        <strong>Methodology.</strong> The closing-stock total is computed as
+        the arithmetic sum of K-column aggregate rows that did not receive a
+        production allocation (no entries in the L, M, or O production columns)
+        during the reporting period. Material is physically segregated within
+        the {{ plant_name }} feedstock bay; no commingling with the subsequent
+        period's intake occurs until the stock has been drawn down. This is
+        consistent with the ISCC EU mass-balance method for chain-of-custody
+        accounting (System Document 203, §4) and with the {{ regulator }}
+        expectation that retained intermediates are reported explicitly rather
+        than implied via closure drift.
+    </p>
+
+    <p>
+        This Annex D accompanies submission
+        <span class="mono">{{ submission_ref }}</span> and is to be read with
+        Annex A — Mass Balance Report ({{ period_label }}) and the cover
+        letter of the same submission bundle. The closing-stock quantity
+        declared on the previous page reconciles, on a kilogram basis, with
+        the difference between the K-aggregate input and the L/M/O production
+        allocations of Annex A for the same period.
+    </p>
+
+    <p>
+        For audit purposes, each K-only row in the composition table is
+        traceable to its source position in the production workbook
+        <span class="mono">{{ source_workbook }}</span> (column K, row numbers
+        as listed). The supplier-reference column reproduces the ISCC EU
+        chain-of-custody identifier as recorded in the operator's daily log;
+        where a row spans multiple supplier deliveries, the aggregated supplier
+        block reference is shown.
+    </p>
+
+    <p>
+        This Annex D is cryptographically anchored to the cover letter of the
+        submission bundle via the SHA-256 digest reported in the running footer
+        (short prefix <span class="mono">{{ annex_d_hash[:12] if annex_d_hash else '—' }}</span>).
+    </p>
+
+    <div class="signature">
+        <div class="sig-label">Signed for and on behalf of {{ submitter_company }}</div>
+        <div class="sig-line">[CEO_NAME]<br>Chief Executive Officer</div>
+        <div class="sig-date">Date: ____________________</div>
+    </div>
+
+    <div class="end-stamp">— End of Annex D —</div>
+
+</section>
+
+</body>
+</html>
