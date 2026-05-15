@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cover Letter — RTFO {{ submission_ref }}</title>
+    <link rel="stylesheet" href="cover_letter.css">
+    <style>
+        /* Inject annex hash short prefix into the running footer */
+        @page {
+            @bottom-left {
+                content: "Annex A hash: {{ annex_a_hash[:12] }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="letterhead">
+    <div class="brand">OisteBio GmbH</div>
+    <div class="legal">
+        {{ submitter_address }} &middot; MWSt CHE-234.625.162 &middot; {{ submitter_contact }}
+    </div>
+</header>
+
+<section class="meta">
+    <div class="row">
+        <div>{{ generated_at }}</div>
+        <div>Ref. <span class="ref">{{ submission_ref }}</span></div>
+    </div>
+</section>
+
+<section class="addressee">
+    <strong>{{ regulator }}</strong><br>
+    Low Carbon Fuels Delivery Unit<br>
+    Department for Transport<br>
+    Great Minster House, 33 Horseferry Road<br>
+    London SW1P 4DR, United Kingdom
+</section>
+
+<section class="subject">
+    Subject: Pre-application Track A submission &mdash; RTFO RCF pathway, production period {{ period }}
+</section>
+
+<section class="body">
+
+    <p>
+        Dear Sir or Madam,
+    </p>
+
+    <p>
+        On behalf of <strong>{{ submitter_company }}</strong>, operator of the
+        pyrolysis facility located in Girardot (Cundinamarca, Colombia), we hereby
+        submit the present Pre-application bundle under the Renewable Transport Fuel
+        Obligation (RTFO) Track A process, in respect of the Recycled Carbon Fuel
+        (RCF) pathway. The submission covers production volumes of
+        <strong>{{ product }}</strong> derived from <strong>{{ feedstock }}</strong>
+        (end-of-life tyre material), processed during the
+        <strong>{{ rtfo_period }}</strong> reporting period
+        (production period {{ period }}). The feedstock is sourced exclusively from
+        post-consumer waste tyres and is classified as RCF under the UK RTFO Guidance,
+        Chapter 9.
+    </p>
+
+    <p>
+        Enclosed with this letter you will find the following documents, forming the
+        integral evidence pack for the submission:
+    </p>
+
+    <ul class="attachments">
+        <li><strong>ROS export</strong> &mdash; Renewable Obligation Sustainability return draft, period {{ rtfo_period }};</li>
+        <li><strong>Annex A &mdash; Mass Balance report</strong> (signed), period {{ period }}, attachments: {{ ros_attached }};</li>
+        <li><strong>Evidence pack</strong> &mdash; ISCC EU certificate (supplier &amp; operator), Self-Declarations &lt;= 5 tonnes, Proof of Sustainability (POS), and Bill of Lading / Dispatch notes for outbound deliveries to the off-taker.</li>
+    </ul>
+
+    <p>
+        The off-taker for the volumes covered by this submission is
+        <strong>{{ off_taker }}</strong>, which acts as the UK obligated supplier and
+        will subsequently claim Renewable Transport Fuel Certificates (RTFCs) against
+        the RCF volumes evidenced herein. Direct delivery routing and supply contracts
+        are available on request.
+    </p>
+
+    <p>
+        The compliance basis for this submission rests on (i) ISCC EU certification of
+        the full chain of custody from waste-tyre collection through pyrolysis to the
+        finished {{ product }} product, ensuring traceability and mass-balance
+        integrity in accordance with ISCC EU System Document 203, and (ii) the UK
+        RTFO RCF eligibility criteria as set out in the RTFO Guidance Part One
+        (Process Guidance) and Part Two (Carbon and Sustainability). The attached
+        Annex A documents the mass balance for the period and is cryptographically
+        anchored to this letter via the SHA-256 digest reported in the footer of each
+        page (full digest:
+        <span class="compact">{{ annex_a_hash }}</span>).
+    </p>
+
+    <p>
+        We kindly request the Low Carbon Fuels Delivery Unit to acknowledge receipt of
+        the present bundle and to confirm next procedural steps, including any
+        clarification requests, additional evidence to be supplied, or scheduling of
+        a technical pre-application meeting. We remain at your full disposal for any
+        further information that may be required.
+    </p>
+
+    <p>
+        Yours faithfully,
+    </p>
+
+</section>
+
+<section class="signature">
+    <div>For and on behalf of {{ submitter_company }}</div>
+    <div class="line">[CEO_NAME]<br>Chief Executive Officer</div>
+</section>
+
+</body>
+</html>
