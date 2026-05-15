@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Production Conversion Log — {{ period_label }} — {{ submission_ref }}</title>
+    <link rel="stylesheet" href="production_conversion.css">
+    <style>
+        /* Inject submission ref + hash short prefix into the running footer chrome. */
+        @page {
+            @top-right {
+                content: "Production Conversion Log — {{ submission_ref }} — {{ period_label }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+            @bottom-left {
+                content: "Hash: {{ doc_hash[:12] if doc_hash else '—' }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        @page cover {
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-right { content: ""; }
+        }
+    </style>
+</head>
+<body>
+
+{# =====================================================================
+   PAGE 1 — COVER
+   ===================================================================== #}
+<section class="cover page-cover">
+    <div class="cover-brand">{{ submitter_company }}</div>
+    <div class="cover-tagline">{{ submitter_address }}</div>
+
+    <div class="cover-stamp">Conversion Log</div>
+    <h1 class="cover-title">Production Conversion Log</h1>
+    <div class="cover-sub">{{ period_label }} &middot; {{ plant_name }}</div>
+
+    <table class="cover-meta">
+        <tr><td>Submission reference</td><td><span class="mono">{{ submission_ref }}</span></td></tr>
+        <tr><td>Reporting period</td><td>{{ period_label }} ({{ period }})</td></tr>
+        <tr><td>Plant</td><td>{{ plant_name }}</td></tr>
+        <tr><td>Product</td><td>{{ product }}</td></tr>
+        <tr><td>Off-taker</td><td>{{ off_taker }}</td></tr>
+        <tr><td>Regulator</td><td>{{ regulator }}</td></tr>
+        <tr><td>Density — EU-grade</td><td><span class="mono">{{ density_eu | fmt_density }}</span></td></tr>
+        <tr><td>Density — PLUS-grade</td><td><span class="mono">{{ density_plus | fmt_density }}</span></td></tr>
+        <tr><td>Generated</td><td>{{ generated_at }}</td></tr>
+    </table>
+
+    <div class="cover-signatory">
+        <div class="sig-label">Signed for and on behalf of {{ submitter_company }}</div>
+        <div class="sig-line">[CEO_NAME]<br>Chief Executive Officer</div>
+        <div class="sig-date">Date: ____________________</div>
+    </div>
+</section>
+
+{# =====================================================================
+   PAGE 2 — EXECUTIVE SUMMARY + DAILY TABLE
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="summary">
+
+    <h2 class="section-title">Executive Summary</h2>
+
+    <p class="lede">
+        Per-day mass-to-volume conversion log for <strong>{{ period_label }}</strong>
+        production at the {{ plant_name }} pyrolysis facility, operated by
+        <strong>{{ submitter_company }}</strong>. Output product is
+        <strong>{{ product }}</strong>, supplied to <strong>{{ off_taker }}</strong>
+        under the {{ regulator }} reporting framework. Litres are derived from
+        kilograms via the nominal product densities listed below.
+    </p>
+
+    <h3 class="block-title">Monthly aggregate</h3>
+    <table class="kpi-table">
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th class="num">Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Total EU-grade production</td>
+                <td class="num">
+                    {{ totals.eu_prod_kg | fmt_kg }}
+                    <span class="muted">/ {{ totals.eu_prod_litres | fmt_l }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Total PLUS-grade production</td>
+                <td class="num">
+                    {{ totals.plus_prod_kg | fmt_kg }}
+                    <span class="muted">/ {{ totals.plus_prod_litres | fmt_l }}</span>
+                </td>
+            </tr>
+            <tr class="row-closure">
+                <td>Grand total volume (EU + PLUS)</td>
+                <td class="num">{{ totals.grand_total_litres | fmt_l }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+</section>
+
+{# =====================================================================
+   DAILY CONVERSION TABLE — flows from summary on same page if it fits.
+   ===================================================================== #}
+<section class="detail">
+
+    <h2 class="section-title">Daily Conversion — {{ period_label }}</h2>
+
+    <p class="block-note">
+        Per-day kilogram-to-litre conversion for EU-grade and PLUS-grade
+        product. Litres computed at constant density:
+        <strong>EU {{ density_eu | fmt_density }}</strong>,
+        <strong>PLUS {{ density_plus | fmt_density }}</strong>.
+    </p>
+
+    <table class="data-table daily-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th class="num">EU (kg)</th>
+                <th class="num">PLUS (kg)</th>
+                <th class="num">ρ EU (kg/L)</th>
+                <th class="num">ρ PLUS (kg/L)</th>
+                <th class="num">EU (L)</th>
+                <th class="num">PLUS (L)</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in daily_rows %}
+            <tr>
+                <td class="mono">{{ row.date }}</td>
+                <td class="num">{{ row.eu_prod_kg | fmt_num }}</td>
+                <td class="num">{{ row.plus_prod_kg | fmt_num }}</td>
+                <td class="num mono">{{ density_eu | fmt_density_plain }}</td>
+                <td class="num mono">{{ density_plus | fmt_density_plain }}</td>
+                <td class="num">{{ row.eu_prod_litres | fmt_num }}</td>
+                <td class="num">{{ row.plus_prod_litres | fmt_num }}</td>
+                <td class="notes">{{ row.notes or "—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th>Total</th>
+                <th class="num">{{ totals.eu_prod_kg | fmt_num }}</th>
+                <th class="num">{{ totals.plus_prod_kg | fmt_num }}</th>
+                <th class="num">—</th>
+                <th class="num">—</th>
+                <th class="num">{{ totals.eu_prod_litres | fmt_num }}</th>
+                <th class="num">{{ totals.plus_prod_litres | fmt_num }}</th>
+                <th></th>
+            </tr>
+        </tfoot>
+    </table>
+
+</section>
+
+{# =====================================================================
+   LAST PAGE — METHODOLOGY
+   Flows naturally — no forced page break — so a short month may keep
+   methodology on the same page as the tail of the daily table.
+   ===================================================================== #}
+<section class="methodology">
+
+    <h2 class="section-title">Methodology &amp; References</h2>
+
+    <p>
+        Volumetric conversion applies the canonical relation
+        <span class="formula">litres&nbsp;=&nbsp;kg&nbsp;/&nbsp;density</span>
+        at constant product density measured at 15&nbsp;°C. The two nominal
+        densities used in this report are:
+    </p>
+
+    <ul class="density-list">
+        <li>
+            <strong>EU-grade ({{ product_eu_code }})</strong> —
+            <span class="mono">ρ<sub>EU</sub> = {{ density_eu | fmt_density }}</span>
+        </li>
+        <li>
+            <strong>PLUS-grade ({{ product_plus_code }})</strong> —
+            <span class="mono">ρ<sub>PLUS</sub> = {{ density_plus | fmt_density }}</span>
+        </li>
+    </ul>
+
+    <p>
+        Both density values are ISCC-recognised product-specification figures
+        for the OisteBio {{ product }} family and are loaded into the platform
+        <span class="mono">product_densities</span> seed table by Alembic
+        migration <span class="mono">0005_seed_product_densities.py</span>.
+        They are immutable for the duration of a reporting period and are
+        re-validated against laboratory analysis at every product release.
+    </p>
+
+    <p>
+        Per-row litre values shown in the daily table are not stored
+        independently — they are derived deterministically inside PostgreSQL
+        as <strong>GENERATED ALWAYS</strong> columns on the
+        <span class="mono">daily_production</span> table:
+    </p>
+
+    <pre class="sql-block">litres_eu   NUMERIC GENERATED ALWAYS AS (eu_prod_kg   / {{ density_eu }})  STORED,
+litres_plus NUMERIC GENERATED ALWAYS AS (plus_prod_kg / {{ density_plus }}) STORED</pre>
+
+    <p>
+        These columns are introduced by Alembic migration
+        <span class="mono">0007_persist_production_litres.py</span>. Once
+        persisted, historical litre values become immutable for audit purposes
+        even if product densities are revised in the future. Write access to
+        <span class="mono">litres_eu</span> and <span class="mono">litres_plus</span>
+        is prohibited at the schema level: any attempt to update them raises
+        PostgreSQL error code <span class="mono">42601</span>.
+    </p>
+
+    <p>
+        This Production Conversion Log accompanies Annex&nbsp;A
+        (mass balance) in the {{ submission_ref }} submission bundle and is
+        cryptographically anchored to the cover letter via the SHA-256 digest
+        reported in the running footer
+        (short prefix <span class="mono">{{ doc_hash[:12] if doc_hash else '—' }}</span>).
+    </p>
+
+    <div class="end-stamp">— End of Production Conversion Log —</div>
+
+</section>
+
+</body>
+</html>

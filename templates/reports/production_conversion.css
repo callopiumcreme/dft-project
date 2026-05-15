@@ -1,0 +1,327 @@
+/* Production Conversion Log — print stylesheet (A4, deterministic fonts).
+   Visual language matches templates/reports/mass_balance.css (Worker F)
+   for consistency across the RTFO submission bundle. */
+
+/* -------------------------------------------------------------------------
+   Page setup: A4, 25 mm margins, running header + page n/N footer.
+   ------------------------------------------------------------------------- */
+@page {
+    size: A4;
+    margin: 25mm;
+    @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+        font-size: 8pt;
+        color: #555;
+    }
+}
+
+@page cover {
+    size: A4;
+    margin: 25mm;
+}
+
+.page-cover {
+    page: cover;
+}
+
+/* -------------------------------------------------------------------------
+   Base typography — deterministic fallback chain, no web fonts.
+   ------------------------------------------------------------------------- */
+html, body {
+    font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: #111;
+    margin: 0;
+    padding: 0;
+}
+
+p {
+    margin: 0 0 8pt 0;
+    text-align: justify;
+}
+
+.mono {
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-size: 9.5pt;
+}
+
+.muted {
+    color: #666;
+    font-size: 9pt;
+}
+
+/* -------------------------------------------------------------------------
+   Section helpers
+   ------------------------------------------------------------------------- */
+.page-break {
+    page-break-after: always;
+}
+
+.section-title {
+    font-size: 15pt;
+    color: #1a3a5c;
+    border-bottom: 1.2pt solid #1a3a5c;
+    padding-bottom: 4pt;
+    margin: 0 0 12pt 0;
+}
+
+.block-title {
+    font-size: 11.5pt;
+    color: #1a3a5c;
+    margin: 14pt 0 6pt 0;
+}
+
+.block-note {
+    font-size: 9.5pt;
+    color: #444;
+    margin: 0 0 10pt 0;
+}
+
+.lede {
+    font-size: 10.5pt;
+    margin: 0 0 14pt 0;
+}
+
+/* -------------------------------------------------------------------------
+   PAGE 1 — COVER
+   ------------------------------------------------------------------------- */
+.cover {
+    height: 247mm; /* A4 minus margins */
+    display: block;
+    position: relative;
+}
+
+.cover-brand {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #1a3a5c;
+    letter-spacing: 0.4pt;
+}
+
+.cover-tagline {
+    font-size: 9.5pt;
+    color: #555;
+    margin-bottom: 30pt;
+    border-bottom: 0.5pt solid #ccc;
+    padding-bottom: 6pt;
+}
+
+.cover-stamp {
+    display: inline-block;
+    background: #1a3a5c;
+    color: #fff;
+    font-size: 10pt;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    padding: 3pt 10pt;
+    margin-top: 50pt;
+}
+
+.cover-title {
+    font-size: 28pt;
+    color: #1a3a5c;
+    margin: 8pt 0 4pt 0;
+    line-height: 1.1;
+    font-weight: bold;
+}
+
+.cover-sub {
+    font-size: 13pt;
+    color: #333;
+    margin-bottom: 30pt;
+}
+
+.cover-meta {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    margin-top: 16pt;
+}
+
+.cover-meta td {
+    padding: 5pt 6pt;
+    border-bottom: 0.4pt solid #ddd;
+    vertical-align: top;
+}
+
+.cover-meta td:first-child {
+    color: #555;
+    width: 38%;
+}
+
+.cover-meta td:last-child {
+    font-weight: 500;
+    color: #111;
+}
+
+.cover-signatory {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.sig-label {
+    font-size: 9.5pt;
+    color: #555;
+    margin-bottom: 24pt;
+}
+
+.sig-line {
+    border-top: 0.5pt solid #111;
+    width: 70mm;
+    padding-top: 3pt;
+    font-size: 9.5pt;
+}
+
+.sig-date {
+    margin-top: 14pt;
+    font-size: 9.5pt;
+    color: #555;
+}
+
+/* -------------------------------------------------------------------------
+   EXECUTIVE SUMMARY KPI TABLE
+   ------------------------------------------------------------------------- */
+.kpi-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6pt 0 14pt 0;
+    font-size: 10pt;
+}
+
+.kpi-table thead th {
+    background: #1a3a5c;
+    color: #fff;
+    text-align: left;
+    padding: 5pt 7pt;
+    font-weight: bold;
+    font-size: 9.5pt;
+}
+
+.kpi-table tbody td {
+    padding: 5pt 7pt;
+    border-bottom: 0.4pt solid #ddd;
+}
+
+.kpi-table .row-closure {
+    background: #f4f6f9;
+    font-weight: 600;
+}
+
+.kpi-table .num,
+.data-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------------------
+   DAILY CONVERSION TABLE
+   Headers/footers are repeated on page break (table-header-group /
+   table-footer-group) so the 31-row month keeps its column labels.
+   ------------------------------------------------------------------------- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin-top: 4pt;
+}
+
+.data-table thead {
+    display: table-header-group;
+}
+
+.data-table tfoot {
+    display: table-footer-group;
+}
+
+.data-table thead th {
+    background: #1a3a5c;
+    color: #fff;
+    text-align: left;
+    padding: 4pt 6pt;
+    font-weight: bold;
+    font-size: 8.5pt;
+    border-bottom: 0.5pt solid #1a3a5c;
+}
+
+.data-table tbody td {
+    padding: 3pt 6pt;
+    border-bottom: 0.3pt solid #e2e2e2;
+}
+
+.data-table tbody tr:nth-child(even) td {
+    background: #f7f9fb;
+}
+
+.data-table tfoot th {
+    background: #eef2f7;
+    color: #1a3a5c;
+    padding: 4pt 6pt;
+    border-top: 1pt solid #1a3a5c;
+    font-weight: bold;
+    text-align: left;
+}
+
+.data-table tfoot th.num {
+    text-align: right;
+}
+
+.data-table tr {
+    page-break-inside: avoid;
+}
+
+.data-table .notes {
+    font-size: 8.5pt;
+    color: #444;
+}
+
+/* -------------------------------------------------------------------------
+   METHODOLOGY (last page) — formula, density list, SQL block
+   ------------------------------------------------------------------------- */
+.methodology p {
+    font-size: 10pt;
+    margin-bottom: 9pt;
+}
+
+.formula {
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-size: 10pt;
+    background: #f4f6f9;
+    border: 0.4pt solid #c9d2dd;
+    padding: 1pt 5pt;
+    border-radius: 2pt;
+}
+
+.density-list {
+    margin: 8pt 0 14pt 18pt;
+    padding: 0;
+    font-size: 10pt;
+}
+
+.density-list li {
+    margin-bottom: 4pt;
+}
+
+.sql-block {
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-size: 9pt;
+    background: #f4f6f9;
+    border-left: 2.5pt solid #1a3a5c;
+    padding: 8pt 10pt;
+    margin: 8pt 0 12pt 0;
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.35;
+    color: #1a3a5c;
+}
+
+.end-stamp {
+    margin-top: 30pt;
+    text-align: center;
+    font-size: 9pt;
+    color: #888;
+    letter-spacing: 1pt;
+}
