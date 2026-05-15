@@ -30,11 +30,14 @@ import hashlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 from pypdf import PdfReader
 from weasyprint import HTML
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 # Repo-root anchored templates dir (templates/ at repo root, NOT under backend/).
 # backend/app/services/pdf_renderer.py → parents[3] == repo root.
@@ -106,6 +109,7 @@ def render_to_pdf(
     template_name: str,
     context: dict[str, Any],
     output_path: Path,
+    filters: dict[str, Callable[..., Any]] | None = None,
 ) -> RenderResult:
     """Render a Jinja2 template to a deterministic PDF + SHA-256 side-car.
 
@@ -118,6 +122,10 @@ def render_to_pdf(
         output_path: Destination ``.pdf`` file. Parent directory is created
             if missing. The side-car file is written next to it with the
             same stem plus ``.sha256``.
+        filters: Optional Jinja2 custom filters (e.g. ``fmt_kg``, ``fmt_pct``)
+            registered on a per-call Environment. The renderer builds a fresh
+            ``Environment`` for every call so registering filters here does
+            NOT leak into other renders — keeping determinism intact.
 
     Returns:
         RenderResult with absolute paths, byte size, hex digest, page count,
@@ -132,6 +140,9 @@ def render_to_pdf(
 
     qualified_name = _resolve_template_name(template_name)
     env = _build_env()
+    if filters:
+        for name, fn in filters.items():
+            env.filters[name] = fn
 
     try:
         template = env.get_template(qualified_name)
