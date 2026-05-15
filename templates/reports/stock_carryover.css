@@ -1,0 +1,324 @@
+/* Annex D — Closing Stock Carry-over Declaration — print stylesheet
+ *
+ * Visual language deliberately mirrors templates/reports/mass_balance.css so
+ * Annex A and Annex D stack cleanly in the same submission bundle:
+ *   - A4, 25mm margins, footer "Page n of N" on the right
+ *   - Helvetica / Arial fallback chain, no web fonts (determinism)
+ *   - Navy brand colour #1a3a5c for headings, table headers, accent rules
+ *   - Page-break / table chrome conventions identical to Annex A
+ *
+ * Differences from Annex A:
+ *   - Single declaration page (no semaforo, no daily detail, no supplier bars)
+ *   - Composition table is shorter (17 K-only rows) → fits on one page
+ *   - Signature block sits beneath the declaration text, not on the cover
+ */
+
+/* -------------------------------------------------------------------------
+   Page setup — A4, running footer with page n/N
+   ------------------------------------------------------------------------- */
+@page {
+    size: A4;
+    margin: 25mm;
+    @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+        font-size: 8pt;
+        color: #555;
+    }
+}
+
+@page cover {
+    size: A4;
+    margin: 25mm;
+}
+
+.page-cover {
+    page: cover;
+}
+
+/* -------------------------------------------------------------------------
+   Base typography — deterministic fallback chain
+   ------------------------------------------------------------------------- */
+html, body {
+    font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: #111;
+    margin: 0;
+    padding: 0;
+}
+
+p {
+    margin: 0 0 8pt 0;
+    text-align: justify;
+}
+
+.mono {
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-size: 9.5pt;
+}
+
+.muted {
+    color: #666;
+    font-size: 9pt;
+}
+
+/* -------------------------------------------------------------------------
+   Section helpers
+   ------------------------------------------------------------------------- */
+.page-break {
+    page-break-after: always;
+}
+
+.section-title {
+    font-size: 15pt;
+    color: #1a3a5c;
+    border-bottom: 1.2pt solid #1a3a5c;
+    padding-bottom: 3pt;
+    margin: 0 0 9pt 0;
+}
+
+.block-title {
+    font-size: 11pt;
+    color: #1a3a5c;
+    margin: 10pt 0 4pt 0;
+}
+
+.block-note {
+    font-size: 9.5pt;
+    color: #444;
+    margin: 0 0 10pt 0;
+}
+
+.lede {
+    font-size: 10.5pt;
+    margin: 0 0 14pt 0;
+}
+
+/* -------------------------------------------------------------------------
+   PAGE 1 — COVER
+   ------------------------------------------------------------------------- */
+.cover {
+    height: 247mm; /* A4 minus 25mm margins */
+    display: block;
+    position: relative;
+}
+
+.cover-brand {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #1a3a5c;
+    letter-spacing: 0.4pt;
+}
+
+.cover-tagline {
+    font-size: 9.5pt;
+    color: #555;
+    margin-bottom: 30pt;
+    border-bottom: 0.5pt solid #ccc;
+    padding-bottom: 6pt;
+}
+
+.cover-stamp {
+    display: inline-block;
+    background: #1a3a5c;
+    color: #fff;
+    font-size: 10pt;
+    font-weight: bold;
+    letter-spacing: 1pt;
+    padding: 3pt 10pt;
+    margin-top: 50pt;
+}
+
+.cover-title {
+    font-size: 28pt;
+    color: #1a3a5c;
+    margin: 8pt 0 4pt 0;
+    line-height: 1.1;
+    font-weight: bold;
+}
+
+.cover-sub {
+    font-size: 13pt;
+    color: #333;
+    margin-bottom: 40pt;
+}
+
+.cover-meta {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    margin-top: 18pt;
+}
+
+.cover-meta td {
+    padding: 5pt 6pt;
+    border-bottom: 0.4pt solid #ddd;
+    vertical-align: top;
+}
+
+.cover-meta td:first-child {
+    color: #555;
+    width: 38%;
+}
+
+.cover-meta td:last-child {
+    font-weight: 500;
+    color: #111;
+}
+
+.legal-block {
+    margin-top: 26pt;
+    padding: 10pt 12pt;
+    background: #f4f6f9;
+    border-left: 2.5pt solid #1a3a5c;
+    font-size: 9.5pt;
+    line-height: 1.5;
+}
+
+.legal-block .legal-name {
+    font-weight: bold;
+    color: #1a3a5c;
+    font-size: 10.5pt;
+    margin-bottom: 2pt;
+}
+
+/* -------------------------------------------------------------------------
+   PAGE 2 — DECLARATION + COMPOSITION TABLE
+   ------------------------------------------------------------------------- */
+.declaration {
+    margin-top: 2pt;
+}
+
+.declaration p {
+    font-size: 10pt;
+    margin-bottom: 7pt;
+}
+
+.declaration .lede {
+    margin-bottom: 8pt;
+}
+
+.declaration .callout {
+    background: #eef2f7;
+    border: 0.6pt solid #1a3a5c;
+    border-left: 3pt solid #1a3a5c;
+    padding: 7pt 12pt;
+    margin: 8pt 0 8pt 0;
+    font-size: 10pt;
+}
+
+.declaration .callout .qty {
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-weight: bold;
+    color: #1a3a5c;
+    font-size: 12pt;
+}
+
+/* -------------------------------------------------------------------------
+   COMPOSITION TABLE — 17 K-only rows + total
+   Same chrome as Annex A .data-table.
+   ------------------------------------------------------------------------- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    margin-top: 4pt;
+}
+
+.data-table thead {
+    display: table-header-group;
+}
+
+.data-table tfoot {
+    display: table-footer-group;
+}
+
+.data-table thead th {
+    background: #1a3a5c;
+    color: #fff;
+    text-align: left;
+    padding: 4pt 6pt;
+    font-weight: bold;
+    font-size: 8.5pt;
+    border-bottom: 0.5pt solid #1a3a5c;
+}
+
+.data-table tbody td {
+    padding: 2.2pt 6pt;
+    border-bottom: 0.3pt solid #e2e2e2;
+}
+
+.data-table tbody tr:nth-child(even) td {
+    background: #f7f9fb;
+}
+
+.data-table tfoot th {
+    background: #eef2f7;
+    color: #1a3a5c;
+    padding: 4pt 6pt;
+    border-top: 1pt solid #1a3a5c;
+    font-weight: bold;
+    text-align: left;
+}
+
+.data-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.data-table tfoot th.num {
+    text-align: right;
+}
+
+.data-table tr {
+    page-break-inside: avoid;
+}
+
+/* -------------------------------------------------------------------------
+   METHODOLOGY + SIGNATURE
+   ------------------------------------------------------------------------- */
+.methodology p {
+    font-size: 10pt;
+    margin-bottom: 9pt;
+}
+
+.footnote {
+    margin-top: 8pt;
+    padding-top: 6pt;
+    border-top: 0.4pt solid #ccc;
+    font-size: 8.8pt;
+    color: #555;
+    line-height: 1.35;
+}
+
+.signature {
+    margin-top: 32pt;
+}
+
+.signature .sig-label {
+    font-size: 9.5pt;
+    color: #555;
+    margin-bottom: 30pt;
+}
+
+.signature .sig-line {
+    border-top: 0.5pt solid #111;
+    width: 70mm;
+    padding-top: 3pt;
+    font-size: 9.5pt;
+}
+
+.signature .sig-date {
+    margin-top: 14pt;
+    font-size: 9.5pt;
+    color: #555;
+}
+
+.end-stamp {
+    margin-top: 30pt;
+    text-align: center;
+    font-size: 9pt;
+    color: #888;
+    letter-spacing: 1pt;
+}
