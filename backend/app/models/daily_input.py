@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import (
     BigInteger,
@@ -11,9 +12,11 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     Numeric,
+    String,
     Text,
     Time,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -26,6 +29,11 @@ class DailyInput(Base):
         CheckConstraint(
             "car_kg >= 0 AND truck_kg >= 0 AND special_kg >= 0",
             name="daily_inputs_kg_nonneg",
+        ),
+        CheckConstraint(
+            "rectification_source IS NULL OR rectification_source IN "
+            "('supplier_letter','internal_audit','dft_request','other')",
+            name="ck_daily_inputs_rectification_source",
         ),
     )
 
@@ -67,3 +75,14 @@ class DailyInput(Base):
     updated_by: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL")
     )
+
+    # --- Rectification audit columns (migration 0006) -----------------
+    # Soft-rectification only — never hard-delete. See 0006 migration
+    # docstring for the four allowed rectification_source values.
+    rectified_at: Mapped[datetime | None] = mapped_column()
+    rectified_by: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    rectification_reason: Mapped[str | None] = mapped_column(Text)
+    rectification_source: Mapped[str | None] = mapped_column(String(40))
+    original_values: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
