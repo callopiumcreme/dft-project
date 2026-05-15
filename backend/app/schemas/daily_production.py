@@ -46,6 +46,9 @@ class DailyProductionRead(DailyProductionBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    # GENERATED ALWAYS in DB (migration 0007) — exposed read-only here.
+    litres_eu: Decimal | None = None
+    litres_plus: Decimal | None = None
     source_file: str | None = None
     source_row: int | None = None
     created_at: datetime
