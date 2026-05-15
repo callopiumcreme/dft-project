@@ -5,6 +5,7 @@ aggregates over daily_inputs joined to suppliers. All endpoints viewer+.
 """
 from __future__ import annotations
 
+import os
 import re
 import tempfile
 from datetime import UTC, date, datetime, timedelta
@@ -431,16 +432,17 @@ async def _fetch_supplier_breakdown(
     """Per-supplier totals + share% within the month."""
     sql = text(
         """
-        SELECT s.name                  AS name,
-               s.cert_iscc_ref         AS cert_iscc_ref,
-               SUM(di.total_input_kg)  AS total_kg
+        SELECT s.name                       AS name,
+               COALESCE(MAX(c.cert_number), '—') AS cert_iscc_ref,
+               SUM(di.total_input_kg)       AS total_kg
         FROM daily_inputs di
         JOIN suppliers s ON s.id = di.supplier_id
+        LEFT JOIN certificates c ON c.id = di.certificate_id
         WHERE di.deleted_at IS NULL
           AND s.deleted_at IS NULL
           AND di.entry_date >= :first
           AND di.entry_date <= :last
-        GROUP BY s.id, s.name, s.cert_iscc_ref
+        GROUP BY s.id, s.name
         ORDER BY total_kg DESC
         """
     )
@@ -472,7 +474,7 @@ def _build_context(
     year, mo = int(month[:4]), int(month[5:7])
     period_label = f"{_IT_MONTHS[mo - 1]} {year}"
     return {
-        "submission_ref": f"RTFO-{mo:02d}{str(year)[2:]}{str(year)[:2]}",
+        "submission_ref": os.environ.get("RTFO_SUBMISSION_REF", "RTFO-310125"),
         "period": month,
         "period_label": period_label,
         "generated_at": generated_at,
