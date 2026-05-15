@@ -70,6 +70,10 @@ yarn-error.log*
 backups/
 dumps/
 
+# --- RTFO audit-trail DB snapshots (large + real data, NEVER commit) ---
+deliverables/**/db_snapshots/*.sql.gz
+deliverables/**/db_snapshots/*.sha256
+
 # --- IDE ---
 .vscode/
 .idea/
