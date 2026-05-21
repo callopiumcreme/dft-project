@@ -201,6 +201,10 @@ PATH_METADATA: Final[list[tuple[str, FileMeta]]] = [
         "03_supplier_evidence/ersv/",
         FileMeta("S1.7", "eRSV per-supplier statements", "FINAL", "final"),
     ),
+    (
+        "03_supplier_evidence/transport/",
+        FileMeta("S1.7", "Outbound transport — Bill of Lading + arrivals tracker (CO→NL→UK)", "FINAL", "final"),
+    ),
     # Compliance
     (
         "04_compliance/01_supply_chain_diagram.pdf",
