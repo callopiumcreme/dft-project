@@ -7,16 +7,16 @@
 **Feedstock:** ELT (end-of-life tyres) → pyrolysis oil → refined DEV-P100
 **RCF eligibility:** UK only, audit-gated (no separate DfT designation; audit pass = eligibility for the batch)
 
-## Contents (49 hashed artefacts)
+## Contents (50 hashed artefacts)
 
 | Folder | Files | Notes |
 |--------|-------|-------|
 | `00_cover_letter/` | `00_cover_letter_FINAL.pdf` | 8-month scope, ELT/RCF framing, Crown Oil routing, DB-driven totals |
 | `01_annex_a_mass_balance/` | `02_mass_balance_<month>_2025_FINAL.pdf` × 8 | One Annex A per month (Jan-Aug); per-month EU+PLUS densities |
 | `02_ros_export/` | `05_production_conversion_logs_<month>_2025.pdf` × 8 | Monthly EU+PLUS per-day kg→L conversion (per-month density) |
-| `03_supplier_evidence/` | `03_iscc_pos_status.pdf` + `certificates/` × 15 ISCC PDFs + `transport/` × 3 | ISCC PoS status snapshot (volume-weighted cert per supplier); 15 supplier ISCC EU + ISCC PLUS certificate PDFs in `certificates/` (incl. 4 ≤5 TON / pre-rename suppliers); `transport/` = 2 outbound BL (CMA CGM, CARTAGENA EXPRES 2025-06-11 + ISTANBUL EXPRES 2025-07-03) + `transport_note.md` documenting Jan–May 2025 pre-export stockpile, NL→UK routing chain, and inbound-transport pending status; `contracts/`, `ersv/` are gitkeep placeholders pending supplier upload |
+| `03_supplier_evidence/` | `03_iscc_pos_status.pdf` + `certificates/` × 15 ISCC PDFs + `transport/` × 3 | ISCC PoS status snapshot (volume-weighted cert per supplier); 15 supplier ISCC EU + ISCC PLUS certificate PDFs in `certificates/` (incl. 5 ≤5 TON / pre-rename suppliers (BIOWASTE, ECOGRAS, ECODIESEL, LITOPLAS, SANIMAX)); `transport/` = 2 outbound BL (CMA CGM, CARTAGENA EXPRES 2025-06-11 + ISTANBUL EXPRES 2025-07-03) + `transport_note.md` documenting Jan–May 2025 pre-export stockpile, NL→UK routing chain, and inbound-transport pending status; `contracts/`, `ersv/` are gitkeep placeholders pending supplier upload |
 | `04_compliance/` | `01_supply_chain_diagram.pdf` | Supplier list + ISCC EU certificate references (no ANLA pathway — ELT RCF is UK RTFO + ISCC EU only) |
-| `05_audit_trail/` | `06_audit_trail_export_<month>_2025.csv` × 8 + `db_snapshots/dft_snapshot_2026-05-21_RTFO-310825.sql` | audit_log diff per month + full DB snapshot at submission date |
+| `05_audit_trail/` | `06_audit_trail_export_<month>_2025.csv` × 8 + `06_audit_trail_redistribution_0016.csv` + `db_snapshots/dft_snapshot_2026-05-21_RTFO-310825.sql` | audit_log diff per month, 0016 supplier-redistribution trail (1,239 rows pre/post per row — `daily_inputs.original_values` materialised), full DB snapshot at submission date |
 | `06_annex_d_stock_carryover/` | `07_stock_carryover_jan_feb_2025.pdf` | Documents the 339,865 kg Jan→Feb stock carry-over (Feb 1-4 consumption) |
 | (root) | `09_evidence_index_FINAL.pdf` | Evidence index — catalogues every hashed deliverable item |
 | (root) | `MANIFEST.sha256` | SHA-256 of every artefact in this bundle |

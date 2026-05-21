@@ -13,7 +13,7 @@ Target distribution (over the 1,239-row pool of the five certified
 suppliers, excluding LE5TON aggregate):
 
     EFFICIEN TECHNOLOGY  35%
-    KAL TIRE             30%
+    KALTIRE             30%
     PYRCOM SAS           20%
     BOLDER INDUSTRIES    10%
     ESENTTIA              5%
@@ -65,8 +65,8 @@ Supplier-cert validity used for the rebind (looked up by cert_number):
     BOLDER     US201-120372025  2025-04-04 -> 2026-04-03
     EFFICIEN   US201-158772025  2025-01-26 -> 2026-01-25
     ESENTTIA   CO222-00000027   (no expiry; pick the dominant cert)
-    KAL TIRE   US201-138762024  2024-05-18 -> 2025-05-17
-    KAL TIRE   US201-138762025  2025-05-18 -> 2026-05-17
+    KALTIRE   US201-138762024  2024-05-18 -> 2025-05-17
+    KALTIRE   US201-138762025  2025-05-18 -> 2026-05-17
     PYRCOM     ES216-20249051   2024-10-17 -> 2025-10-16
 
 Mass-balance MVs aggregate by day, not by supplier or certificate — no
@@ -107,7 +107,7 @@ depends_on = None
 _RECT_REASON = (
     "Supplier mix correction Feb-Aug 2025 — client directive 2026-05-21. "
     "Redistribution of the five certified ELT suppliers to target "
-    "shares EFFICIEN 35% / KAL TIRE 30% / PYRCOM 20% / BOLDER 10% / "
+    "shares EFFICIEN 35% / KALTIRE 30% / PYRCOM 20% / BOLDER 10% / "
     "ESENTTIA 5% on the 1,239-row pool. Daily loads (kg/date/time) "
     "preserved; supplier_id reassigned per deterministic greedy "
     "mapping. eRSV cleared (supplier-specific serials), certificate_id "

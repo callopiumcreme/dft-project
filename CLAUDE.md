@@ -10,7 +10,7 @@
 ## Stack
 
 - **Backend:** FastAPI (Python 3.12) + SQLAlchemy 2.0 async + Pydantic v2 + Alembic
-- **DB:** PostgreSQL 16 — 11 migrations in `backend/alembic/versions/` (0001-0011)
+- **DB:** PostgreSQL 16 — 16 migrations in `backend/alembic/versions/` (0001-0016)
 - **Auth:** JWT Bearer, 8h TTL, ruoli: `admin|operator|viewer|certifier`
 - **Frontend:** Next.js 14 App Router — `landing/` (deploy https://oistebio.usenexos.com via PM2 + nginx Hetzner). Sprint 3 estende con `/app/*` protetto JWT
 - **Proxy:** Caddy 2 (non nginx) — auto HTTPS
@@ -25,7 +25,7 @@
 4. **MAI eseguire** `REFRESH MATERIALIZED VIEW CONCURRENTLY` dentro transazione — usare AUTOCOMMIT (vedi `routers/mass_balance.py`)
 5. **Pydantic v2:** `model_dump()` non `.dict()`
 6. **Pre-implementation:** leggere BLUEPRINT.md prima di qualsiasi nuovo feature
-7. **Migrations:** prefisso `000N_descrizione.py`, prossima è `0012_`
+7. **Migrations:** prefisso `000N_descrizione.py`, prossima è `0017_`
 
 ## Stato sprint
 
