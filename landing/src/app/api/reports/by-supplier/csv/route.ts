@@ -9,9 +9,16 @@ export const dynamic = 'force-dynamic';
 
 type Row = components['schemas']['BySupplierRow'];
 
-const LE5TON_CODE = 'LE5TON';
+const REDIST_POOL = new Set(['EFFICIEN', 'KALTIRE', 'PYRCOM', 'BOLDER', 'ESENTTIA']);
+const REDIST_TARGET: Record<string, number> = {
+  EFFICIEN: 35,
+  KALTIRE: 30,
+  PYRCOM: 20,
+  BOLDER: 10,
+  ESENTTIA: 5,
+};
 
-type EnrichedRow = Row & { pct_total: string; pct_cert: string };
+type EnrichedRow = Row & { pct_total: string; pct_pool: string; target_pct: string };
 
 const COLS: { key: keyof EnrichedRow; header: string }[] = [
   { key: 'supplier_id', header: 'supplier_id' },
@@ -19,7 +26,8 @@ const COLS: { key: keyof EnrichedRow; header: string }[] = [
   { key: 'supplier_name', header: 'supplier_name' },
   { key: 'total_input_kg', header: 'total_input_kg' },
   { key: 'pct_total', header: 'pct_total' },
-  { key: 'pct_cert', header: 'pct_cert' },
+  { key: 'pct_pool', header: 'pct_pool' },
+  { key: 'target_pct', header: 'target_pct' },
   { key: 'entries', header: 'entries' },
   { key: 'days', header: 'days' },
 ];
@@ -43,18 +51,20 @@ export async function GET(req: NextRequest) {
       query: { date_from: from, date_to: to },
     });
     const totalKg = rows.reduce((s, r) => s + (Number(r.total_input_kg) || 0), 0);
-    const certKg = rows
-      .filter((r) => r.supplier_code !== LE5TON_CODE)
+    const poolKg = rows
+      .filter((r) => REDIST_POOL.has(r.supplier_code))
       .reduce((s, r) => s + (Number(r.total_input_kg) || 0), 0);
     const enriched: EnrichedRow[] = rows.map((r) => {
       const v = Number(r.total_input_kg) || 0;
-      const isLe5ton = r.supplier_code === LE5TON_CODE;
+      const inPool = REDIST_POOL.has(r.supplier_code);
       const pctTotal = totalKg > 0 ? (v / totalKg) * 100 : 0;
-      const pctCert = !isLe5ton && certKg > 0 ? (v / certKg) * 100 : null;
+      const pctPool = inPool && poolKg > 0 ? (v / poolKg) * 100 : null;
+      const target = REDIST_TARGET[r.supplier_code];
       return {
         ...r,
         pct_total: pctTotal.toFixed(4),
-        pct_cert: pctCert === null ? '' : pctCert.toFixed(4),
+        pct_pool: pctPool === null ? '' : pctPool.toFixed(4),
+        target_pct: target === undefined ? '' : target.toFixed(4),
       };
     });
     const csv = rowsToCsv(enriched, COLS);

@@ -8,7 +8,16 @@ type Row = components['schemas']['BySupplierRow'];
 export const dynamic = 'force-dynamic';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const LE5TON_CODE = 'LE5TON';
+const REDIST_POOL = new Set(['EFFICIEN', 'KALTIRE', 'PYRCOM', 'BOLDER', 'ESENTTIA']);
+const REDIST_TARGET: Record<string, number> = {
+  EFFICIEN: 35,
+  KALTIRE: 30,
+  PYRCOM: 20,
+  BOLDER: 10,
+  ESENTTIA: 5,
+};
+const REDIST_FROM = '2025-02-01';
+const REDIST_TO = '2025-08-31';
 const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
 const pctFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 1,
@@ -51,8 +60,9 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
   const totalKg = sorted.reduce((s, r) => s + (Number(r.total_input_kg) || 0), 0);
   const totalEntries = sorted.reduce((s, r) => s + r.entries, 0);
   const certKg = sorted
-    .filter((r) => r.supplier_code !== LE5TON_CODE)
+    .filter((r) => REDIST_POOL.has(r.supplier_code))
     .reduce((s, r) => s + (Number(r.total_input_kg) || 0), 0);
+  const inRedistWindow = from === REDIST_FROM && to === REDIST_TO;
 
   const slices: PieSlice[] = sorted.map((r) => {
     const v = Number(r.total_input_kg) || 0;
@@ -128,6 +138,41 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
         </div>
       )}
 
+      <div
+        className={`mt-6 border p-4 font-mono text-[0.72rem] leading-relaxed ${
+          inRedistWindow
+            ? 'border-olive-deep/40 bg-olive-deep/5 text-ink-soft'
+            : 'border-rule bg-bg-soft text-ink-soft'
+        }`}
+      >
+        {inRedistWindow ? (
+          <>
+            <span className="text-ink">RTFO 0016 window active</span> — filter
+            matches Feb-Aug 2025; % Pool should equal Target within ±0.04 pp.
+          </>
+        ) : (
+          <>
+            <span className="text-ink">% Pool ≠ Target?</span> Migration 0016
+            redistribution targets apply to Feb-Aug 2025 only — current filter
+            is{' '}
+            <span className="text-ink">
+              {from ?? '…'} → {to ?? '…'}
+            </span>
+            .{' '}
+            <Link
+              href={buildHref('/app/reports/by-supplier', {
+                from: REDIST_FROM,
+                to: REDIST_TO,
+              })}
+              className="underline decoration-dotted underline-offset-2 hover:text-ink"
+            >
+              Apply Feb 1 → Aug 31 filter
+            </Link>{' '}
+            to verify the 35 / 30 / 20 / 10 / 5 match.
+          </>
+        )}
+      </div>
+
       <section className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KpiTile label="Suppliers" value={String(sorted.length)} />
         <KpiTile label="Total input" value={`${numFmt.format(totalKg)} kg`} />
@@ -153,7 +198,8 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
                 <Th>Name</Th>
                 <ThNum>Input kg</ThNum>
                 <ThNum>% Total</ThNum>
-                <ThNum>% Cert</ThNum>
+                <ThNum>% Pool</ThNum>
+                <ThNum>Target</ThNum>
                 <ThNum>Entries</ThNum>
                 <ThNum>Days</ThNum>
               </tr>
@@ -161,7 +207,7 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
             <tbody>
               {sorted.length === 0 && !fetchError && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-ink-mute">
+                  <td colSpan={9} className="px-3 py-6 text-center text-ink-mute">
                     No suppliers in selected period.
                   </td>
                 </tr>
@@ -169,8 +215,9 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
               {sorted.map((r, i) => {
                 const v = Number(r.total_input_kg) || 0;
                 const pct = totalKg > 0 ? (v / totalKg) * 100 : 0;
-                const isLe5ton = r.supplier_code === LE5TON_CODE;
-                const pctCert = !isLe5ton && certKg > 0 ? (v / certKg) * 100 : null;
+                const inPool = REDIST_POOL.has(r.supplier_code);
+                const pctCert = inPool && certKg > 0 ? (v / certKg) * 100 : null;
+                const target = REDIST_TARGET[r.supplier_code];
                 return (
                   <tr
                     key={r.supplier_id}
@@ -181,8 +228,11 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
                     <Td className="text-ink-soft">{r.supplier_name}</Td>
                     <TdNum>{numFmt.format(v)}</TdNum>
                     <TdNum>{pctFmt.format(pct)}</TdNum>
-                    <TdNum className={isLe5ton ? 'text-ink-mute' : ''}>
+                    <TdNum className={inPool ? '' : 'text-ink-mute'}>
                       {pctCert === null ? '—' : pctFmt.format(pctCert)}
+                    </TdNum>
+                    <TdNum className="text-ink-mute">
+                      {target === undefined ? '—' : pctFmt.format(target)}
                     </TdNum>
                     <TdNum>{numFmt.format(r.entries)}</TdNum>
                     <TdNum>{numFmt.format(r.days)}</TdNum>
@@ -199,6 +249,7 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
                   <TdNum>
                     {certKg > 0 ? pctFmt.format((certKg / totalKg) * 100) : '—'}
                   </TdNum>
+                  <TdNum className="text-ink-mute">100.0</TdNum>
                   <TdNum>{numFmt.format(totalEntries)}</TdNum>
                   <TdNum>—</TdNum>
                 </tr>
@@ -210,10 +261,12 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
 
       <p className="mt-4 max-w-reading font-mono text-[0.7rem] leading-relaxed text-ink-mute">
         <span className="text-ink-soft">% Total</span> = share of input over all suppliers (includes
-        LE5TON ≤5 TON aggregate self-declarations).{' '}
-        <span className="text-ink-soft">% Cert</span> = share over certified-supplier pool only
-        (excl. LE5TON) — this is the denominator used for the RTFO 0016 redistribution targets
-        (EFFICIEN 35 % / KALTIRE 30 % / PYRCOM 20 % / BOLDER 10 % / ESENTTIA 5 %).
+        LE5TON ≤5 TON aggregate + Jan-only suppliers BIOWASTE / LITOPLAS).{' '}
+        <span className="text-ink-soft">% Pool</span> = share over the 5-supplier RTFO 0016
+        redistribution pool only (EFFICIEN, KALTIRE, PYRCOM, BOLDER, ESENTTIA). Migration 0016
+        rebalanced these five over Feb-Aug 2025 to <span className="text-ink-soft">Target</span>{' '}
+        (35 / 30 / 20 / 10 / 5). Apply the Feb 1 → Aug 31 filter for an exact match within
+        ±0.04 pp.
       </p>
     </div>
   );
