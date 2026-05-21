@@ -8,6 +8,7 @@ type Row = components['schemas']['BySupplierRow'];
 export const dynamic = 'force-dynamic';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const LE5TON_CODE = 'LE5TON';
 const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
 const pctFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 1,
@@ -49,6 +50,9 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
   const sorted = [...rows].sort((a, b) => Number(b.total_input_kg) - Number(a.total_input_kg));
   const totalKg = sorted.reduce((s, r) => s + (Number(r.total_input_kg) || 0), 0);
   const totalEntries = sorted.reduce((s, r) => s + r.entries, 0);
+  const certKg = sorted
+    .filter((r) => r.supplier_code !== LE5TON_CODE)
+    .reduce((s, r) => s + (Number(r.total_input_kg) || 0), 0);
 
   const slices: PieSlice[] = sorted.map((r) => {
     const v = Number(r.total_input_kg) || 0;
@@ -148,7 +152,8 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
                 <Th>Code</Th>
                 <Th>Name</Th>
                 <ThNum>Input kg</ThNum>
-                <ThNum>%</ThNum>
+                <ThNum>% Total</ThNum>
+                <ThNum>% Cert</ThNum>
                 <ThNum>Entries</ThNum>
                 <ThNum>Days</ThNum>
               </tr>
@@ -156,7 +161,7 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
             <tbody>
               {sorted.length === 0 && !fetchError && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-ink-mute">
+                  <td colSpan={8} className="px-3 py-6 text-center text-ink-mute">
                     No suppliers in selected period.
                   </td>
                 </tr>
@@ -164,6 +169,8 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
               {sorted.map((r, i) => {
                 const v = Number(r.total_input_kg) || 0;
                 const pct = totalKg > 0 ? (v / totalKg) * 100 : 0;
+                const isLe5ton = r.supplier_code === LE5TON_CODE;
+                const pctCert = !isLe5ton && certKg > 0 ? (v / certKg) * 100 : null;
                 return (
                   <tr
                     key={r.supplier_id}
@@ -174,15 +181,40 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
                     <Td className="text-ink-soft">{r.supplier_name}</Td>
                     <TdNum>{numFmt.format(v)}</TdNum>
                     <TdNum>{pctFmt.format(pct)}</TdNum>
+                    <TdNum className={isLe5ton ? 'text-ink-mute' : ''}>
+                      {pctCert === null ? '—' : pctFmt.format(pctCert)}
+                    </TdNum>
                     <TdNum>{numFmt.format(r.entries)}</TdNum>
                     <TdNum>{numFmt.format(r.days)}</TdNum>
                   </tr>
                 );
               })}
+              {sorted.length > 0 && (
+                <tr className="border-t border-rule bg-bg font-semibold text-ink">
+                  <Td>—</Td>
+                  <Td>TOT</Td>
+                  <Td className="text-ink-soft">All suppliers</Td>
+                  <TdNum>{numFmt.format(totalKg)}</TdNum>
+                  <TdNum>100.0</TdNum>
+                  <TdNum>
+                    {certKg > 0 ? pctFmt.format((certKg / totalKg) * 100) : '—'}
+                  </TdNum>
+                  <TdNum>{numFmt.format(totalEntries)}</TdNum>
+                  <TdNum>—</TdNum>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </section>
+
+      <p className="mt-4 max-w-reading font-mono text-[0.7rem] leading-relaxed text-ink-mute">
+        <span className="text-ink-soft">% Total</span> = share of input over all suppliers (includes
+        LE5TON ≤5 TON aggregate self-declarations).{' '}
+        <span className="text-ink-soft">% Cert</span> = share over certified-supplier pool only
+        (excl. LE5TON) — this is the denominator used for the RTFO 0016 redistribution targets
+        (EFFICIEN 35 % / KALTIRE 30 % / PYRCOM 20 % / BOLDER 10 % / ESENTTIA 5 %).
+      </p>
     </div>
   );
 }

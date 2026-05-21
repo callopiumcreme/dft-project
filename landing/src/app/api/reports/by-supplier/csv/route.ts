@@ -9,11 +9,17 @@ export const dynamic = 'force-dynamic';
 
 type Row = components['schemas']['BySupplierRow'];
 
-const COLS: { key: keyof Row; header: string }[] = [
+const LE5TON_CODE = 'LE5TON';
+
+type EnrichedRow = Row & { pct_total: string; pct_cert: string };
+
+const COLS: { key: keyof EnrichedRow; header: string }[] = [
   { key: 'supplier_id', header: 'supplier_id' },
   { key: 'supplier_code', header: 'supplier_code' },
   { key: 'supplier_name', header: 'supplier_name' },
   { key: 'total_input_kg', header: 'total_input_kg' },
+  { key: 'pct_total', header: 'pct_total' },
+  { key: 'pct_cert', header: 'pct_cert' },
   { key: 'entries', header: 'entries' },
   { key: 'days', header: 'days' },
 ];
@@ -36,7 +42,22 @@ export async function GET(req: NextRequest) {
     const rows = await apiGet<Row[]>('/reports/by-supplier', {
       query: { date_from: from, date_to: to },
     });
-    const csv = rowsToCsv(rows, COLS);
+    const totalKg = rows.reduce((s, r) => s + (Number(r.total_input_kg) || 0), 0);
+    const certKg = rows
+      .filter((r) => r.supplier_code !== LE5TON_CODE)
+      .reduce((s, r) => s + (Number(r.total_input_kg) || 0), 0);
+    const enriched: EnrichedRow[] = rows.map((r) => {
+      const v = Number(r.total_input_kg) || 0;
+      const isLe5ton = r.supplier_code === LE5TON_CODE;
+      const pctTotal = totalKg > 0 ? (v / totalKg) * 100 : 0;
+      const pctCert = !isLe5ton && certKg > 0 ? (v / certKg) * 100 : null;
+      return {
+        ...r,
+        pct_total: pctTotal.toFixed(4),
+        pct_cert: pctCert === null ? '' : pctCert.toFixed(4),
+      };
+    });
+    const csv = rowsToCsv(enriched, COLS);
     const filename = `by-supplier-${new Date().toISOString().slice(0, 10)}.csv`;
     return new NextResponse(csv, {
       status: 200,
