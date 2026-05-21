@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RTFO Pathway Declaration — {{ submission_ref }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 18mm 20mm;
+            @bottom-left {
+                content: "RTFO Pathway Declaration · {{ submission_ref }} · ISCC EU {{ iscc_eu_cert_ref }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        html, body {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 9.5pt;
+            line-height: 1.4;
+            color: #111;
+        }
+        h1 {
+            font-size: 14pt;
+            border-bottom: 1pt solid #333;
+            padding-bottom: 4pt;
+            margin: 0 0 10pt 0;
+        }
+        h2 {
+            font-size: 10.5pt;
+            margin: 12pt 0 4pt 0;
+            text-transform: uppercase;
+            letter-spacing: 0.4pt;
+            border-bottom: 0.4pt solid #999;
+            padding-bottom: 2pt;
+        }
+        p { margin: 0 0 6pt 0; }
+        ul { margin: 4pt 0 8pt 0; padding-left: 16pt; }
+        ul li { margin-bottom: 2pt; }
+        .letterhead {
+            margin-bottom: 10pt;
+            padding-bottom: 4pt;
+            border-bottom: 0.5pt solid #888;
+        }
+        .letterhead .brand {
+            font-size: 12pt;
+            font-weight: bold;
+        }
+        .letterhead .legal {
+            font-size: 8pt;
+            color: #555;
+            margin-top: 2pt;
+        }
+        .meta {
+            font-size: 8.5pt;
+            color: #444;
+            margin-bottom: 10pt;
+        }
+        .meta strong { color: #111; }
+        table.kv {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin: 4pt 0 8pt 0;
+        }
+        table.kv th, table.kv td {
+            border: 0.5pt solid #888;
+            padding: 3pt 6pt;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.kv th {
+            background: #f0f0f0;
+            font-weight: bold;
+            width: 32%;
+        }
+        table.kv td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        table.totals-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin: 4pt 0 8pt 0;
+        }
+        table.totals-table th, table.totals-table td {
+            border: 0.5pt solid #888;
+            padding: 3pt 6pt;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.totals-table th {
+            background: #eee;
+            font-weight: bold;
+        }
+        table.totals-table td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .declaration {
+            margin-top: 10pt;
+            padding: 8pt 10pt;
+            border: 0.5pt solid #444;
+            background: #fafafa;
+        }
+        .declaration ol {
+            margin: 4pt 0 4pt 18pt;
+            padding: 0;
+        }
+        .declaration li { margin-bottom: 3pt; }
+        .signature { margin-top: 18pt; }
+        .signature .line { margin-top: 24pt; }
+        .signature .role { font-size: 8.5pt; color: #555; margin-top: 2pt; }
+        .mono { font-family: "Courier New", monospace; font-size: 8pt; }
+    </style>
+</head>
+<body>
+
+<header class="letterhead">
+    <div class="brand">{{ submitter_company }}</div>
+    <div class="legal">
+        {{ submitter_address }} &middot; MWSt {{ submitter_vat }}
+    </div>
+</header>
+
+<h1>RTFO Pathway Declaration</h1>
+
+<section class="meta">
+    <div><strong>Submission ref:</strong> {{ submission_ref }}</div>
+    <div><strong>Reporting period:</strong> {{ period_label }} ({{ period_start }} → {{ period_end }})</div>
+    <div><strong>Issued:</strong> {{ generated_at }}</div>
+    <div><strong>Issuer:</strong> {{ submitter_company }} &middot; signed by {{ signatory_name }} ({{ signatory_role }})</div>
+</section>
+
+<h2>1 · Operator &amp; production facility</h2>
+<table class="kv">
+    <tr><th>Operator</th><td>{{ submitter_company }} (Swiss GmbH, MWSt {{ submitter_vat }})</td></tr>
+    <tr><th>Registered office</th><td>{{ submitter_address }}</td></tr>
+    <tr><th>Production facility</th><td>{{ plant_name }}</td></tr>
+    <tr><th>Process</th><td>Pyrolysis of end-of-life tyres → refined pyrolysis oil</td></tr>
+    <tr><th>Product</th><td>{{ product }} (EU + PLUS variants)</td></tr>
+</table>
+
+<h2>2 · Feedstock &amp; pathway eligibility</h2>
+<table class="kv">
+    <tr><th>Feedstock</th><td>{{ feedstock }} — post-consumer waste tyres</td></tr>
+    <tr><th>Feedstock source</th><td>{{ supplier_count }} ISCC-certified Colombian collecting points + ≤5 t/m self-declared suppliers, Girardot weighbridge intake</td></tr>
+    <tr><th>RTFO classification</th><td>Recycled Carbon Fuel (RCF) — UK RTFO Guidance, Chapter&nbsp;9</td></tr>
+    <tr><th>EU market eligibility</th><td>Not RED-eligible. No EU-market RCF claim made under this submission.</td></tr>
+    <tr><th>Audit basis</th><td>UK RTFO RCF eligibility is audit-gated. ISCC EU audit pass = eligibility for the volumes covered.</td></tr>
+</table>
+
+<h2>3 · Mass balance methodology</h2>
+<p>
+    The production reported under this declaration follows the mass-balance chain-of-custody
+    methodology defined in <strong>ISCC EU System Document 203</strong>. Per-month mass balance
+    is filed as Annex A × 8 in
+    <span class="mono">01_annex_a_mass_balance/02_mass_balance_&lt;month&gt;_2025_FINAL.pdf</span>.
+    Day-level audit trail is exported as
+    <span class="mono">05_audit_trail/06_audit_trail_export_&lt;month&gt;_2025.csv</span> × 8 with
+    full DB snapshot pinned in <span class="mono">05_audit_trail/db_snapshots/</span>.
+</p>
+
+<h2>4 · ISCC EU certification</h2>
+<table class="kv">
+    <tr><th>Certificate holder</th><td>{{ submitter_company }}</td></tr>
+    <tr><th>ISCC EU cert ref</th><td><span class="mono">{{ iscc_eu_cert_ref }}</span></td></tr>
+    <tr><th>Issuing body</th><td>{{ iscc_eu_cert_body }}</td></tr>
+    <tr><th>Scope</th><td>DEV-P100 producer; ELT pyrolysis pathway</td></tr>
+    <tr><th>Cert PDF</th><td><span class="mono">04_compliance/iscc_eu_certificate/OISTEBIO - EU-ISCC-Cert-{{ iscc_eu_cert_ref }}.pdf</span></td></tr>
+</table>
+
+<h2>5 · Chain of custody (off-taker route)</h2>
+<p>
+    Supplier (Colombia, 15 ISCC collecting points) → Girardot weighbridge → pyrolysis plant
+    → refined {{ product }} (EU + PLUS variants) → CMA CGM outbound shipping (CARTAGENA EXPRES
+    2025-06-11, ISTANBUL EXPRES 2025-07-03) → UTB BV Dordrecht NL → <strong>{{ off_taker }}</strong>
+    (sole UK off-taker; obligated supplier; sole submitter to UK DfT ROS).
+</p>
+<p>
+    OisteBio GmbH does <strong>not</strong> submit to ROS directly; all DfT-facing
+    submissions for the volumes covered by this declaration are handled by Crown Oil Ltd.
+</p>
+
+<h2>6 · Production volumes — Jan–Aug 2025</h2>
+<table class="totals-table">
+    <thead>
+        <tr>
+            <th>Metric</th>
+            <th class="num">Value</th>
+            <th>Source</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Total ELT feedstock input</td>
+            <td class="num">{{ input_total_kg | fmt_kg }}</td>
+            <td>Sum across 8 monthly Annex A</td>
+        </tr>
+        <tr>
+            <td>DEV-P100 EU output</td>
+            <td class="num">{{ eu_prod_kg | fmt_kg }}</td>
+            <td>EU variant — combined all months</td>
+        </tr>
+        <tr>
+            <td>DEV-P100 PLUS output</td>
+            <td class="num">{{ plus_prod_kg | fmt_kg }}</td>
+            <td>PLUS variant — combined all months</td>
+        </tr>
+        <tr>
+            <td>DEV-P100 EU — volume</td>
+            <td class="num">{{ eu_prod_litres | fmt_num }} L</td>
+            <td>Conversion log; density ASTM D4052</td>
+        </tr>
+        <tr>
+            <td>DEV-P100 PLUS — volume</td>
+            <td class="num">{{ plus_prod_litres | fmt_num }} L</td>
+            <td>Conversion log; density ASTM D4052</td>
+        </tr>
+        <tr>
+            <td>Process gas / syngas</td>
+            <td class="num">{{ gas_syngas_m3 | fmt_num }} m³</td>
+            <td>Combusted on-site; not claimed as RCF volume</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>7 · GHG saving</h2>
+<p>
+    RCF feedstock under UK RTFO is recognised as waste-derived; no GHG saving threshold applies.
+    GHG saving evidence is derived from the ISCC EU audit findings and can be supplied to the
+    UK DfT LCF Delivery Unit on request. Mass balance and chain-of-custody traceability satisfy
+    the RCF pathway eligibility requirements for the volumes claimed in this submission.
+</p>
+
+<h2>8 · Declaration</h2>
+<div class="declaration">
+    <p>
+        On behalf of {{ submitter_company }}, I, the undersigned, declare that:
+    </p>
+    <ol>
+        <li>
+            The above pathway accurately describes the production process for {{ product }}
+            covered by RTFO bundle <span class="mono">{{ submission_ref }}</span>;
+        </li>
+        <li>
+            All feedstock used is end-of-life tyres (post-consumer waste) eligible as RCF
+            under UK RTFO Chapter&nbsp;9;
+        </li>
+        <li>
+            Mass balance has been maintained throughout the {{ period_label }} reporting period
+            in accordance with ISCC EU System Document&nbsp;203;
+        </li>
+        <li>
+            All chain-of-custody steps are documented in the supporting evidence pack
+            (Annex A × 8, audit-trail CSV × 8, ISCC EU certificates, BL shipping documents,
+            DB snapshot at submission date);
+        </li>
+        <li>
+            Crown Oil Ltd, as obligated UK supplier, is the sole submitter to the
+            UK DfT ROS system for the volumes covered by this declaration.
+        </li>
+    </ol>
+</div>
+
+<section class="signature">
+    <div>For and on behalf of {{ submitter_company }}</div>
+    <div class="line">{{ signatory_name }}</div>
+    <div class="role">{{ signatory_role }}</div>
+    <div class="role">Date: {{ generated_at_date }}</div>
+</section>
+
+</body>
+</html>

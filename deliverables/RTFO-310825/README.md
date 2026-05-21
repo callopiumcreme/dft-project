@@ -7,7 +7,7 @@
 **Feedstock:** ELT (end-of-life tyres) → pyrolysis oil → refined DEV-P100
 **RCF eligibility:** UK only, audit-gated (no separate DfT designation; audit pass = eligibility for the batch)
 
-## Contents (51 hashed artefacts)
+## Contents (52 hashed artefacts)
 
 | Folder | Files | Notes |
 |--------|-------|-------|
@@ -15,7 +15,7 @@
 | `01_annex_a_mass_balance/` | `02_mass_balance_<month>_2025_FINAL.pdf` × 8 | One Annex A per month (Jan-Aug); per-month EU+PLUS densities |
 | `02_ros_export/` | `05_production_conversion_logs_<month>_2025.pdf` × 8 | Monthly EU+PLUS per-day kg→L conversion (per-month density) |
 | `03_supplier_evidence/` | `03_iscc_pos_status.pdf` + `certificates/` × 15 ISCC PDFs + `transport/` × 3 | ISCC PoS status snapshot (volume-weighted cert per supplier); 15 supplier ISCC EU + ISCC PLUS certificate PDFs in `certificates/` (incl. 5 ≤5 TON / pre-rename suppliers (BIOWASTE, ECOGRAS, ECODIESEL, LITOPLAS, SANIMAX)); `transport/` = 2 outbound BL (CMA CGM, CARTAGENA EXPRES 2025-06-11 + ISTANBUL EXPRES 2025-07-03) + `transport_note.md` documenting Jan–May 2025 pre-export stockpile, NL→UK routing chain, and inbound-transport pending status; `contracts/`, `ersv/` are gitkeep placeholders pending supplier upload |
-| `04_compliance/` | `01_supply_chain_diagram.pdf` + `iscc_eu_certificate/OISTEBIO - EU-ISCC-Cert-LV227-00000597.pdf` | Supplier list + ISCC EU certificate references (no ANLA pathway — ELT RCF is UK RTFO + ISCC EU only); OisteBio ISCC EU certificate LV227-00000597 (issuer CB LV227) covering DEV-P100 producer scope |
+| `04_compliance/` | `01_supply_chain_diagram.pdf` + `iscc_eu_certificate/OISTEBIO - EU-ISCC-Cert-LV227-00000597.pdf` + `rtfo_pathway_declaration/08_rtfo_pathway_declaration_FINAL.pdf` | Supplier list + ISCC EU certificate references (no ANLA pathway — ELT RCF is UK RTFO + ISCC EU only); OisteBio ISCC EU certificate LV227-00000597 (issuer CB LV227) covering DEV-P100 producer scope; signed RTFO RCF pathway declaration (Paolo Ughetti, Managing Director) citing ISCC EU System Document 203 + UK RTFO Chapter 9 |
 | `05_audit_trail/` | `06_audit_trail_export_<month>_2025.csv` × 8 + `06_audit_trail_redistribution_0016.csv` + `db_snapshots/dft_snapshot_2026-05-21_RTFO-310825.sql` | audit_log diff per month, 0016 supplier-redistribution trail (1,239 rows pre/post per row — `daily_inputs.original_values` materialised), full DB snapshot at submission date |
 | `06_annex_d_stock_carryover/` | `07_stock_carryover_jan_feb_2025.pdf` | Documents the 339,865 kg Jan→Feb stock carry-over (Feb 1-4 consumption) |
 | (root) | `09_evidence_index_FINAL.pdf` | Evidence index — catalogues every hashed deliverable item |
@@ -40,7 +40,7 @@ shasum -a 256 MANIFEST.sha256   # compare against MANIFEST.sha256.sig content
 
 - `03_supplier_evidence/certificates/` — 15 ISCC certificate PDFs uploaded from internal Drive (2026-05-21); `contracts/`, `ersv/` still empty until Crown Oil / suppliers upload originals
 - `03_supplier_evidence/transport/` — 2 outbound BL + corrected arrivals tracker added 2026-05-21; **inbound transport** (suppliers → Girardot weighbridge tickets / CMRs) still pending digital upload from operator — paper records held at Girardot gate-house, retrievable on auditor demand per delivery
-- `04_compliance/iscc_eu_certificate/` — OisteBio ISCC EU cert LV227-00000597 uploaded 2026-05-21; `04_compliance/rtfo_pathway_declaration/` still empty until issued / scanned
+- `04_compliance/iscc_eu_certificate/` — OisteBio ISCC EU cert LV227-00000597 uploaded 2026-05-21; `04_compliance/rtfo_pathway_declaration/` populated 2026-05-21 with signed RCF pathway declaration `08_rtfo_pathway_declaration_FINAL.pdf` (Paolo Ughetti, Managing Director; ISCC EU System Document 203 + UK RTFO Chapter 9)
 - PYRCOM feedstock mismatch flagged in migration 0010 (cert-correction) remains unresolved; documented in `03_iscc_pos_status.pdf`
 - BIOWASTE cert `PL21990602701` format preserved verbatim (no hyphen) — original form retained for ISCC EU audit trail per project policy
 
@@ -63,6 +63,7 @@ python3 scripts/render_iscc_pos_status.py
 python3 scripts/render_supply_chain.py
 python3 scripts/render_stock_carryover.py
 python3 scripts/render_cover_letter_v2.py
+python3 scripts/render_pathway_declaration.py
 python3 scripts/render_evidence_index_v2.py      # must run last — indexes all sibling files
 
 # regen MANIFEST + sig
