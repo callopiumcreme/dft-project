@@ -32,9 +32,9 @@ shasum -a 256 MANIFEST.sha256   # compare against MANIFEST.sha256.sig content
 
 ## Source data fingerprint
 
-- Postgres database `dft`, alembic head `0015`
-- Migration history covering Feb-Aug EU% rebalance (0012), gas_syngas density + m³ MV (0013), monthly EU+PLUS densities (0014), PYRCOM orphan cert assignment (0015) — all captured in `05_audit_trail/db_snapshots/`
-- All per-row rewrites under 0010/0012/0015 captured in `audit_log` with full `old_values`/`new_values` JSONB; the per-month CSV exports replay those rows
+- Postgres database `dft`, alembic head `0016`
+- Migration history covering Feb-Aug EU% rebalance (0012), gas_syngas density + m³ MV (0013), monthly EU+PLUS densities (0014), PYRCOM orphan cert assignment (0015), Feb-Aug supplier-mix redistribution (0016: EFFICIEN 35% / KALTIRE 30% / PYRCOM 20% / BOLDER 10% / ESENTTIA 5%) — all captured in `05_audit_trail/db_snapshots/`
+- All per-row rewrites under 0010/0012/0015 captured in `audit_log` with full `old_values`/`new_values` JSONB; 0016 stores its pre-state on each affected `daily_inputs` row in the `original_values` JSONB column with marker `redistribution_migration: '0016'` for full reversibility via downgrade; the per-month CSV exports replay those rows
 
 ## Known gaps (handover items, not blockers)
 

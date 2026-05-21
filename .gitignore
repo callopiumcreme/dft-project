@@ -11,6 +11,7 @@ secrets/
 *.xls
 *.csv
 data/
+!backend/alembic/versions/data/
 client-data/
 imports/
 
