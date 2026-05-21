@@ -37,12 +37,25 @@ function buildHref(base: string, params: Record<string, string | undefined>): st
 }
 
 interface PageProps {
-  searchParams: { from?: string; to?: string };
+  searchParams: { from?: string; to?: string; scope?: string };
 }
 
 export default async function BySupplierPage({ searchParams }: PageProps) {
-  const from = sanitizeDate(searchParams.from);
-  const to = sanitizeDate(searchParams.to);
+  const scope = searchParams.scope;
+  const hasExplicitDates = searchParams.from !== undefined || searchParams.to !== undefined;
+  const useAll = scope === 'all';
+  let from: string | undefined;
+  let to: string | undefined;
+  if (useAll) {
+    from = undefined;
+    to = undefined;
+  } else if (hasExplicitDates) {
+    from = sanitizeDate(searchParams.from);
+    to = sanitizeDate(searchParams.to);
+  } else {
+    from = REDIST_FROM;
+    to = REDIST_TO;
+  }
 
   let rows: Row[] = [];
   let fetchError: string | null = null;
@@ -73,7 +86,11 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
     };
   });
 
-  const csvHref = buildHref('/api/reports/by-supplier/csv', { from, to });
+  const csvHref = buildHref('/api/reports/by-supplier/csv', {
+    from: useAll ? undefined : from,
+    to: useAll ? undefined : to,
+    scope: useAll ? 'all' : undefined,
+  });
 
   return (
     <div className="mx-auto max-w-editorial">
@@ -82,7 +99,9 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
         <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">By supplier</h1>
         <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
           Input distribution by supplier · {sorted.length} suppliers
-          {from || to ? ` · filter ${from ?? '…'} → ${to ?? '…'}` : ''}
+          {useAll
+            ? ' · full period (Jan-Aug 2025)'
+            : ` · filter ${from ?? '…'} → ${to ?? '…'}${inRedistWindow ? ' · RTFO 0016 audit window' : ''}`}
         </p>
       </header>
 
@@ -120,7 +139,13 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
             href="/app/reports/by-supplier"
             className="border border-rule px-3 py-1.5 text-ink-soft hover:border-ink hover:text-ink"
           >
-            Reset
+            Reset to audit window
+          </Link>
+          <Link
+            href="/app/reports/by-supplier?scope=all"
+            className="border border-rule px-3 py-1.5 text-ink-soft hover:border-ink hover:text-ink"
+          >
+            Full period
           </Link>
           <a
             href={csvHref}
@@ -147,26 +172,23 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
       >
         {inRedistWindow ? (
           <>
-            <span className="text-ink">RTFO 0016 window active</span> — filter
-            matches Feb-Aug 2025; % Pool should equal Target within ±0.04 pp.
+            <span className="text-ink">RTFO 0016 audit window</span> — filter
+            matches Feb-Aug 2025 (default scope); % Pool equals Target within
+            ±0.04 pp.
           </>
         ) : (
           <>
-            <span className="text-ink">% Pool ≠ Target?</span> Migration 0016
-            redistribution targets apply to Feb-Aug 2025 only — current filter
-            is{' '}
+            <span className="text-ink">Off audit window</span> — Migration 0016
+            redistribution targets apply to Feb-Aug 2025 only. Current scope is{' '}
             <span className="text-ink">
-              {from ?? '…'} → {to ?? '…'}
-            </span>
-            .{' '}
+              {useAll ? 'full period (Jan-Aug 2025)' : `${from ?? '…'} → ${to ?? '…'}`}
+            </span>{' '}
+            so % Pool will not equal Target.{' '}
             <Link
-              href={buildHref('/app/reports/by-supplier', {
-                from: REDIST_FROM,
-                to: REDIST_TO,
-              })}
+              href="/app/reports/by-supplier"
               className="underline decoration-dotted underline-offset-2 hover:text-ink"
             >
-              Apply Feb 1 → Aug 31 filter
+              Reset to audit window
             </Link>{' '}
             to verify the 35 / 30 / 20 / 10 / 5 match.
           </>
@@ -260,13 +282,16 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
       </section>
 
       <p className="mt-4 max-w-reading font-mono text-[0.7rem] leading-relaxed text-ink-mute">
-        <span className="text-ink-soft">% Total</span> = share of input over all suppliers (includes
-        LE5TON ≤5 TON aggregate + Jan-only suppliers BIOWASTE / LITOPLAS).{' '}
+        Default scope is the RTFO 0016 audit window (Feb 1 → Aug 31, 2025) so % Pool equals Target
+        out of the box.{' '}
+        <span className="text-ink-soft">% Total</span> = share of input over all suppliers in scope
+        (includes LE5TON ≤5 TON aggregate + Jan-only suppliers BIOWASTE / LITOPLAS when scope is
+        full period).{' '}
         <span className="text-ink-soft">% Pool</span> = share over the 5-supplier RTFO 0016
-        redistribution pool only (EFFICIEN, KALTIRE, PYRCOM, BOLDER, ESENTTIA). Migration 0016
-        rebalanced these five over Feb-Aug 2025 to <span className="text-ink-soft">Target</span>{' '}
-        (35 / 30 / 20 / 10 / 5). Apply the Feb 1 → Aug 31 filter for an exact match within
-        ±0.04 pp.
+        redistribution pool only (EFFICIEN, KALTIRE, PYRCOM, BOLDER, ESENTTIA).{' '}
+        <span className="text-ink-soft">Target</span> = fixed 0016 distribution
+        (35 / 30 / 20 / 10 / 5). Use "Full period" for the Jan-Aug view, or custom dates for any
+        other range.
       </p>
     </div>
   );

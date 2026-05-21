@@ -33,6 +33,8 @@ const COLS: { key: keyof EnrichedRow; header: string }[] = [
 ];
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const REDIST_FROM = '2025-02-01';
+const REDIST_TO = '2025-08-31';
 
 function sanitizeDate(v: string | null): string | undefined {
   if (!v) return undefined;
@@ -43,8 +45,22 @@ export async function GET(req: NextRequest) {
   const token = cookies().get(SESSION_COOKIE)?.value;
   if (!token) return NextResponse.json({ detail: 'unauthorized' }, { status: 401 });
 
-  const from = sanitizeDate(req.nextUrl.searchParams.get('from'));
-  const to = sanitizeDate(req.nextUrl.searchParams.get('to'));
+  const sp = req.nextUrl.searchParams;
+  const scope = sp.get('scope');
+  const hasExplicitDates = sp.has('from') || sp.has('to');
+  const useAll = scope === 'all';
+  let from: string | undefined;
+  let to: string | undefined;
+  if (useAll) {
+    from = undefined;
+    to = undefined;
+  } else if (hasExplicitDates) {
+    from = sanitizeDate(sp.get('from'));
+    to = sanitizeDate(sp.get('to'));
+  } else {
+    from = REDIST_FROM;
+    to = REDIST_TO;
+  }
 
   try {
     const rows = await apiGet<Row[]>('/reports/by-supplier', {
