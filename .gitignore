@@ -75,6 +75,17 @@ dumps/
 deliverables/**/db_snapshots/*.sql.gz
 deliverables/**/db_snapshots/*.sha256
 
+# --- Bundle artefact zips + generated supplier contracts (binary, client data) ---
+deliverables/*.zip
+deliverables/**/*.zip
+deliverables/contracts_*/
+*.docx
+
+# --- Claude runtime state ---
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+.claude/projects/
+
 # --- IDE ---
 .vscode/
 .idea/
