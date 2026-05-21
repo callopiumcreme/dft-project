@@ -290,8 +290,8 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
         <span className="text-ink-soft">% Pool</span> = share over the 5-supplier RTFO 0016
         redistribution pool only (EFFICIEN, KALTIRE, PYRCOM, BOLDER, ESENTTIA).{' '}
         <span className="text-ink-soft">Target</span> = fixed 0016 distribution
-        (35 / 30 / 20 / 10 / 5). Use "Full period" for the Jan-Aug view, or custom dates for any
-        other range.
+        (35 / 30 / 20 / 10 / 5). Use the <span className="text-ink-soft">Full period</span> link
+        for the Jan-Aug view, or custom dates for any other range.
       </p>
     </div>
   );
