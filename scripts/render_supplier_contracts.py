@@ -3,6 +3,9 @@
 Sources:
 - Template: /tmp/contracts_src/Neumaticos-Esenttia 2025.docx
 - Anagrafica: extracted from ISCC certificates in deliverables/RTFO-310825/03_supplier_evidence/certificates/
+- qty per supplier: derived from daily_inputs Feb–Aug 2025 average monthly tonnage
+  post-migration 0016 (supplier redistribution: EFFICIEN 35% / KALTIRE 30% /
+  PYRCOM 20% / BOLDER 10% / ESENTTIA 5%); rounded to nearest 25 mt.
 
 Output: deliverables/contracts_2025/*.docx
 """
@@ -65,7 +68,7 @@ SUPPLIERS = [
         sig_company_upper="BOLDER INDUSTRIES",
         nit_or_reg="ISCC US201-120372025",
         price_usd="[PRICE TO BE AGREED] USD",
-        qty="600 mt monthly (+/- 20%)",
+        qty="275 mt monthly (+/- 20%)",
         timeframe_es="Febrero – Agosto 2025",
         timeframe_en="February – August 2025",
         language="en",
@@ -93,7 +96,7 @@ SUPPLIERS = [
         sig_company_upper="EFFICIEN TECHNOLOGY LLC",
         nit_or_reg="ISCC US201-158772025",
         price_usd="[PRICE TO BE AGREED] USD",
-        qty="500 mt monthly (+/- 20%)",
+        qty="975 mt monthly (+/- 20%)",
         timeframe_es="Febrero – Agosto 2025",
         timeframe_en="February – August 2025",
         language="en",
@@ -121,7 +124,7 @@ SUPPLIERS = [
         sig_company_upper="KAL TIRE RECYCLING CHILE SPA",
         nit_or_reg="ISCC US201-138762025",
         price_usd="[PRICE TO BE AGREED] USD",
-        qty="550 mt monthly (+/- 20%)",
+        qty="825 mt monthly (+/- 20%)",
         timeframe_es="Febrero – Agosto 2025",
         timeframe_en="February – August 2025",
         language="en",
@@ -145,7 +148,7 @@ SUPPLIERS = [
         sig_company_upper="PYRCOM S.A.S.",
         nit_or_reg="ISCC ES216-20249051",
         price_usd="[PRICE TO BE AGREED] USD",
-        qty="250 mt mensuales (+/- 20%)",
+        qty="550 mt mensuales (+/- 20%)",
         timeframe_es="Febrero – Agosto 2025",
         timeframe_en="February – August 2025",
         language="es",
