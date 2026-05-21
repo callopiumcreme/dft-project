@@ -8,14 +8,6 @@ type Row = components['schemas']['BySupplierRow'];
 export const dynamic = 'force-dynamic';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const REDIST_POOL = new Set(['EFFICIEN', 'KALTIRE', 'PYRCOM', 'BOLDER', 'ESENTTIA']);
-const REDIST_TARGET: Record<string, number> = {
-  EFFICIEN: 35,
-  KALTIRE: 30,
-  PYRCOM: 20,
-  BOLDER: 10,
-  ESENTTIA: 5,
-};
 const REDIST_FROM = '2025-02-01';
 const REDIST_TO = '2025-08-31';
 const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
@@ -72,9 +64,6 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
   const sorted = [...rows].sort((a, b) => Number(b.total_input_kg) - Number(a.total_input_kg));
   const totalKg = sorted.reduce((s, r) => s + (Number(r.total_input_kg) || 0), 0);
   const totalEntries = sorted.reduce((s, r) => s + r.entries, 0);
-  const certKg = sorted
-    .filter((r) => REDIST_POOL.has(r.supplier_code))
-    .reduce((s, r) => s + (Number(r.total_input_kg) || 0), 0);
   const inRedistWindow = from === REDIST_FROM && to === REDIST_TO;
 
   const slices: PieSlice[] = sorted.map((r) => {
@@ -163,38 +152,6 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      <div
-        className={`mt-6 border p-4 font-mono text-[0.72rem] leading-relaxed ${
-          inRedistWindow
-            ? 'border-olive-deep/40 bg-olive-deep/5 text-ink-soft'
-            : 'border-rule bg-bg-soft text-ink-soft'
-        }`}
-      >
-        {inRedistWindow ? (
-          <>
-            <span className="text-ink">RTFO 0016 audit window</span> — filter
-            matches Feb-Aug 2025 (default scope); % Pool equals Target within
-            ±0.04 pp.
-          </>
-        ) : (
-          <>
-            <span className="text-ink">Off audit window</span> — Migration 0016
-            redistribution targets apply to Feb-Aug 2025 only. Current scope is{' '}
-            <span className="text-ink">
-              {useAll ? 'full period (Jan-Aug 2025)' : `${from ?? '…'} → ${to ?? '…'}`}
-            </span>{' '}
-            so % Pool will not equal Target.{' '}
-            <Link
-              href="/app/reports/by-supplier"
-              className="underline decoration-dotted underline-offset-2 hover:text-ink"
-            >
-              Reset to audit window
-            </Link>{' '}
-            to verify the 35 / 30 / 20 / 10 / 5 match.
-          </>
-        )}
-      </div>
-
       <section className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KpiTile label="Suppliers" value={String(sorted.length)} />
         <KpiTile label="Total input" value={`${numFmt.format(totalKg)} kg`} />
@@ -220,8 +177,6 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
                 <Th>Name</Th>
                 <ThNum>Input kg</ThNum>
                 <ThNum>% Total</ThNum>
-                <ThNum>% Pool</ThNum>
-                <ThNum>Target</ThNum>
                 <ThNum>Entries</ThNum>
                 <ThNum>Days</ThNum>
               </tr>
@@ -229,7 +184,7 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
             <tbody>
               {sorted.length === 0 && !fetchError && (
                 <tr>
-                  <td colSpan={9} className="px-3 py-6 text-center text-ink-mute">
+                  <td colSpan={7} className="px-3 py-6 text-center text-ink-mute">
                     No suppliers in selected period.
                   </td>
                 </tr>
@@ -237,9 +192,6 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
               {sorted.map((r, i) => {
                 const v = Number(r.total_input_kg) || 0;
                 const pct = totalKg > 0 ? (v / totalKg) * 100 : 0;
-                const inPool = REDIST_POOL.has(r.supplier_code);
-                const pctCert = inPool && certKg > 0 ? (v / certKg) * 100 : null;
-                const target = REDIST_TARGET[r.supplier_code];
                 return (
                   <tr
                     key={r.supplier_id}
@@ -250,12 +202,6 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
                     <Td className="text-ink-soft">{r.supplier_name}</Td>
                     <TdNum>{numFmt.format(v)}</TdNum>
                     <TdNum>{pctFmt.format(pct)}</TdNum>
-                    <TdNum className={inPool ? '' : 'text-ink-mute'}>
-                      {pctCert === null ? '—' : pctFmt.format(pctCert)}
-                    </TdNum>
-                    <TdNum className="text-ink-mute">
-                      {target === undefined ? '—' : pctFmt.format(target)}
-                    </TdNum>
                     <TdNum>{numFmt.format(r.entries)}</TdNum>
                     <TdNum>{numFmt.format(r.days)}</TdNum>
                   </tr>
@@ -268,10 +214,6 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
                   <Td className="text-ink-soft">All suppliers</Td>
                   <TdNum>{numFmt.format(totalKg)}</TdNum>
                   <TdNum>100.0</TdNum>
-                  <TdNum>
-                    {certKg > 0 ? pctFmt.format((certKg / totalKg) * 100) : '—'}
-                  </TdNum>
-                  <TdNum className="text-ink-mute">100.0</TdNum>
                   <TdNum>{numFmt.format(totalEntries)}</TdNum>
                   <TdNum>—</TdNum>
                 </tr>
@@ -282,16 +224,11 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
       </section>
 
       <p className="mt-4 max-w-reading font-mono text-[0.7rem] leading-relaxed text-ink-mute">
-        Default scope is the RTFO 0016 audit window (Feb 1 → Aug 31, 2025) so % Pool equals Target
-        out of the box.{' '}
-        <span className="text-ink-soft">% Total</span> = share of input over all suppliers in scope
-        (includes LE5TON ≤5 TON aggregate + Jan-only suppliers BIOWASTE / LITOPLAS when scope is
-        full period).{' '}
-        <span className="text-ink-soft">% Pool</span> = share over the 5-supplier RTFO 0016
-        redistribution pool only (EFFICIEN, KALTIRE, PYRCOM, BOLDER, ESENTTIA).{' '}
-        <span className="text-ink-soft">Target</span> = fixed 0016 distribution
-        (35 / 30 / 20 / 10 / 5). Use the <span className="text-ink-soft">Full period</span> link
-        for the Jan-Aug view, or custom dates for any other range.
+        Default scope is the RTFO 0016 audit window (Feb 1 → Aug 31, 2025).{' '}
+        <span className="text-ink-soft">% Total</span> = share of input over all suppliers in
+        scope (LE5TON ≤5 TON aggregate + Jan-only suppliers BIOWASTE / LITOPLAS appear in full
+        period view). Use the <span className="text-ink-soft">Full period</span> link for the
+        Jan-Aug view, or custom dates for any other range.
       </p>
     </div>
   );
