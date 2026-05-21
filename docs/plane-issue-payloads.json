@@ -1,0 +1,913 @@
+[
+  {
+    "_tmp_id": "E1-S1.1",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": [],
+    "_priority": "urgent",
+    "payload": {
+      "name": "[E1-S1.1] Decisione persistenza litres su daily_production",
+      "description_html": "<h3>Goal</h3><p>Decidere se i litri di output (eu_prod_litres / plus_prod_litres) restano calcolati on-the-fly nella materialized view oppure persistiti come colonne fisiche su daily_production per audit immutabile (decisione Day 1).</p><h3>Acceptance criteria</h3><ul><li>Decisione tracciata in repo (commit message o docs/notes/)</li><li>Se &quot;persistere&quot; &rarr; migration 0007 pronta come follow-up</li><li>Se &quot;MV-only&quot; &rarr; nessuna migration, MV ricomputate ad ogni refresh</li></ul><h3>Technical breakdown</h3><ul><li>T1 Verificare presenza eu_prod_litres / plus_prod_litres in mv_mass_balance_daily via \\d+ mv_mass_balance_daily</li><li>T2 Audit stakeholder DfT su accettabilità &quot;computed view&quot; vs &quot;physical column&quot; per ispezione</li><li>T3 Documentare scelta</li></ul><h3>Risks/notes</h3><p>Bloccato da decisione D2 (Crown Oil + DfT preference). Cross-ref docs/blueprint-activities.md E1 S1.1.</p><h3>Depends on</h3><p>Nessuna (decisione root).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "urgent"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.2",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": [],
+    "_priority": "urgent",
+    "payload": {
+      "name": "[E1-S1.2] Setup WeasyPrint runtime + template base in container backend",
+      "description_html": "<h3>Goal</h3><p>Installare WeasyPrint e dipendenze sistema (cairo/pango/gdk-pixbuf) nel container dft-back per abilitare PDF rendering. Prerequisito hard per tutto E1.</p><h3>Acceptance criteria</h3><ul><li>weasyprint==&lt;latest stable&gt; aggiunto a backend/requirements.txt</li><li>apt-get install libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf2.0-0 in backend/Dockerfile</li><li>docker compose build backend succede senza errori</li><li>Smoke test: python -c &quot;from weasyprint import HTML; HTML(string='&lt;h1&gt;ok&lt;/h1&gt;').write_pdf('/tmp/x.pdf')&quot; esegue dentro container</li></ul><h3>Technical breakdown</h3><ul><li>T1 Patch Dockerfile (system deps)</li><li>T2 Patch requirements.txt</li><li>T3 Verificare versione python-jose / pydantic non rotta da install</li><li>T4 Fallback documentato a reportlab se WeasyPrint fallisce setup</li></ul><h3>Risks/notes</h3><p>Risk-high: dipendenze sistema mancanti possono bloccare E1 Day 1. Cross-ref docs/blueprint-activities.md E1 S1.2.</p><h3>Depends on</h3><p>Nessuna.</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "urgent"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.3",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.2"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.3] Service pdf_renderer + hash side-car SHA-256",
+      "description_html": "<h3>Goal</h3><p>Creare service condiviso per rendering PDF audit-grade con hash crittografico side-car, riusabile per Annex A, Annex D, production logs e (futuro) verifier bundle.</p><h3>Acceptance criteria</h3><ul><li>backend/app/services/pdf_renderer.py con render_pdf(template_name, context) -&gt; bytes</li><li>hash_pdf(pdf_bytes) -&gt; str (SHA-256 hex digest)</li><li>Template Jinja base in backend/app/templates/reports/mass_balance.html con header firma, footer hash, paginazione mese, tabella giorni + aggregato mensile + closing stock</li><li>Unit test su sample</li></ul><h3>Technical breakdown</h3><ul><li>T1 Creare struttura templates/reports/</li><li>T2 Design template HTML con CSS print-friendly (page-break, header/footer)</li><li>T3 Helper hash_pdf con hashlib.sha256</li><li>T4 Unit test su sample</li></ul><h3>Risks/notes</h3><p>Risk-medium: template scope creep. Cross-ref docs/blueprint-activities.md E1 S1.3.</p><h3>Depends on</h3><p>E1-S1.2 (WeasyPrint runtime).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.4",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.3"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.4] Endpoint /reports/mass-balance/export PDF",
+      "description_html": "<h3>Goal</h3><p>Espone endpoint REST per generare PDF mass-balance mensile con hash header, integrato con audit_log.</p><h3>Acceptance criteria</h3><ul><li>GET /reports/mass-balance/export?month=YYYY-MM&amp;format=pdf ritorna Response(media_type='application/pdf')</li><li>Header X-Content-SHA256: &lt;hex&gt;</li><li>Richiede Bearer auth</li><li>Usa mv_mass_balance_daily filtrata + mv_mass_balance_monthly aggregata</li><li>400 se mese non valido</li><li>Audit log entry REPORT_EXPORT</li></ul><h3>Technical breakdown</h3><ul><li>T1 Nuovo handler in backend/app/routers/reports.py</li><li>T2 Query MV daily filtered + MV monthly aggregated</li><li>T3 Chiamata pdf_renderer.render_pdf + hash_pdf</li><li>T4 Audit log entry REPORT_EXPORT su audit_log</li><li>T5 Test smoke</li></ul><h3>Risks/notes</h3><p>Files: backend/app/routers/reports.py, backend/app/services/pdf_renderer.py.</p><h3>Depends on</h3><p>E1-S1.3 (pdf_renderer service).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.5",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.4"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.5] Generazione Annex A v1 Gennaio 2025",
+      "description_html": "<h3>Goal</h3><p>Generare prima versione del PDF mass-balance Gen 2025 da includere nel bundle RTFO-310125.</p><h3>Acceptance criteria</h3><ul><li>File bundle_RTFO-310125/02_mass_balance_january_2025_v1.pdf + .sha256 generato via endpoint S1.4</li><li>Closure &minus;10,05% leggibile</li><li>Carry-over 339.865 kg dichiarato in footnote</li></ul><h3>Technical breakdown</h3><ul><li>T1 Chiamata curl autenticata all'endpoint</li><li>T2 Verifica hash</li><li>T3 Review visivo team ingest</li></ul><h3>Risks/notes</h3><p>Cross-ref docs/blueprint-activities.md E1 S1.5.</p><h3>Depends on</h3><p>E1-S1.4 (endpoint PDF).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.6",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.5"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.6] Hardening template + Annex A v2",
+      "description_html": "<h3>Goal</h3><p>Stabilizzare template PDF dopo feedback v1 e rigenerare Annex A v2 con hash aggiornato.</p><h3>Acceptance criteria</h3><ul><li>Template stabile, paginazione mese OK</li><li>Header firma OisteBio</li><li>Footer hash + page n/N</li><li>Font deterministico</li><li>Rigenera v2 + hash; review OisteBio</li></ul><h3>Technical breakdown</h3><ul><li>T1 Fix bug visivi v1</li><li>T2 Commit template templates/reports/mass_balance.html</li><li>T3 Rigenera bundle file v2</li></ul><h3>Depends on</h3><p>E1-S1.5 (v1).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.7",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": [],
+    "_priority": "urgent",
+    "payload": {
+      "name": "[E1-S1.7] Migration 0006 supplier rectification Gennaio 2025",
+      "description_html": "<h3>Goal</h3><p>Riclassificare fornitori Gennaio 2025 (mapping a Litoplas/Biowaste/Esenttia) tramite soft-delete + UPDATE, preservando audit trail e closure mass-balance.</p><h3>Acceptance criteria</h3><ul><li>Riclassificazione fornitori Gen 2025 applicata via UPDATE (mai DELETE)</li><li>Soft-delete sui supplier_id mal classificati con deleted_at + note &quot;DfT investigation reclassification 2026-05&quot;</li><li>Ogni riga daily_input riallineata logga in audit_log con old_values/new_values</li><li>Query closure mass-balance pre/post: delta &le; 0.01% kg</li></ul><h3>Technical breakdown</h3><ul><li>T1 Mapping definitivo fornitori (atteso D3 da OisteBio)</li><li>T2 File backend/alembic/versions/0006_supplier_rectification_jan2025.py</li><li>T3 Transaction wrap che popola audit_log per ogni UPDATE</li><li>T4 Dry-run su DB locale + diff input_kg/day pre/post</li><li>T5 Apply prod con backup</li></ul><h3>Risks/notes</h3><p>Risk-high: delta closure &gt; 0.01% &rarr; rollback immediato. Bloccato da D3.</p><h3>Depends on</h3><p>Nessuna (eseguibile in parallelo a chain PDF), ma decisione D3 mapping fornitori richiesta Day 1-2.</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "urgent"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.8",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.3"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.8] Annex D closing stock 339.865 kg PDF",
+      "description_html": "<h3>Goal</h3><p>Generare il documento PDF mandatorio Annex D che spiega lo stock di chiusura end-Jan 2025 e giustifica la closure apparente &minus;10,05%.</p><h3>Acceptance criteria</h3><ul><li>PDF 07_stock_carryover_explanation.pdf con composizione 17 K-only rows JANUARY2025 (righe 48, 78, 94, 108, 138, 194, 223, 228-233, 267, 283, 314, 330)</li><li>Dichiarazione &quot;fisicamente disponibile in facility OisteBio&quot;</li><li>Riferimento record interno aziendale</li><li>Firma OisteBio scansionata</li><li>Hash SHA-256 side-car</li></ul><h3>Technical breakdown</h3><ul><li>T1 Template Jinja dedicato in backend/app/templates/reports/stock_carryover.html</li><li>T2 Dati statici da memoria progetto (project_jan_feb_stock_carryover.md)</li><li>T3 Rendering via stessa pdf_renderer</li></ul><h3>Depends on</h3><p>E1-S1.3 (pdf_renderer).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.9",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": [],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.9] Endpoint CSV /admin/audit-log?format=csv",
+      "description_html": "<h3>Goal</h3><p>Aggiungere export CSV streamato all'endpoint audit-log per inclusione nel bundle (file 06_audit_trail_export_january_2025.csv).</p><h3>Acceptance criteria</h3><ul><li>GET /admin/audit-log accetta param format=csv (default json)</li><li>Con format=csv ritorna StreamingResponse(media_type='text/csv') con BOM UTF-8</li><li>Colonne fisse: id,timestamp,user_email,action,table_name,record_id,old_values,new_values,ip_address</li><li>Filtri since/until rispettati</li><li>Richiede AdminUser</li></ul><h3>Technical breakdown</h3><ul><li>T1 Patch backend/app/routers/admin.py ramo CSV</li><li>T2 Generator function streamato</li><li>T3 Escape CSV (RFC4180) per JSONB old/new_values</li><li>T4 Smoke test export Gen 2025</li><li>T5 Verifica Excel apre con accenti corretti</li></ul><h3>Depends on</h3><p>Nessuna.</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.10",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.3"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.10] Production conversion log Gen 2025 PDF",
+      "description_html": "<h3>Goal</h3><p>Generare PDF 05_production_conversion_logs_january_2025.pdf che documenta esplicitamente kg&rarr;litri conversion per ogni giorno Gen 2025.</p><h3>Acceptance criteria</h3><ul><li>PDF mostra per ogni giorno Gen 2025: eu_prod_kg, plus_prod_kg, density lookup EU 0.78 / PLUS 0.856, formula litres = kg / density, totale mensile in litri</li><li>Firma OisteBio + hash side-car</li></ul><h3>Technical breakdown</h3><ul><li>T1 Template templates/reports/production_conversion.html</li><li>T2 Query MV daily</li><li>T3 Rendering pipeline pdf_renderer</li></ul><h3>Depends on</h3><p>E1-S1.3 (pdf_renderer).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.11",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.7"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.11] Supply chain diagram PDF",
+      "description_html": "<h3>Goal</h3><p>Generare diagramma vettoriale supply chain a 4 layer (origin &rarr; collecting point &rarr; OisteBio Girardot &rarr; Crown Oil UK) per bundle file 01_supply_chain_diagram.pdf.</p><h3>Acceptance criteria</h3><ul><li>PDF 01_supply_chain_diagram.pdf con quattro layer</li><li>Origin &rarr; collecting point Litoplas/Biowaste/Esenttia &rarr; OisteBio Girardot &rarr; Crown Oil UK</li><li>Diagramma vettoriale (Graphviz / mermaid render o SVG statico)</li><li>Cert ISCC overlay come placeholder dove non disponibili (gap dichiarato)</li></ul><h3>Technical breakdown</h3><ul><li>T1 Scegliere tool (Graphviz CLI in container backend &egrave; opzione semplice)</li><li>T2 Input dati da supplier mapping post-S1.7</li><li>T3 Render statico una-tantum, commit nel bundle</li></ul><h3>Depends on</h3><p>E1-S1.7 (supplier mapping definitivo).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.12",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.6", "E1-S1.7", "E1-S1.8"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.12] Cover letter Crown Oil + evidence index PDF",
+      "description_html": "<h3>Goal</h3><p>Produrre cover letter firmata Crown Oil (00_cover_letter.pdf) e evidence index PDF (09_evidence_index.pdf) con cross-reference docs &harr; punti rigetto DfT.</p><h3>Acceptance criteria</h3><ul><li>00_cover_letter.pdf firmato Crown Oil con sezione &quot;Outstanding items&quot; (3 gap residui da &sect;5 di 5wd-plan)</li><li>09_evidence_index.pdf cross-reference tabella docs &harr; punti rigetto DfT</li></ul><h3>Technical breakdown</h3><ul><li>T1 v0 draft Day 1 (Crown Oil)</li><li>T2 v1 Day 4 review legale</li><li>T3 v2 Day 5 incorporare evidence definitive</li><li>T4 FINAL Day 6 firmato</li><li>T5 Evidence index renderizzato via pdf_renderer + dati statici</li></ul><h3>Risks/notes</h3><p>Cross-team: ownership Crown Oil legal + ops, non engineering. Architect ha tenuto monolitica - vedi PM notes per razionale.</p><h3>Depends on</h3><p>E1-S1.6 (Annex A v2), E1-S1.7 (supplier mapping), E1-S1.8 (Annex D).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.13",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.3"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.13] PDF 03_iscc_pos_status.pdf",
+      "description_html": "<h3>Goal</h3><p>Documentare lo stato della richiesta PoS ISCC retroattiva inviata al certifier Colombia Day 1, da includere come gap dichiarato nel bundle.</p><h3>Acceptance criteria</h3><ul><li>PDF documenta richiesta retroattiva inviata Day 1</li><li>Risposta certifier (se ricevuta entro Day 6)</li><li>Impegno consegna post-acceptance</li></ul><h3>Technical breakdown</h3><ul><li>T1 Raccogliere timestamp email</li><li>T2 Template Jinja</li><li>T3 Firma OisteBio</li></ul><h3>Depends on</h3><p>E1-S1.3 (pdf_renderer).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.14",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": [],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.14] Feedstock provider authorisations folder + status",
+      "description_html": "<h3>Goal</h3><p>Assemblare la cartella 04_feedstock_provider_authorisations/ con copie ANLA/Min.Ambiente per Litoplas/Biowaste/Esenttia + nota stato legalizzazione consolare.</p><h3>Acceptance criteria</h3><ul><li>Cartella 04_feedstock_provider_authorisations/ con PDF per Litoplas/Biowaste/Esenttia (copie ANLA/Min.Ambiente non legalizzate)</li><li>_status_legalisation.pdf con ETA legalizzazione consolare</li></ul><h3>Technical breakdown</h3><ul><li>T1 OisteBio fornisce copie</li><li>T2 Nota stato legalizzazione</li></ul><h3>Depends on</h3><p>Nessuna (asincrono OisteBio).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.15",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.5", "E1-S1.8", "E1-S1.9", "E1-S1.10", "E1-S1.11", "E1-S1.13", "E1-S1.14"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.15] Pre-audit interno bundle Day 4",
+      "description_html": "<h3>Goal</h3><p>Checklist walk-through del bundle assemblato a Day 4 con team ingest + OisteBio + Crown Oil per identificare gap residui prima del fix di Day 5.</p><h3>Acceptance criteria</h3><ul><li>Checklist firmata team ingest + OisteBio + Crown Oil</li><li>Verifica completezza Annex A/B/C/D + production log + audit CSV</li><li>Gap emersi listati per Day 5 fix</li></ul><h3>Technical breakdown</h3><ul><li>T1 Checklist template</li><li>T2 Walk-through bundle</li><li>T3 Lista azioni Day 5</li></ul><h3>Depends on</h3><p>Tutti i deliverable PDF (S1.5, S1.8, S1.9, S1.10, S1.11, S1.13, S1.14).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.16",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.7"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.16] Snapshot crittografico DB Day 5 + Day 6",
+      "description_html": "<h3>Goal</h3><p>Produrre snapshot DB con hash per evidence integrity, sia preliminare (Day 5) sia FINAL (Day 6 pre-submission).</p><h3>Acceptance criteria</h3><ul><li>db_snapshot_2026-05-19.sql.gz + .sha256 (Day 5 preliminare)</li><li>db_snapshot_2026-05-20.sql.gz + .sha256 (Day 6 FINAL)</li><li>Comando: pg_dump dft | gzip | tee snapshot.sql.gz | sha256sum &gt; snapshot.sha256</li></ul><h3>Technical breakdown</h3><ul><li>T1 Script scripts/snapshot_db.sh con timestamp + hash</li><li>T2 Esecuzione dentro container dft-back</li><li>T3 Storage offline</li></ul><h3>Risks/notes</h3><p>Pre-flight df -h obbligatorio per evitare fallimento per spazio disco.</p><h3>Depends on</h3><p>E1-S1.7 (rectification applied prima del snapshot FINAL).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.17",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.15"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E1-S1.17] Audit interno Day 6 + Annex A FINAL",
+      "description_html": "<h3>Goal</h3><p>Audit interno definitivo del bundle Day 6 con cross-reference completo e rigenerazione Annex A FINAL con hash definitivo per evidence index.</p><h3>Acceptance criteria</h3><ul><li>Cross-reference ogni kg Gennaio in mass-balance &harr; daily_input &harr; supplier &harr; PoS o gap dichiarato</li><li>Checklist firmata</li><li>Annex A rigenerato come 02_mass_balance_january_2025_FINAL.pdf con hash FINAL elencato in evidence index</li></ul><h3>Technical breakdown</h3><ul><li>T1 Walkthrough Crown Oil + OisteBio + team ingest</li><li>T2 Fix gap</li><li>T3 Rigenera Annex A</li><li>T4 Update evidence index con hash definitivo</li><li>T5 Cover letter cita hash manifest</li></ul><h3>Depends on</h3><p>E1-S1.15 (pre-audit Day 4 gap list).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.18",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.12", "E1-S1.16", "E1-S1.17"],
+    "_priority": "urgent",
+    "payload": {
+      "name": "[E1-S1.18] Submission ROS Day 7 + notifica DfT",
+      "description_html": "<h3>Goal</h3><p>Upload finale del bundle RTFO-310125 su ROS + notifica formale a DfT contact entro 21 mag 2026 23:59 UK.</p><h3>Acceptance criteria</h3><ul><li>Verifica integrit&agrave; bundle (file presenti, hash verificati, dimensioni)</li><li>Telefonata cortesia DfT contact (mattina)</li><li>Upload su ROS (pomeriggio)</li><li>Email notifica formale al contact DfT con lista allegati + hash file principale (EOD)</li></ul><h3>Technical breakdown</h3><ul><li>T1 Checklist integrit&agrave;</li><li>T2 Chiamata</li><li>T3 Upload</li><li>T4 Email</li></ul><h3>Risks/notes</h3><p>Risk-high: slittamento Day 6 &rarr; buffer mattina Day 7. Slittamento Day 7 = pathway 2025 Gen chiusa.</p><h3>Depends on</h3><p>E1-S1.12 (cover letter FINAL), E1-S1.16 (snapshot FINAL), E1-S1.17 (Annex A FINAL).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "urgent"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.1",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": [],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.1] Setup shadcn/ui + base UI primitives",
+      "description_html": "<h3>Goal</h3><p>Verifica completezza dei componenti shadcn/ui in landing/src/components/ui/ e integra primitives mancanti.</p><h3>Acceptance criteria</h3><ul><li>Componenti base in landing/src/components/ui/: button, input, label, form, card, table, dialog, dropdown-menu, select, toast, badge</li><li>Design tokens (var(--bg), var(--ink)) preservati</li></ul><h3>Technical breakdown</h3><ul><li>T1 Audit presenza tutti i primitives</li><li>T2 Integrare quelli mancanti (form, toast da check)</li><li>T3 Smoke test render su pagina dev</li></ul><h3>Risks/notes</h3><p>Codebase in flight: verificare contro spec docs/sprint-3-frontend.md S3-1.</p><h3>Depends on</h3><p>Nessuna.</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.2",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": [],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.2] API client lib + tipi backend",
+      "description_html": "<h3>Goal</h3><p>Verifica esistenza e completezza del typed fetch wrapper landing/src/lib/api.ts e dei tipi generati da OpenAPI.</p><h3>Acceptance criteria</h3><ul><li>landing/src/lib/api.ts typed fetch wrapper</li><li>Tipi generati da /openapi.json via openapi-typescript</li><li>apiGet/apiPost/apiPatch/apiDelete</li><li>ApiError(status, code, detail) tipizzato</li><li>Cookie reading server-only</li></ul><h3>Technical breakdown</h3><ul><li>T1 Verifica lib/api.ts esiste</li><li>T2 Verifica generazione tipi</li><li>T3 Helper auth injection</li></ul><h3>Depends on</h3><p>Nessuna.</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.3",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E2-S2.2"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.3] Auth flow login/logout (server actions)",
+      "description_html": "<h3>Goal</h3><p>Verifica conformit&agrave; del flow /login con server actions e cookie httpOnly secondo spec.</p><h3>Acceptance criteria</h3><ul><li>/login con server actions (loginAction/logoutAction in src/lib/auth.ts)</li><li>Cookie dft_session httpOnly + Secure(prod) + SameSite=Lax + Max-Age 8h</li><li>Redirect /app su login, / su logout</li></ul><h3>Technical breakdown</h3><ul><li>T1 Verifica landing/src/app/login/ con login-form.tsx + page.tsx</li><li>T2 Verifica conformit&agrave; AC</li><li>T3 Test E2E manuale login admin@dft-project.com</li></ul><h3>Depends on</h3><p>E2-S2.2 (api client).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.4",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E2-S2.3"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.4] Middleware route protection",
+      "description_html": "<h3>Goal</h3><p>Verifica conformit&agrave; middleware route protection con matcher /app/:path* e jose JWT verify.</p><h3>Acceptance criteria</h3><ul><li>landing/src/middleware.ts matcher /app/:path*</li><li>JWT verify via jose</li><li>Redirect /login?next=${pathname} se mancante/invalido/scaduto</li><li>Cookie cleared se scaduto</li></ul><h3>Technical breakdown</h3><ul><li>T1 Verifica matcher</li><li>T2 Verifica jose.jwtVerify</li><li>T3 Verifica path next preservation</li></ul><h3>Risks/notes</h3><p>Risk: JWT_SECRET disallineato dev/prod &rarr; login rotto. Documentare in .env.example.</p><h3>Depends on</h3><p>E2-S2.3 (auth flow).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.5",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E2-S2.4"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.5] Dashboard layout shell",
+      "description_html": "<h3>Goal</h3><p>Verifica conformit&agrave; del layout (app)/layout.tsx con sidebar fissa + topbar + responsive collassabile.</p><h3>Acceptance criteria</h3><ul><li>(app)/layout.tsx sidebar fissa + topbar</li><li>Nav Dashboard/Reports/Anagrafiche</li><li>Sidebar collassabile mobile (Radix sheet)</li><li>User dropdown + logout</li></ul><h3>Technical breakdown</h3><ul><li>T1 Verifica landing/src/app/app/layout.tsx</li><li>T2 Verifica conformit&agrave; spec</li><li>T3 Smoke test navigation</li></ul><h3>Depends on</h3><p>E2-S2.4 (middleware).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.6",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E2-S2.5"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.6] Dashboard home KPI cards",
+      "description_html": "<h3>Goal</h3><p>Verifica server component dashboard home con 4 KPI cards + sparkline Recharts.</p><h3>Acceptance criteria</h3><ul><li>(app)/page.tsx server component</li><li>4 KPI cards: Input 30g, Output 30g, Closure %, Alert count</li><li>Sparkline Recharts</li><li>Render &lt; 500ms</li><li>Thousand separator IT</li></ul><h3>Technical breakdown</h3><ul><li>T1 Verifica landing/src/app/app/page.tsx</li><li>T2 Verifica KPI cards + sparkline</li><li>T3 Smoke test formatting</li></ul><h3>Depends on</h3><p>E2-S2.5 (layout).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.7",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E2-S2.5"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.7] Report mass balance daily/monthly",
+      "description_html": "<h3>Goal</h3><p>Verifica completezza pagina report mass balance con tab daily/monthly + table + export CSV.</p><h3>Acceptance criteria</h3><ul><li>Tab daily/monthly</li><li>Date range picker (default 30g)</li><li>TanStack Table v8 con sorting + pagination 50/pagina</li><li>Export CSV UTF-8 BOM</li></ul><h3>Technical breakdown</h3><ul><li>T1 Verifica landing/src/app/app/reports/mass-balance/page.tsx + helpers</li><li>T2 Test sorting + pagination</li><li>T3 Verifica CSV BOM</li></ul><h3>Depends on</h3><p>E2-S2.5 (layout).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.8",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E2-S2.5"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.8] Report by-supplier (chart + table)",
+      "description_html": "<h3>Goal</h3><p>Verifica pagina by-supplier con pie chart top-7 + tabella ranking + interazione.</p><h3>Acceptance criteria</h3><ul><li>Pie chart Recharts top-7 + &quot;Altri&quot;</li><li>Tabella ranking</li><li>Click pie &rarr; highlight tabella</li><li>Date range picker</li></ul><h3>Technical breakdown</h3><ul><li>T1 Verifica landing/src/app/app/reports/by-supplier/page.tsx</li><li>T2 Smoke test interazione</li></ul><h3>Depends on</h3><p>E2-S2.5 (layout).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.9",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E2-S2.5"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.9] Report closure-status (semaforo)",
+      "description_html": "<h3>Goal</h3><p>Verifica pagina closure-status con Badge colorati per bucket + label IT + filtro.</p><h3>Acceptance criteria</h3><ul><li>Tabella con bucket come Badge colorato (ok=green/warn=yellow/alert=red/no_input/no_output=gray)</li><li>Label IT</li><li>Filtro per bucket</li></ul><h3>Technical breakdown</h3><ul><li>T1 Verifica landing/src/app/app/reports/closure-status/page.tsx</li><li>T2 Smoke test filtri</li></ul><h3>Depends on</h3><p>E2-S2.5 (layout).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.10",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E2-S2.5"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.10] Anagrafiche read-only viewer",
+      "description_html": "<h3>Goal</h3><p>Verifica pagine suppliers/certificates/contracts read-only con TanStack Table + search + detail view.</p><h3>Acceptance criteria</h3><ul><li>suppliers, certificates, contracts listate via TanStack Table + search</li><li>Detail view read-only su /app/suppliers/[id]</li></ul><h3>Technical breakdown</h3><ul><li>T1 Verifica landing/src/app/app/suppliers/, certificates/, contracts/</li><li>T2 Smoke test detail page</li></ul><h3>Depends on</h3><p>E2-S2.5 (layout).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.11",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E2-S2.6", "E2-S2.7", "E2-S2.8", "E2-S2.9", "E2-S2.10"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E2-S2.11] Sprint 3 DoD verification + deploy smoke test",
+      "description_html": "<h3>Goal</h3><p>Verifica DoD Sprint 3 con checklist eseguibile + smoke test deploy prod (post WARN-1 reviewer).</p><h3>Acceptance criteria (executable checks)</h3><ul><li>POST /api/auth/login admin@dft-project.com &rarr; 200 + cookie httpOnly</li><li>GET /app dashboard &rarr; KPI cards rendered + chart input-vs-output presente</li><li>GET /app/reports/mass-balance &rarr; tabella Gen 2025 con totali kg + litres (eu/plus) + colonna C14 visibile</li><li>GET /app/reports/by-supplier &rarr; pie chart + ranking + click &quot;Export CSV&quot; produce file</li><li>GET /app/reports/closure &rarr; semaforo bucket tolleranza + filtro mese</li><li>GET /app/audit &rarr; ultimi 50 eventi audit_log paginati</li><li>CRUD /app/daily-inputs: create + update + soft-delete &rarr; ogni op genera 1 riga audit_log</li><li>cd landing &amp;&amp; pnpm build &rarr; exit 0, zero TS errors</li><li>cd landing &amp;&amp; pnpm lint &rarr; exit 0, zero warnings</li><li>PM2 reload oistebio @ 91.98.82.20 &rarr; curl https://oistebio.usenexos.com/app/login &rarr; 200 con header set-cookie</li></ul><h3>Technical breakdown</h3><ul><li>T1 Playwright headless script copre check #1-#7 con asserzioni pass/fail</li><li>T2 pnpm build + pnpm lint locale &amp; CI</li><li>T3 rsync landing/ &rarr; Hetzner + PM2 reload</li><li>T4 Smoke curl prod su tutte le 7 viste sopra</li><li>T5 Screenshot bundle in screenshots-jan2025/sprint3-dod/</li></ul><h3>Risks/notes</h3><p>Risk-medium: JWT_SECRET drift dev&harr;prod; bundle size soglia recharts+tanstack. AC riscritti come check eseguibili (reviewer WARN-1 risolto).</p><h3>Depends on</h3><p>E2-S2.6, E2-S2.7, E2-S2.8, E2-S2.9, E2-S2.10 (tutte le pagine app).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E3-S3.1",
+    "_epic": "E3",
+    "_sprint": "Sprint 4",
+    "_blocked_by": [],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E3-S3.1] Fetch RTFO List of Feedstocks ufficiale + seed CSV",
+      "description_html": "<h3>Goal</h3><p>Scaricare la lista ufficiale DfT dei feedstock RTFO e normalizzarla in CSV inline per seed migration successiva.</p><h3>Acceptance criteria</h3><ul><li>docs/rtfo-feedstock-list.md con CSV inline (code, name, rtfo_class, double_counting_eligible, source URL DfT, fetch date)</li><li>ELT presente con rtfo_class=rcf + lcf_designation_status=pending</li></ul><h3>Technical breakdown</h3><ul><li>T1 WebFetch lista DfT</li><li>T2 Normalizzare CSV</li><li>T3 Commit doc</li></ul><h3>Risks/notes</h3><p>Lista pu&ograve; cambiare annualmente &mdash; versionare seed con fetch date.</p><h3>Depends on</h3><p>Nessuna.</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E3-S3.2",
+    "_epic": "E3",
+    "_sprint": "Sprint 4",
+    "_blocked_by": ["E3-S3.1"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E3-S3.2] Migration 0008 feedstocks table",
+      "description_html": "<h3>Goal</h3><p>Creare la tabella feedstocks + FK su daily_inputs.feedstock_id + seed RTFO da CSV S3.1.</p><h3>Acceptance criteria</h3><ul><li>Schema feedstocks creato</li><li>FK su daily_inputs nullable</li><li>Seed da CSV S3.1</li><li>Tutti i daily_input esistenti restano feedstock_id NULL (back-population in S3.3)</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0008_feedstocks.py</li><li>T2 backend/app/models/feedstock.py</li><li>T3 backend/app/schemas/feedstock.py</li></ul><h3>Depends on</h3><p>E3-S3.1 (CSV seed).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E3-S3.3",
+    "_epic": "E3",
+    "_sprint": "Sprint 4",
+    "_blocked_by": ["E3-S3.2"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E3-S3.3] Back-population daily_inputs.feedstock_id ELT",
+      "description_html": "<h3>Goal</h3><p>Script che back-popola tutti i daily_input esistenti con feedstock_id = ELT, con audit_log entries.</p><h3>Acceptance criteria</h3><ul><li>Script scripts/backfill_feedstock_elt.py</li><li>UPDATE daily_inputs.feedstock_id = (SELECT id FROM feedstocks WHERE code='ELT')</li><li>Audit_log entries per ogni riga</li><li>Rollback safe</li></ul><h3>Technical breakdown</h3><ul><li>T1 Script Python con SQLAlchemy session</li><li>T2 Audit log batch</li><li>T3 Dry-run + apply</li></ul><h3>Risks/notes</h3><p>Scope corrente ELT-only banale. Futuro feedstock biogenico richieder&agrave; logica per riga.</p><h3>Depends on</h3><p>E3-S3.2 (feedstocks table).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E3-S3.4",
+    "_epic": "E3",
+    "_sprint": "Sprint 4",
+    "_blocked_by": ["E3-S3.2"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E3-S3.4] Router /feedstocks CRUD",
+      "description_html": "<h3>Goal</h3><p>Endpoint CRUD per feedstocks con pattern come routers/anagrafica.py e audit_log integration.</p><h3>Acceptance criteria</h3><ul><li>CRUD standard pattern come routers/anagrafica.py</li><li>admin only per POST/PATCH</li><li>viewer pu&ograve; GET</li><li>audit_log integration</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/routers/feedstocks.py</li><li>T2 backend/app/main.py (include router)</li></ul><h3>Depends on</h3><p>E3-S3.2 (feedstocks table).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E3-S3.5",
+    "_epic": "E3",
+    "_sprint": "Sprint 4",
+    "_blocked_by": [],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E3-S3.5] Migration 0009 ghg_calculations table",
+      "description_html": "<h3>Goal</h3><p>Creare tabella ghg_calculations con methodology enum e check constraints sulla soglia GHG saving.</p><h3>Acceptance criteria</h3><ul><li>Schema creato</li><li>FK su daily_production nullable</li><li>Enum ghg_methodology definito</li><li>Constraint check baseline_fossil_gCO2eq_MJ &gt; 0</li><li>Constraint ghg_saving_pct = (baseline - ci_total) / baseline * 100</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0009_ghg_calculations.py</li><li>T2 backend/app/models/ghg_calculation.py</li><li>T3 backend/app/schemas/ghg_calculation.py</li></ul><h3>Depends on</h3><p>Nessuna (indipendente da chain feedstocks).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E3-S3.6",
+    "_epic": "E3",
+    "_sprint": "Sprint 4",
+    "_blocked_by": ["E3-S3.5"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E3-S3.6] Router /ghg-calculations upload manuale",
+      "description_html": "<h3>Goal</h3><p>Endpoint per upload manuale di GHG calculations con compute saving server-side e advisory 422 sotto soglia.</p><h3>Acceptance criteria</h3><ul><li>POST /ghg-calculations accetta JSON body (no upload file in Fase 1)</li><li>Compute ghg_saving_pct server-side</li><li>Flag threshold_met = ghg_saving_pct &ge; 65</li><li>Ritorna 422 se sotto soglia con warning (non blocca insert)</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/routers/ghg_calculations.py</li><li>T2 Validazione Pydantic</li><li>T3 Audit log integration</li></ul><h3>Depends on</h3><p>E3-S3.5 (ghg_calculations table).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E3-S3.7",
+    "_epic": "E3",
+    "_sprint": "Sprint 4",
+    "_blocked_by": [],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E3-S3.7] Migration 0010 certificate scheme enum",
+      "description_html": "<h3>Goal</h3><p>Convertire Certificate.scheme da VARCHAR a enum certificate_scheme data-preserving.</p><h3>Acceptance criteria</h3><ul><li>Migration data-preserving: UPDATE valori esistenti 'ISCC EU' &rarr; 'ISCC_EU', 'ISCC' &rarr; 'ISCC_EU', etc</li><li>ALTER COLUMN type su enum certificate_scheme &isin; {ISCC_EU, ISCC_PLUS, REDcert, REDcert_EU, RSB_EU_RED, RSB_Global, KZR_INiG, _2BSvs, Bonsucro, ...}</li><li>Rollback path documentato</li><li>Nessuna riga persa</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0010_certificate_scheme_enum.py</li><li>T2 Data UPDATE prima di ALTER</li><li>T3 Backup pre-apply</li></ul><h3>Risks/notes</h3><p>Risk-medium: migrazione su tabella popolata in prod, backup obbligatorio.</p><h3>Depends on</h3><p>Nessuna.</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E3-S3.8",
+    "_epic": "E3",
+    "_sprint": "Sprint 4",
+    "_blocked_by": ["E3-S3.4"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E3-S3.8] Frontend /app/feedstocks/ list + detail",
+      "description_html": "<h3>Goal</h3><p>UI lista feedstocks con filtro per rtfo_class e detail view con link a daily_inputs collegati.</p><h3>Acceptance criteria</h3><ul><li>Tabella TanStack feedstocks</li><li>Filtro per rtfo_class</li><li>Detail view /app/feedstocks/[id]</li><li>Mostra link a daily_inputs collegati</li></ul><h3>Technical breakdown</h3><ul><li>T1 landing/src/app/app/feedstocks/page.tsx</li><li>T2 landing/src/app/app/feedstocks/[id]/page.tsx</li><li>T3 Sidebar nav add &quot;RTFO&quot; group</li></ul><h3>Depends on</h3><p>E3-S3.4 (router /feedstocks).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E3-S3.9",
+    "_epic": "E3",
+    "_sprint": "Sprint 4",
+    "_blocked_by": ["E3-S3.6"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E3-S3.9] Frontend /app/ghg/ upload + view",
+      "description_html": "<h3>Goal</h3><p>UI form upload GHG calculations con auto-compute saving % e warning visivo sotto soglia.</p><h3>Acceptance criteria</h3><ul><li>Form upload (react-hook-form + zod) con campi CI per stadio</li><li>Auto-compute saving %</li><li>Tabella GHG calculations recenti</li><li>Warning visivo se threshold_met=false</li></ul><h3>Technical breakdown</h3><ul><li>T1 landing/src/app/app/ghg/page.tsx</li><li>T2 Form component con zod schema</li><li>T3 Sidebar nav RTFO group</li></ul><h3>Depends on</h3><p>E3-S3.6 (router /ghg-calculations).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.1",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": [],
+    "_priority": "urgent",
+    "payload": {
+      "name": "[E4-S4.1] Migration 0011 off_takers + Crown Oil seed",
+      "description_html": "<h3>Goal</h3><p>Creare tabella off_takers con seed Crown Oil UK, parametrizzato sul contract_basis decision D4.</p><h3>Acceptance criteria</h3><ul><li>Tabella creata con tutti i campi</li><li>Crown Oil seeded con uk_obligated=true</li><li>contract_basis come mass_balance o physical_segregated per Q4 gap &sect;7 (D4)</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0011_off_takers.py</li><li>T2 Seed Crown Oil</li><li>T3 Model + schema</li></ul><h3>Risks/notes</h3><p>Bloccato da D4 (Crown Oil contract basis decision).</p><h3>Depends on</h3><p>D4 decision (mass-balance vs physical segregated).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "urgent"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.2",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": [],
+    "_priority": "urgent",
+    "payload": {
+      "name": "[E4-S4.2] Migration 0012 verifiers",
+      "description_html": "<h3>Goal</h3><p>Creare tabella verifiers (nessun seed iniziale &mdash; D6 ancora aperto).</p><h3>Acceptance criteria</h3><ul><li>Schema creato</li><li>Nessun seed iniziale (Q5 / D6 aperto)</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0012_verifiers.py</li><li>T2 Model + schema</li></ul><h3>Risks/notes</h3><p>Bloccato da D6 (verifier identification) per seed meaningful.</p><h3>Depends on</h3><p>Nessuna (schema-only), seed dipende da D6.</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "urgent"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.3",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": [],
+    "_priority": "high",
+    "payload": {
+      "name": "[E4-S4.3] Migration 0013 obligation_periods + seed 2025+2026",
+      "description_html": "<h3>Goal</h3><p>Creare tabella obligation_periods con seed valori 2025 (e placeholder 2026).</p><h3>Acceptance criteria</h3><ul><li>Seed 2025: main 14,054%, dev 1,619%, buyout main &pound;0,50, dev &pound;0,80, deadline 15-set-2026</li><li>Seed 2026 placeholder fino a fetch DfT publication</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0013_obligation_periods.py</li><li>T2 Seed 2025 + 2026 placeholder</li></ul><h3>Depends on</h3><p>Nessuna.</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.4",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": ["E4-S4.1", "E4-S4.2", "E4-S4.3", "E3-S3.5"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E4-S4.4] Migration 0014 rtfc_batches",
+      "description_html": "<h3>Goal</h3><p>Creare tabella rtfc_batches con tutti FK + enum + check constraints.</p><h3>Acceptance criteria</h3><ul><li>Schema con tutti FK (obligation_period_year, daily_production_id, ghg_calculation_id, off_taker_id, verifier_id) + enum (class, status)</li><li>Check constraint litres_eligible &gt; 0</li><li>Check drtfc_qty + rtfc_qty &gt; 0</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0014_rtfc_batches.py</li><li>T2 Enum rtfc_class, rtfc_status</li><li>T3 Model + schema</li></ul><h3>Depends on</h3><p>E4-S4.1, E4-S4.2, E4-S4.3 (FK targets) + E3-S3.5 (ghg_calculations FK).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.5",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": ["E4-S4.4"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E4-S4.5] Migration 0015 rtfc_events (append-only)",
+      "description_html": "<h3>Goal</h3><p>Creare tabella rtfc_events append-only (no soft-delete, no PATCH; cancellazione via event_type 'cancelled').</p><h3>Acceptance criteria</h3><ul><li>Schema append-only</li><li>No soft-delete column</li><li>FK audit_log per ogni evento</li><li>Cancellazione via event_type 'cancelled'</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0015_rtfc_events.py</li><li>T2 Enum rtfc_event_type</li><li>T3 Model + schema</li></ul><h3>Depends on</h3><p>E4-S4.4 (rtfc_batches FK).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.6",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": ["E4-S4.1"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E4-S4.6] Router /off-takers CRUD",
+      "description_html": "<h3>Goal</h3><p>Endpoint CRUD off-takers con pattern anagrafica.</p><h3>Acceptance criteria</h3><ul><li>CRUD admin pattern</li><li>Audit log integration</li><li>Soft-delete</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/routers/off_takers.py</li><li>T2 main.py include</li></ul><h3>Depends on</h3><p>E4-S4.1 (off_takers table).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.7",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": ["E4-S4.2"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E4-S4.7] Router /verifiers CRUD",
+      "description_html": "<h3>Goal</h3><p>Endpoint CRUD verifiers con pattern anagrafica.</p><h3>Acceptance criteria</h3><ul><li>CRUD admin pattern</li><li>Audit log integration</li><li>Soft-delete</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/routers/verifiers.py</li><li>T2 main.py include</li></ul><h3>Depends on</h3><p>E4-S4.2 (verifiers table).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.8",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": ["E4-S4.4", "E4-S4.5"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E4-S4.8] Router /rtfc-batches con state machine",
+      "description_html": "<h3>Goal</h3><p>Endpoint CRUD rtfc-batches con state machine enforced + audit log + rtfc_events emission.</p><h3>Acceptance criteria</h3><ul><li>State transitions: draft &rarr; verified &rarr; awarded &rarr; (redeemed | sold | cancelled)</li><li>Transizioni invalid &rarr; 409</li><li>Ogni transizione logga evento (rtfc_events) + audit_log</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/routers/rtfc_batches.py</li><li>T2 State machine validation</li><li>T3 Event emission helper</li></ul><h3>Depends on</h3><p>E4-S4.4 (batches), E4-S4.5 (events).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.9",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": ["E4-S4.5"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E4-S4.9] Router /rtfc-events append-only",
+      "description_html": "<h3>Goal</h3><p>Endpoint POST-only + GET con filtri + pagination, append-only.</p><h3>Acceptance criteria</h3><ul><li>POST only (no PATCH/DELETE)</li><li>GET con filtri (batch_id, year, class, event_type)</li><li>Pagination</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/routers/rtfc_events.py</li><li>T2 Pagination helper</li></ul><h3>Depends on</h3><p>E4-S4.5 (rtfc_events table).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.10",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": ["E4-S4.4", "E4-S4.5"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E4-S4.10] View rtfc_balance per obligation period",
+      "description_html": "<h3>Goal</h3><p>Materialized view o computed query che aggrega balance RTFC per year + class.</p><h3>Acceptance criteria</h3><ul><li>Materialized view o computed query</li><li>Aggrega per year + class</li><li>Mostra awarded - redeemed - sold + bought - bought_out + carried_in - carried_out</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/migration MV (o computed in endpoint)</li><li>T2 Endpoint GET /rtfc-balance?year=YYYY&amp;class=...</li><li>T3 Refresh pattern AUTOCOMMIT se MV</li></ul><h3>Depends on</h3><p>E4-S4.4, E4-S4.5.</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.11",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": ["E4-S4.10"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E4-S4.11] Carry-over 25% annuale singolo endpoint",
+      "description_html": "<h3>Goal</h3><p>Endpoint per carry-over RTFC con cap 25% del balance e blocco double carry-over.</p><h3>Acceptance criteria</h3><ul><li>POST /rtfc-batches/{id}/carry-over?to_year=</li><li>Valida qty &le; 0.25 * available_balance(class, year)</li><li>Valida to_year = year+1</li><li>Rifiuta double carry-over (no carry-over di carry-over)</li></ul><h3>Technical breakdown</h3><ul><li>T1 Handler in rtfc_batches.py</li><li>T2 Validation helper</li><li>T3 Event emission carried_over</li><li>T4 Unit test cap 25%</li></ul><h3>Risks/notes</h3><p>Risk-high: carry-over mal calcolato &rarr; certificati assegnati eccedenti. Test specifici obbligatori.</p><h3>Depends on</h3><p>E4-S4.10 (balance view).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.12",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": ["E4-S4.6", "E4-S4.7", "E4-S4.8", "E4-S4.9", "E4-S4.10"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E4-S4.12] Frontend /app/rtfo/* shell",
+      "description_html": "<h3>Goal</h3><p>Layout RTFO Ledger con sidebar nav e pagine batches/events/balance/off-takers/verifiers.</p><h3>Acceptance criteria</h3><ul><li>Sidebar nav &quot;RTFO Ledger&quot; group con sotto-link batches/events/balance/off-takers/verifiers</li><li>Visibili admin/operator/certifier</li></ul><h3>Technical breakdown</h3><ul><li>T1 landing/src/app/app/rtfo/layout.tsx</li><li>T2 Pagine shell list</li><li>T3 Nav permissions</li></ul><h3>Depends on</h3><p>E4-S4.6, E4-S4.7, E4-S4.8, E4-S4.9, E4-S4.10 (tutti i router).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E4-S4.13",
+    "_epic": "E4",
+    "_sprint": "Sprint 5",
+    "_blocked_by": ["E4-S4.8", "E4-S4.12"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E4-S4.13] Frontend batch detail + state transitions",
+      "description_html": "<h3>Goal</h3><p>Pagina detail batch con timeline eventi cronologici e bottoni transizione admin-only.</p><h3>Acceptance criteria</h3><ul><li>Detail page batch mostra eventi cronologici</li><li>Stato corrente evidenziato</li><li>Bottoni transizione (admin only)</li></ul><h3>Technical breakdown</h3><ul><li>T1 landing/src/app/app/rtfo/batches/[id]/page.tsx</li><li>T2 Timeline component</li><li>T3 Transition actions</li></ul><h3>Depends on</h3><p>E4-S4.8 (state machine), E4-S4.12 (shell).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E5-S5.1",
+    "_epic": "E5",
+    "_sprint": "Sprint 6",
+    "_blocked_by": [],
+    "_priority": "urgent",
+    "payload": {
+      "name": "[E5-S5.1] Fetch ROS schema (DfT API o spec)",
+      "description_html": "<h3>Goal</h3><p>Recuperare schema ROS ufficiale e documentare mapping rtfc_batches + rtfc_events &rarr; ROS fields.</p><h3>Acceptance criteria</h3><ul><li>docs/ros-schema.md con definizione campi attesi</li><li>Mapping rtfc_batches + rtfc_events &rarr; ROS fields</li></ul><h3>Technical breakdown</h3><ul><li>T1 WebFetch o richiesta DfT</li><li>T2 Normalizzare schema</li><li>T3 Commit doc</li></ul><h3>Risks/notes</h3><p>Bloccato da D7. Schema pu&ograve; cambiare anno su anno.</p><h3>Depends on</h3><p>D7 (ROS schema availability).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "urgent"
+    }
+  },
+  {
+    "_tmp_id": "E5-S5.2",
+    "_epic": "E5",
+    "_sprint": "Sprint 6",
+    "_blocked_by": ["E5-S5.1", "E5-S5.3"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E5-S5.2] View + endpoint /ros-export idempotente",
+      "description_html": "<h3>Goal</h3><p>Query che produce esattamente formato ROS, idempotente, versionata in ros_exports table.</p><h3>Acceptance criteria</h3><ul><li>Query produce esattamente formato ROS</li><li>Idempotente (stessa risposta per stessi dati)</li><li>Versioning via ros_exports table</li><li>GET /ros-export?year=YYYY&amp;format=json|csv|xml</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/routers/ros_export.py</li><li>T2 Service ros_export per format generation</li><li>T3 Audit log entry su ogni export</li></ul><h3>Depends on</h3><p>E5-S5.1 (schema), E5-S5.3 (ros_exports table).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E5-S5.3",
+    "_epic": "E5",
+    "_sprint": "Sprint 6",
+    "_blocked_by": [],
+    "_priority": "high",
+    "payload": {
+      "name": "[E5-S5.3] Migrations 0016 buyout_events + 0017 reminders + 0018 ros_exports",
+      "description_html": "<h3>Goal</h3><p>Tre migration per le tabelle di support E5: buyout_events, reminders, ros_exports.</p><h3>Acceptance criteria</h3><ul><li>Tre migration applicate</li><li>FK validi</li><li>Enum tipi creati</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0016_buyout_events.py</li><li>T2 backend/alembic/versions/0017_reminders.py</li><li>T3 backend/alembic/versions/0018_ros_exports.py</li><li>T4 Model + schema per ognuna</li></ul><h3>Depends on</h3><p>Nessuna (indipendenti dal ROS schema).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E5-S5.4",
+    "_epic": "E5",
+    "_sprint": "Sprint 6",
+    "_blocked_by": ["E5-S5.3"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E5-S5.4] Buyout cash ledger router",
+      "description_html": "<h3>Goal</h3><p>Endpoint per inserimento eventi buyout integrati con rtfc_balance view.</p><h3>Acceptance criteria</h3><ul><li>POST inserisce evento buyout</li><li>Integra con rtfc_balance view (riduce obbligo da soddisfare)</li><li>Audit_log entries</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/routers/buyout.py</li><li>T2 Service buyout_ledger</li></ul><h3>Depends on</h3><p>E5-S5.3 (buyout_events table).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E5-S5.5",
+    "_epic": "E5",
+    "_sprint": "Sprint 6",
+    "_blocked_by": ["E5-S5.3"],
+    "_priority": "urgent",
+    "payload": {
+      "name": "[E5-S5.5] Reminder scheduler (cron + email SMTP)",
+      "description_html": "<h3>Goal</h3><p>Job ricorrente per reminders submission deadline 15-set + email SMTP integration.</p><h3>Acceptance criteria</h3><ul><li>Job ricorrente (APScheduler in-process o cron container)</li><li>Verifica reminders.due_date &le; NOW+30d AND status=pending</li><li>Invio email via SMTP cliente</li><li>Mark sent_at</li><li>Reminder seeded auto su obligation_period insert</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/services/reminder_scheduler.py (APScheduler)</li><li>T2 SMTP config from .env</li><li>T3 Email templates</li><li>T4 Health check job</li></ul><h3>Risks/notes</h3><p>Risk-high: SMTP config + secrets management. Bloccato da D8. Reminders mai inviati &rarr; scadenza 15-set persa.</p><h3>Depends on</h3><p>D8 (SMTP config), E5-S5.3 (reminders table).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "urgent"
+    }
+  },
+  {
+    "_tmp_id": "E5-S5.6",
+    "_epic": "E5",
+    "_sprint": "Sprint 6",
+    "_blocked_by": ["E1-S1.3", "E4-S4.4", "E4-S4.5"],
+    "_priority": "high",
+    "payload": {
+      "name": "[E5-S5.6] Verifier bundle PDF generator",
+      "description_html": "<h3>Goal</h3><p>Estendere pdf_renderer di E1 con template multi-page per verifier bundle + ZIP con hash manifest.</p><h3>Acceptance criteria</h3><ul><li>Estende pdf_renderer di E1 con template multi-page</li><li>Cover + batch summary + GHG worksheets + event timeline + audit log excerpt + supply chain diagram</li><li>ZIP con hash manifest</li></ul><h3>Technical breakdown</h3><ul><li>T1 Template Jinja multi-page</li><li>T2 ZIP packaging + manifest</li><li>T3 Endpoint POST /reports/verifier-bundle?year=YYYY&amp;class=</li></ul><h3>Risks/notes</h3><p>Cross-epic dependency: E1 pdf_renderer + E4 rtfc_batches/events.</p><h3>Depends on</h3><p>E1-S1.3 (pdf_renderer), E4-S4.4, E4-S4.5 (batches + events tables).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E5-S5.7",
+    "_epic": "E5",
+    "_sprint": "Sprint 6",
+    "_blocked_by": ["E5-S5.2"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E5-S5.7] Frontend ROS export UI",
+      "description_html": "<h3>Goal</h3><p>UI con anteprima dati ROS + bottone Export + storico ros_exports.</p><h3>Acceptance criteria</h3><ul><li>Pagina con anteprima dati</li><li>Bottone &quot;Export&quot;</li><li>Storico ros_exports</li></ul><h3>Technical breakdown</h3><ul><li>T1 landing/src/app/app/rtfo/ros-export/page.tsx</li><li>T2 Preview component</li></ul><h3>Depends on</h3><p>E5-S5.2 (endpoint).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E5-S5.8",
+    "_epic": "E5",
+    "_sprint": "Sprint 6",
+    "_blocked_by": ["E5-S5.5"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E5-S5.8] Frontend reminders dashboard",
+      "description_html": "<h3>Goal</h3><p>UI lista reminders pending + ack action.</p><h3>Acceptance criteria</h3><ul><li>Lista reminders pending</li><li>Ack action</li></ul><h3>Technical breakdown</h3><ul><li>T1 landing/src/app/app/rtfo/reminders/page.tsx</li><li>T2 Ack mutation</li></ul><h3>Depends on</h3><p>E5-S5.5 (scheduler + endpoint).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E5-S5.9",
+    "_epic": "E5",
+    "_sprint": "Sprint 6",
+    "_blocked_by": ["E5-S5.4"],
+    "_priority": "medium",
+    "payload": {
+      "name": "[E5-S5.9] Frontend buyout entry",
+      "description_html": "<h3>Goal</h3><p>UI form inserimento evento buyout + storico tabellare.</p><h3>Acceptance criteria</h3><ul><li>Form inserimento evento buyout</li><li>Storico tabellare</li></ul><h3>Technical breakdown</h3><ul><li>T1 landing/src/app/app/rtfo/buyout/page.tsx</li><li>T2 Form component</li></ul><h3>Depends on</h3><p>E5-S5.4 (buyout router).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "medium"
+    }
+  },
+  {
+    "_tmp_id": "E6-S6.1",
+    "_epic": "E6",
+    "_sprint": "Sprint 7",
+    "_blocked_by": [],
+    "_priority": "low",
+    "payload": {
+      "name": "[E6-S6.1] Annex D formula spec doc",
+      "description_html": "<h3>Goal</h3><p>Documentare formula Annex D RCF da DfT essential guide con cross-ref righe specifiche del doc fonte.</p><h3>Acceptance criteria</h3><ul><li>docs/annex-d-methodology.md con formula completa RCF</li><li>Cross-ref righe specifiche del doc fonte</li></ul><h3>Technical breakdown</h3><ul><li>T1 Fetch essential guide</li><li>T2 Estrazione formula</li><li>T3 Doc</li></ul><h3>Risks/notes</h3><p>Bloccato da D9. Methodology pu&ograve; cambiare versione.</p><h3>Depends on</h3><p>D9 (Annex D methodology version target).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "low"
+    }
+  },
+  {
+    "_tmp_id": "E6-S6.2",
+    "_epic": "E6",
+    "_sprint": "Sprint 7",
+    "_blocked_by": [],
+    "_priority": "low",
+    "payload": {
+      "name": "[E6-S6.2] Migration 0019 emission_factors + seed",
+      "description_html": "<h3>Goal</h3><p>Tabella emission_factors per stadi + seed da pubblicazione DfT 2025/2026.</p><h3>Acceptance criteria</h3><ul><li>Schema creato</li><li>Seed da pubblicazione DfT 2025/2026</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0019_emission_factors.py</li><li>T2 Seed</li><li>T3 Model + schema</li></ul><h3>Risks/notes</h3><p>Emission factors regionali ELT-from-Colombia specifici da reperire.</p><h3>Depends on</h3><p>Nessuna (indipendente da spec).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "low"
+    }
+  },
+  {
+    "_tmp_id": "E6-S6.3",
+    "_epic": "E6",
+    "_sprint": "Sprint 7",
+    "_blocked_by": ["E6-S6.2", "E3-S3.5"],
+    "_priority": "low",
+    "payload": {
+      "name": "[E6-S6.3] Migration 0020 annex_d_inputs",
+      "description_html": "<h3>Goal</h3><p>Tabella annex_d_inputs in relazione 1:1 con ghg_calculations.</p><h3>Acceptance criteria</h3><ul><li>FK 1:1 con ghg_calculations</li><li>Schema completo (counterfactual_landfill, counterfactual_incineration, transport_km, energy_kwh, ...)</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/alembic/versions/0020_annex_d_inputs.py</li><li>T2 Model + schema</li></ul><h3>Depends on</h3><p>E6-S6.2 (emission_factors), E3-S3.5 (ghg_calculations).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "low"
+    }
+  },
+  {
+    "_tmp_id": "E6-S6.4",
+    "_epic": "E6",
+    "_sprint": "Sprint 7",
+    "_blocked_by": ["E6-S6.1", "E6-S6.3"],
+    "_priority": "low",
+    "payload": {
+      "name": "[E6-S6.4] Service ghg_annex_d.py pure function",
+      "description_html": "<h3>Goal</h3><p>Pure function compute_annex_d isolata, unit-tested con sample DfT.</p><h3>Acceptance criteria</h3><ul><li>Pure function compute_annex_d(daily_production, emission_factors, annex_d_inputs) -&gt; ghg_calculation_dict</li><li>Unit-tested con sample DfT</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/services/ghg_annex_d.py</li><li>T2 Test suite con sample DfT</li><li>T3 Versioning via methodology_version</li></ul><h3>Depends on</h3><p>E6-S6.1 (spec), E6-S6.3 (annex_d_inputs schema).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "low"
+    }
+  },
+  {
+    "_tmp_id": "E6-S6.5",
+    "_epic": "E6",
+    "_sprint": "Sprint 7",
+    "_blocked_by": ["E6-S6.4"],
+    "_priority": "low",
+    "payload": {
+      "name": "[E6-S6.5] Endpoint POST /ghg/annex-d/compute",
+      "description_html": "<h3>Goal</h3><p>Endpoint che calcola Annex D + persiste, idempotente per stesso input.</p><h3>Acceptance criteria</h3><ul><li>Calcola + persiste</li><li>Idempotente per stesso input</li><li>Ritorna 422 se sotto soglia 65% (advisory, non bloccante)</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/routers/ghg_annex_d.py</li><li>T2 Service call + persist</li></ul><h3>Depends on</h3><p>E6-S6.4 (service).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "low"
+    }
+  },
+  {
+    "_tmp_id": "E6-S6.6",
+    "_epic": "E6",
+    "_sprint": "Sprint 7",
+    "_blocked_by": ["E6-S6.4"],
+    "_priority": "low",
+    "payload": {
+      "name": "[E6-S6.6] Carbon Calculator import/export",
+      "description_html": "<h3>Goal</h3><p>Mapping CSV &harr; schema interno per DfT Carbon Calculator, idempotente.</p><h3>Acceptance criteria</h3><ul><li>Mapping CSV &harr; schema interno</li><li>Verifica integrit&agrave; (somma stadi = totale)</li><li>Idempotente</li></ul><h3>Technical breakdown</h3><ul><li>T1 backend/app/services/carbon_calculator.py</li><li>T2 Endpoint POST /ghg/carbon-calculator/import (multipart CSV)</li><li>T3 Endpoint GET /ghg/carbon-calculator/export?period=</li></ul><h3>Risks/notes</h3><p>Bloccato da D10 (API vs CSV-only).</p><h3>Depends on</h3><p>D10, E6-S6.4 (service).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "low"
+    }
+  },
+  {
+    "_tmp_id": "E6-S6.7",
+    "_epic": "E6",
+    "_sprint": "Sprint 7",
+    "_blocked_by": ["E6-S6.5", "E4-S4.8"],
+    "_priority": "low",
+    "payload": {
+      "name": "[E6-S6.7] Soglia 65% enforcement nel ledger RTFC",
+      "description_html": "<h3>Goal</h3><p>POST /rtfc-batches con ghg_calculation_id sotto soglia 65% ritorna 409 con motivo; admin override flag + audit_log.</p><h3>Acceptance criteria</h3><ul><li>POST /rtfc-batches con ghg_calculation_id cui threshold_met=false ritorna 409 con motivo</li><li>Admin pu&ograve; override con flag + audit_log entry</li></ul><h3>Technical breakdown</h3><ul><li>T1 Patch rtfc_batches router</li><li>T2 Override flag validation</li><li>T3 Test suite enforcement + override</li></ul><h3>Depends on</h3><p>E6-S6.5 (annex-d compute), E4-S4.8 (rtfc-batches router).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "low"
+    }
+  },
+  {
+    "_tmp_id": "E6-S6.8",
+    "_epic": "E6",
+    "_sprint": "Sprint 7",
+    "_blocked_by": ["E6-S6.5"],
+    "_priority": "low",
+    "payload": {
+      "name": "[E6-S6.8] Frontend Annex D worksheet (XL - consider split)",
+      "description_html": "<h3>Goal</h3><p>Form multistep Annex D con preview compute live + save &rarr; ghg_calculation.</p><h3>Acceptance criteria</h3><ul><li>Form multistep (transport km, energia kWh, fattori emissione, controfattuali)</li><li>Preview compute live</li><li>Save &rarr; ghg_calculation</li></ul><h3>Technical breakdown</h3><ul><li>T1 landing/src/app/app/ghg/annex-d/page.tsx multistep wizard</li><li>T2 Live compute preview component (calls compute endpoint debounced)</li><li>T3 Form persistence</li><li>T4 Admin emission_factors page (sub-task or follow-up)</li></ul><h3>Risks/notes</h3><p>XL complexity &mdash; PM raccomanda split in S6.8a (form skeleton + state) + S6.8b (live compute preview + persist). Lasciato monolitico per decisione orchestrator.</p><h3>Depends on</h3><p>E6-S6.5 (compute endpoint).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "low"
+    }
+  },
+  {
+    "_tmp_id": "E1-S1.6b",
+    "_epic": "E1",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E1-S1.1"],
+    "_priority": "high",
+    "_conditional": "D2=persist",
+    "payload": {
+      "name": "[E1-S1.6b] Migration 0007 persist_production_litres (conditional D2)",
+      "description_html": "<h3>Goal</h3><p>Conditional follow-up di E1-S1.1: se D2 = 'persistere litres' aggiungere colonne litres_eu / litres_plus a daily_production come GENERATED ALWAYS via product_densities (migration 0007). Se D2 = 'MV-only' chiudere come Cancelled.</p><h3>Conditional trigger</h3><p>Attivare SOLO se E1-S1.1 risolve con esito 'persist'. Altrimenti transitionare a Cancelled state in Plane.</p><h3>Acceptance criteria</h3><ul><li>backend/alembic/versions/0007_persist_production_litres.py creata</li><li>ADD COLUMN litres_eu NUMERIC GENERATED ALWAYS AS (eu_prod_kg / 0.78) STORED</li><li>ADD COLUMN litres_plus NUMERIC GENERATED ALWAYS AS (plus_prod_kg / 0.856) STORED</li><li>alembic upgrade head &rarr; green</li><li>SELECT su daily_production restituisce litres coerenti con mv_mass_balance_monthly</li><li>alembic downgrade -1 testato + ripristinato</li><li>CLAUDE.md regola &quot;MAI scrivere su colonne GENERATED&quot; estesa anche a litres_eu/litres_plus</li></ul><h3>Technical breakdown</h3><ul><li>T1 alembic revision -m persist_production_litres</li><li>T2 Add 2 generated columns con cast a product_densities</li><li>T3 Optional: simplify mv_mass_balance_monthly (rimuovi calcolo runtime)</li><li>T4 Test su dump Gen 2025 (verify byte-equal output)</li></ul><h3>Risks/notes</h3><p>GENERATED STORED + densita immutabile per row. Se cliente modifica product_densities in futuro: storiche restano coerenti con densita all'INSERT (Postgres GENERATED behavior).</p><h3>Depends on</h3><p>E1-S1.1 (D2 = persist).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "high"
+    }
+  },
+  {
+    "_tmp_id": "E2-S2.12",
+    "_epic": "E2",
+    "_sprint": "Sprint 3",
+    "_blocked_by": ["E2-S2.11"],
+    "_priority": "low",
+    "payload": {
+      "name": "[E2-S2.12] Housekeeping doc baseline (CLAUDE.md + agentos-context + BLUEPRINT)",
+      "description_html": "<h3>Goal</h3><p>Riallineare doc baseline a stato reale repo post-Sprint 3 (reviewer OBS-2 + OBS-3 + OBS-4 risolti).</p><h3>Acceptance criteria</h3><ul><li>CLAUDE.md riga 28 &quot;prossima &egrave; 000N_&quot; aggiornata a prossimo prefisso reale</li><li>CLAUDE.md riga 51 &quot;N migration files&quot; coerente con git ls backend/alembic/versions/</li><li>CLAUDE.md tabella Sprint: Sprint 3 &rarr; &check; COMPLETO (data chiusura)</li><li>docs/agentos-context.md &sect;3: count migrations + lista files allineata a HEAD</li><li>docs/agentos-context.md &sect;6: endpoint /daily-inputs + /daily-production al posto di /daily-entries</li><li>BLUEPRINT.md bumped a v0.2 con schema split daily_input/daily_production</li><li>Commit chore(docs): rebaseline post-sprint-3</li></ul><h3>Technical breakdown</h3><ul><li>T1 grep -rn '0009_\\|8 migration\\|daily_entries\\|daily-entries' docs/ CLAUDE.md BLUEPRINT.md</li><li>T2 Edit CLAUDE.md (3 sezioni: riga 28 + riga 51 + tabella sprint)</li><li>T3 Edit docs/agentos-context.md &sect;3 + &sect;6</li><li>T4 Bump BLUEPRINT.md v0.1 &rarr; v0.2 con changelog</li><li>T5 Commit + push</li></ul><h3>Depends on</h3><p>E2-S2.11 (Sprint 3 DoD chiuso).</p>",
+      "state": "9c3f0600-ec31-40d5-9e46-e81a3442c089",
+      "priority": "low"
+    }
+  }
+]

@@ -1,0 +1,815 @@
+{
+  "mapping": {
+    "E1-S1.1": {
+      "id": "bacf842d-f745-4b60-b327-d094781a627d",
+      "sequence_id": 95,
+      "name": "[E1-S1.1] Decisione persistenza litres su daily_production"
+    },
+    "E1-S1.2": {
+      "id": "1f228f73-aa16-4408-a8bc-dfff0de74da0",
+      "sequence_id": 96,
+      "name": "[E1-S1.2] Setup WeasyPrint runtime + template base in container backend"
+    },
+    "E1-S1.3": {
+      "id": "5401351e-37fe-4614-8ad2-09ec3bbe4d02",
+      "sequence_id": 97,
+      "name": "[E1-S1.3] Service pdf_renderer + hash side-car SHA-256"
+    },
+    "E1-S1.4": {
+      "id": "9d6253c1-9bc1-44a7-9a10-6c6a9f4efd15",
+      "sequence_id": 98,
+      "name": "[E1-S1.4] Endpoint /reports/mass-balance/export PDF"
+    },
+    "E1-S1.5": {
+      "id": "6d1958cb-a75a-4d81-8df1-f771b4a0023c",
+      "sequence_id": 99,
+      "name": "[E1-S1.5] Generazione Annex A v1 Gennaio 2025"
+    },
+    "E1-S1.6": {
+      "id": "b29e3d6f-57ee-4f6e-8d24-c456e3fa7a33",
+      "sequence_id": 100,
+      "name": "[E1-S1.6] Hardening template + Annex A v2"
+    },
+    "E1-S1.7": {
+      "id": "568110b9-c574-44b6-9e34-3dcb041b33c8",
+      "sequence_id": 101,
+      "name": "[E1-S1.7] Migration 0006 supplier rectification Gennaio 2025"
+    },
+    "E1-S1.8": {
+      "id": "f4ed26fc-f606-4cb4-b046-3b27d4a4771b",
+      "sequence_id": 102,
+      "name": "[E1-S1.8] Annex D closing stock 339.865 kg PDF"
+    },
+    "E1-S1.9": {
+      "id": "ad369c60-0348-4ae6-b0f4-52ac479a8284",
+      "sequence_id": 103,
+      "name": "[E1-S1.9] Endpoint CSV /admin/audit-log?format=csv"
+    },
+    "E1-S1.10": {
+      "id": "286b73ef-2eb9-4a0c-b0e6-fb1337153d81",
+      "sequence_id": 104,
+      "name": "[E1-S1.10] Production conversion log Gen 2025 PDF"
+    },
+    "E1-S1.11": {
+      "id": "ba354da5-be29-49e4-9db6-887e25d21c3f",
+      "sequence_id": 105,
+      "name": "[E1-S1.11] Supply chain diagram PDF"
+    },
+    "E1-S1.12": {
+      "id": "302a1d9c-00b0-4ee3-b4f5-ffa98fecf45a",
+      "sequence_id": 106,
+      "name": "[E1-S1.12] Cover letter Crown Oil + evidence index PDF"
+    },
+    "E1-S1.13": {
+      "id": "4a0a45f5-14ad-436e-8400-891ec83169f1",
+      "sequence_id": 107,
+      "name": "[E1-S1.13] PDF 03_iscc_pos_status.pdf"
+    },
+    "E1-S1.14": {
+      "id": "77821e15-ba61-4b1c-ab9d-254032bd481c",
+      "sequence_id": 108,
+      "name": "[E1-S1.14] Feedstock provider authorisations folder + status"
+    },
+    "E1-S1.15": {
+      "id": "ff1d2f78-676e-4e55-81e5-d47cf411e2b5",
+      "sequence_id": 109,
+      "name": "[E1-S1.15] Pre-audit interno bundle Day 4"
+    },
+    "E1-S1.16": {
+      "id": "848963f9-ac2b-4275-970b-2715091ca67a",
+      "sequence_id": 110,
+      "name": "[E1-S1.16] Snapshot crittografico DB Day 5 + Day 6"
+    },
+    "E1-S1.17": {
+      "id": "b7e47548-bd94-4117-b98e-ef080f9da912",
+      "sequence_id": 111,
+      "name": "[E1-S1.17] Audit interno Day 6 + Annex A FINAL"
+    },
+    "E1-S1.18": {
+      "id": "28aa405a-791a-464c-bccf-c4479bb4708b",
+      "sequence_id": 112,
+      "name": "[E1-S1.18] Submission ROS Day 7 + notifica DfT"
+    },
+    "E2-S2.1": {
+      "id": "e64acd61-0b1b-42f3-b148-dfb2107594c3",
+      "sequence_id": 113,
+      "name": "[E2-S2.1] Setup shadcn/ui + base UI primitives"
+    },
+    "E2-S2.2": {
+      "id": "8a997a1a-2dfd-489e-99f3-65b25fedbe3b",
+      "sequence_id": 114,
+      "name": "[E2-S2.2] API client lib + tipi backend"
+    },
+    "E2-S2.3": {
+      "id": "0671f254-9bde-438e-84dc-0b687c456049",
+      "sequence_id": 115,
+      "name": "[E2-S2.3] Auth flow login/logout (server actions)"
+    },
+    "E2-S2.4": {
+      "id": "ed08e726-6428-4051-af76-d61d54a37f21",
+      "sequence_id": 116,
+      "name": "[E2-S2.4] Middleware route protection"
+    },
+    "E2-S2.5": {
+      "id": "2e4435e3-8f2a-4526-a935-33ca8657b482",
+      "sequence_id": 117,
+      "name": "[E2-S2.5] Dashboard layout shell"
+    },
+    "E2-S2.6": {
+      "id": "0a680469-7674-49ac-b131-4918d2ed01bc",
+      "sequence_id": 118,
+      "name": "[E2-S2.6] Dashboard home KPI cards"
+    },
+    "E2-S2.7": {
+      "id": "1d2b4a2a-72b0-4bf2-ab73-40cdb2823774",
+      "sequence_id": 119,
+      "name": "[E2-S2.7] Report mass balance daily/monthly"
+    },
+    "E2-S2.8": {
+      "id": "2fe6366c-7c6e-4f92-9d3b-e5ca206674aa",
+      "sequence_id": 120,
+      "name": "[E2-S2.8] Report by-supplier (chart + table)"
+    },
+    "E2-S2.9": {
+      "id": "e5e06e8d-12ca-4482-9aac-4bb29f5ede49",
+      "sequence_id": 121,
+      "name": "[E2-S2.9] Report closure-status (semaforo)"
+    },
+    "E2-S2.10": {
+      "id": "7b0b0616-97dd-47c0-b528-14b74d7afccb",
+      "sequence_id": 122,
+      "name": "[E2-S2.10] Anagrafiche read-only viewer"
+    },
+    "E2-S2.11": {
+      "id": "7ce3a28b-2e32-4652-88a3-e23d44acfd76",
+      "sequence_id": 123,
+      "name": "[E2-S2.11] Sprint 3 DoD verification + deploy smoke test"
+    },
+    "E3-S3.1": {
+      "id": "1abd01d7-4f8b-4119-b243-3bb33332eb8c",
+      "sequence_id": 124,
+      "name": "[E3-S3.1] Fetch RTFO List of Feedstocks ufficiale + seed CSV"
+    },
+    "E3-S3.2": {
+      "id": "19ce458f-6e4a-4b43-a54e-b5e5472479e8",
+      "sequence_id": 125,
+      "name": "[E3-S3.2] Migration 0008 feedstocks table"
+    },
+    "E3-S3.3": {
+      "id": "88b4635f-e48a-4c0f-ae39-7ecab819c5d3",
+      "sequence_id": 126,
+      "name": "[E3-S3.3] Back-population daily_inputs.feedstock_id ELT"
+    },
+    "E3-S3.4": {
+      "id": "1fdb5131-c3ec-4d47-a50d-7cdf18709abb",
+      "sequence_id": 127,
+      "name": "[E3-S3.4] Router /feedstocks CRUD"
+    },
+    "E3-S3.5": {
+      "id": "cc6b598d-b394-46ce-9f2d-ae29cc041ce0",
+      "sequence_id": 128,
+      "name": "[E3-S3.5] Migration 0009 ghg_calculations table"
+    },
+    "E3-S3.6": {
+      "id": "4e71ba86-4018-4acc-8130-7e410a3a8710",
+      "sequence_id": 129,
+      "name": "[E3-S3.6] Router /ghg-calculations upload manuale"
+    },
+    "E3-S3.7": {
+      "id": "53bff859-abd2-46c0-9f17-de84fc8fd72c",
+      "sequence_id": 130,
+      "name": "[E3-S3.7] Migration 0010 certificate scheme enum"
+    },
+    "E3-S3.8": {
+      "id": "43b6b36d-29a3-4cff-a6ce-60d248dc27f2",
+      "sequence_id": 131,
+      "name": "[E3-S3.8] Frontend /app/feedstocks/ list + detail"
+    },
+    "E3-S3.9": {
+      "id": "b4f94650-0377-4cba-82b8-9e035ed8fef5",
+      "sequence_id": 132,
+      "name": "[E3-S3.9] Frontend /app/ghg/ upload + view"
+    },
+    "E4-S4.1": {
+      "id": "dd320743-8bba-40c7-9634-0ebe87502ae2",
+      "sequence_id": 133,
+      "name": "[E4-S4.1] Migration 0011 off_takers + Crown Oil seed"
+    },
+    "E4-S4.2": {
+      "id": "0d1445ea-97ab-4bc9-800e-b256a25e6901",
+      "sequence_id": 134,
+      "name": "[E4-S4.2] Migration 0012 verifiers"
+    },
+    "E4-S4.3": {
+      "id": "6ed2cd8b-c71b-48f4-9323-31ea1014e936",
+      "sequence_id": 135,
+      "name": "[E4-S4.3] Migration 0013 obligation_periods + seed 2025+2026"
+    },
+    "E4-S4.4": {
+      "id": "c1ef6521-eff2-4ee3-81c5-d4a529e24403",
+      "sequence_id": 136,
+      "name": "[E4-S4.4] Migration 0014 rtfc_batches"
+    },
+    "E4-S4.5": {
+      "id": "d7d3a3b7-215e-4c17-8641-b6180d2771b0",
+      "sequence_id": 137,
+      "name": "[E4-S4.5] Migration 0015 rtfc_events (append-only)"
+    },
+    "E4-S4.6": {
+      "id": "2850edff-bedb-4100-bed0-1cc4b49e23b2",
+      "sequence_id": 138,
+      "name": "[E4-S4.6] Router /off-takers CRUD"
+    },
+    "E4-S4.7": {
+      "id": "a2348651-e3d6-454a-adb6-1b120566b47d",
+      "sequence_id": 139,
+      "name": "[E4-S4.7] Router /verifiers CRUD"
+    },
+    "E4-S4.8": {
+      "id": "5de6b1a7-dd93-4191-9097-628d4dde8c9a",
+      "sequence_id": 140,
+      "name": "[E4-S4.8] Router /rtfc-batches con state machine"
+    },
+    "E4-S4.9": {
+      "id": "d87c8044-4774-401f-8451-224e16568f23",
+      "sequence_id": 141,
+      "name": "[E4-S4.9] Router /rtfc-events append-only"
+    },
+    "E4-S4.10": {
+      "id": "58a8c2d6-d30a-4d89-b850-e9b694921e7e",
+      "sequence_id": 142,
+      "name": "[E4-S4.10] View rtfc_balance per obligation period"
+    },
+    "E4-S4.11": {
+      "id": "e1d74379-ed3d-4ffd-947c-313a5cf489a6",
+      "sequence_id": 143,
+      "name": "[E4-S4.11] Carry-over 25% annuale singolo endpoint"
+    },
+    "E4-S4.12": {
+      "id": "71a72618-e402-4707-bf98-6defc7af2045",
+      "sequence_id": 144,
+      "name": "[E4-S4.12] Frontend /app/rtfo/* shell"
+    },
+    "E4-S4.13": {
+      "id": "b29ad9a0-643b-44b5-a637-6597cd892481",
+      "sequence_id": 145,
+      "name": "[E4-S4.13] Frontend batch detail + state transitions"
+    },
+    "E5-S5.1": {
+      "id": "564e9512-14d4-44b8-8492-4bcea2dd03f6",
+      "sequence_id": 146,
+      "name": "[E5-S5.1] Fetch ROS schema (DfT API o spec)"
+    },
+    "E5-S5.2": {
+      "id": "a21b2b4e-9d39-45d6-8c35-cfb3ce67dd5c",
+      "sequence_id": 147,
+      "name": "[E5-S5.2] View + endpoint /ros-export idempotente"
+    },
+    "E5-S5.3": {
+      "id": "349f8733-160b-43a8-8e7b-660bf38678f6",
+      "sequence_id": 148,
+      "name": "[E5-S5.3] Migrations 0016 buyout_events + 0017 reminders + 0018 ros_exports"
+    },
+    "E5-S5.4": {
+      "id": "fee59945-210b-4720-9edb-bdf295e0851b",
+      "sequence_id": 149,
+      "name": "[E5-S5.4] Buyout cash ledger router"
+    },
+    "E5-S5.5": {
+      "id": "87f8ceb8-2ece-4886-bdce-2d03a14d66fb",
+      "sequence_id": 150,
+      "name": "[E5-S5.5] Reminder scheduler (cron + email SMTP)"
+    },
+    "E5-S5.6": {
+      "id": "29147982-e0df-404a-94f0-0a30800af855",
+      "sequence_id": 151,
+      "name": "[E5-S5.6] Verifier bundle PDF generator"
+    },
+    "E5-S5.7": {
+      "id": "f7bc8134-a48c-4a92-bb50-9bf92ac9010d",
+      "sequence_id": 152,
+      "name": "[E5-S5.7] Frontend ROS export UI"
+    },
+    "E5-S5.8": {
+      "id": "5e3e9e45-c82c-4601-ac16-ff9c273f7100",
+      "sequence_id": 153,
+      "name": "[E5-S5.8] Frontend reminders dashboard"
+    },
+    "E5-S5.9": {
+      "id": "365f3a61-9365-4c5f-a031-16126792bd31",
+      "sequence_id": 154,
+      "name": "[E5-S5.9] Frontend buyout entry"
+    },
+    "E6-S6.1": {
+      "id": "19fdc85b-eca9-439b-a161-0deb6af58716",
+      "sequence_id": 155,
+      "name": "[E6-S6.1] Annex D formula spec doc"
+    },
+    "E6-S6.2": {
+      "id": "636e46ff-5ed4-464b-a5cb-1657d96989b1",
+      "sequence_id": 156,
+      "name": "[E6-S6.2] Migration 0019 emission_factors + seed"
+    },
+    "E6-S6.3": {
+      "id": "3fcaa1b4-9c0e-4275-b614-09bc5d004eb9",
+      "sequence_id": 157,
+      "name": "[E6-S6.3] Migration 0020 annex_d_inputs"
+    },
+    "E6-S6.4": {
+      "id": "c6b87518-f1a0-4c78-9362-58a2acbe3397",
+      "sequence_id": 158,
+      "name": "[E6-S6.4] Service ghg_annex_d.py pure function"
+    },
+    "E6-S6.5": {
+      "id": "16579643-616c-4f01-a0af-2316154d21f4",
+      "sequence_id": 159,
+      "name": "[E6-S6.5] Endpoint POST /ghg/annex-d/compute"
+    },
+    "E6-S6.6": {
+      "id": "3e09339b-5a65-40c0-84d4-1977c7599a67",
+      "sequence_id": 160,
+      "name": "[E6-S6.6] Carbon Calculator import/export"
+    },
+    "E6-S6.7": {
+      "id": "7c89b53e-d401-4893-8529-308570388d1f",
+      "sequence_id": 161,
+      "name": "[E6-S6.7] Soglia 65% enforcement nel ledger RTFC"
+    },
+    "E6-S6.8": {
+      "id": "388773b5-3a14-45b1-8134-b23a8ddb74e0",
+      "sequence_id": 162,
+      "name": "[E6-S6.8] Frontend Annex D worksheet (XL - consider split)"
+    },
+    "E1-S1.6b": {
+      "id": "eec4aa87-f0d6-4e91-a6f2-d493ef0066cd",
+      "sequence_id": 163,
+      "name": "[E1-S1.6b] Migration 0007 persist_production_litres (conditional D2)"
+    },
+    "E2-S2.12": {
+      "id": "09ae354b-f260-4c8f-94cf-c2de64f94551",
+      "sequence_id": 164,
+      "name": "[E2-S2.12] Housekeeping doc baseline (CLAUDE.md + agentos-context + BLUEPRINT)"
+    }
+  },
+  "errors": [],
+  "total": 70,
+  "dep_errors": [
+    {
+      "tmp_id": "E1-S1.3",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.2"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.4",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.3"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.5",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.4"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.6",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.5"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.8",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.3"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.10",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.3"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.11",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.7"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.12",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.6",
+        "E1-S1.7",
+        "E1-S1.8"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.13",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.3"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.15",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.5",
+        "E1-S1.8",
+        "E1-S1.9",
+        "E1-S1.10",
+        "E1-S1.11",
+        "E1-S1.13",
+        "E1-S1.14"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.16",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.7"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.17",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.15"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.18",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.12",
+        "E1-S1.16",
+        "E1-S1.17"
+      ]
+    },
+    {
+      "tmp_id": "E2-S2.3",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E2-S2.2"
+      ]
+    },
+    {
+      "tmp_id": "E2-S2.4",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E2-S2.3"
+      ]
+    },
+    {
+      "tmp_id": "E2-S2.5",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E2-S2.4"
+      ]
+    },
+    {
+      "tmp_id": "E2-S2.6",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E2-S2.5"
+      ]
+    },
+    {
+      "tmp_id": "E2-S2.7",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E2-S2.5"
+      ]
+    },
+    {
+      "tmp_id": "E2-S2.8",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E2-S2.5"
+      ]
+    },
+    {
+      "tmp_id": "E2-S2.9",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E2-S2.5"
+      ]
+    },
+    {
+      "tmp_id": "E2-S2.10",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E2-S2.5"
+      ]
+    },
+    {
+      "tmp_id": "E2-S2.11",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E2-S2.6",
+        "E2-S2.7",
+        "E2-S2.8",
+        "E2-S2.9",
+        "E2-S2.10"
+      ]
+    },
+    {
+      "tmp_id": "E3-S3.2",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E3-S3.1"
+      ]
+    },
+    {
+      "tmp_id": "E3-S3.3",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E3-S3.2"
+      ]
+    },
+    {
+      "tmp_id": "E3-S3.4",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E3-S3.2"
+      ]
+    },
+    {
+      "tmp_id": "E3-S3.6",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E3-S3.5"
+      ]
+    },
+    {
+      "tmp_id": "E3-S3.8",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E3-S3.4"
+      ]
+    },
+    {
+      "tmp_id": "E3-S3.9",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E3-S3.6"
+      ]
+    },
+    {
+      "tmp_id": "E4-S4.4",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E4-S4.1",
+        "E4-S4.2",
+        "E4-S4.3",
+        "E3-S3.5"
+      ]
+    },
+    {
+      "tmp_id": "E4-S4.5",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E4-S4.4"
+      ]
+    },
+    {
+      "tmp_id": "E4-S4.6",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E4-S4.1"
+      ]
+    },
+    {
+      "tmp_id": "E4-S4.7",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E4-S4.2"
+      ]
+    },
+    {
+      "tmp_id": "E4-S4.8",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E4-S4.4",
+        "E4-S4.5"
+      ]
+    },
+    {
+      "tmp_id": "E4-S4.9",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E4-S4.5"
+      ]
+    },
+    {
+      "tmp_id": "E4-S4.10",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E4-S4.4",
+        "E4-S4.5"
+      ]
+    },
+    {
+      "tmp_id": "E4-S4.11",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E4-S4.10"
+      ]
+    },
+    {
+      "tmp_id": "E4-S4.12",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E4-S4.6",
+        "E4-S4.7",
+        "E4-S4.8",
+        "E4-S4.9",
+        "E4-S4.10"
+      ]
+    },
+    {
+      "tmp_id": "E4-S4.13",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E4-S4.8",
+        "E4-S4.12"
+      ]
+    },
+    {
+      "tmp_id": "E5-S5.2",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E5-S5.1",
+        "E5-S5.3"
+      ]
+    },
+    {
+      "tmp_id": "E5-S5.4",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E5-S5.3"
+      ]
+    },
+    {
+      "tmp_id": "E5-S5.5",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E5-S5.3"
+      ]
+    },
+    {
+      "tmp_id": "E5-S5.6",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.3",
+        "E4-S4.4",
+        "E4-S4.5"
+      ]
+    },
+    {
+      "tmp_id": "E5-S5.7",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E5-S5.2"
+      ]
+    },
+    {
+      "tmp_id": "E5-S5.8",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E5-S5.5"
+      ]
+    },
+    {
+      "tmp_id": "E5-S5.9",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E5-S5.4"
+      ]
+    },
+    {
+      "tmp_id": "E6-S6.3",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E6-S6.2",
+        "E3-S3.5"
+      ]
+    },
+    {
+      "tmp_id": "E6-S6.4",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E6-S6.1",
+        "E6-S6.3"
+      ]
+    },
+    {
+      "tmp_id": "E6-S6.5",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E6-S6.4"
+      ]
+    },
+    {
+      "tmp_id": "E6-S6.6",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E6-S6.4"
+      ]
+    },
+    {
+      "tmp_id": "E6-S6.7",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E6-S6.5",
+        "E4-S4.8"
+      ]
+    },
+    {
+      "tmp_id": "E6-S6.8",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E6-S6.5"
+      ]
+    },
+    {
+      "tmp_id": "E1-S1.6b",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E1-S1.1"
+      ]
+    },
+    {
+      "tmp_id": "E2-S2.12",
+      "code": 404,
+      "msg": "{\"error\": \"Page not found.\"}",
+      "blocked_by": [
+        "E2-S2.11"
+      ]
+    }
+  ],
+  "deps_patched": 0,
+  "dep_links_patched": 52,
+  "dep_links_errors": []
+}

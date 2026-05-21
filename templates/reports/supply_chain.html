@@ -2,29 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Supply Chain Diagram — RTFO {{ submission_ref }}</title>
+    <title>Supply Chain Diagram — {{ submission_ref }} — {{ period_label }}</title>
     <link rel="stylesheet" href="supply_chain.css">
+    <style>
+        @page {
+            @top-right {
+                content: "Supply Chain — {{ submission_ref }} — {{ period_label }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+    </style>
 </head>
 <body>
 
 <header class="header">
     <div>
-        <div class="brand">OisteBio GmbH</div>
+        <div class="brand">{{ submitter_company }}</div>
         <div class="brand-sub">Recycled Carbon Fuels — DEV-P100 pyrolysis oil</div>
     </div>
     <div class="header-meta">
         Submission Ref. <span class="ref">{{ submission_ref }}</span><br>
-        Production period: {{ period }}<br>
+        Reporting period: {{ period_label }}<br>
         Generated: {{ generated_at }}
     </div>
 </header>
 
-<h1 class="section-title">Supply chain diagram</h1>
+<h1 class="section-title">Supply chain — {{ period_label }}</h1>
 <p class="lede">
-    End-to-end traceability from end-of-life tyre (ELT) collection in Colombia
-    through pyrolysis processing at the OisteBio Girardot facility, to the UK
-    obligated supplier under the RTFO RCF pathway. All flows are governed under
-    a single ISCC EU mass-balance system boundary.
+    End-to-end traceability from end-of-life tyre (ELT) collection through
+    catalytic pyrolysis at the OisteBio Girardot facility, to the UK
+    obligated supplier under the RTFO RCF pathway. All inbound flows are
+    governed by a single ISCC EU mass-balance system boundary; per-supplier
+    chain-of-custody refs and volumes are reconciled monthly in Annex A
+    (Mass Balance).
 </p>
 
 <section class="diagram">
@@ -35,39 +47,34 @@
         <div class="layer-stack">
             <div class="node node-origin">
                 <div class="node-name">End-of-life tyres (ELT)</div>
-                <div class="node-loc">Colombia &mdash; multiple aggregated sources</div>
-                <div class="node-cert">Post-consumer waste (RCF-eligible)</div>
-                <div class="node-meta">UN 3077 / Annex IX Part A</div>
+                <div class="node-loc">Multi-jurisdiction aggregated sources</div>
+                <div class="node-cert">Post-consumer waste — RCF-eligible under UK RTFO RCF pathway</div>
+                <div class="node-meta">ISCC EU chain-of-custody (mass balance)</div>
             </div>
         </div>
     </div>
 
-    <!-- Arrows: origin -> collectors -->
-    <div class="arrows">
-        <div class="arrow">&rarr;</div>
-    </div>
+    <div class="arrows"><div class="arrow">&rarr;</div></div>
 
-    <!-- Layer 2 — Collecting points -->
+    <!-- Layer 2 — Collecting points (DB-driven, n suppliers) -->
     <div class="layer">
-        <div class="layer-label">2. Collecting points (Colombia)</div>
-        <div class="layer-stack">
-            {% for cp in collecting_points %}
+        <div class="layer-label">2. Collecting points &mdash; {{ supplier_count }} ISCC EU certified suppliers</div>
+        <div class="layer-stack supplier-grid">
+            {% for sup in suppliers %}
             <div class="node node-collector">
-                <div class="node-name">{{ cp.name }}</div>
-                <div class="node-loc">{{ cp.city }}</div>
-                <div class="node-cert">ANLA cert: {{ cp.anla_status }}</div>
-                {% if cp.volume %}<div class="node-meta">{{ cp.volume }}</div>{% endif %}
+                <div class="node-name">{{ sup.name }}</div>
+                <div class="node-loc">{{ sup.country }}</div>
+                <div class="node-cert">ISCC EU: <span class="mono">{{ sup.cert_iscc_ref }}</span></div>
+                <div class="node-meta">
+                    {{ sup.total_kg | fmt_kg }} &middot; {{ sup.share_pct | fmt_pct }}
+                    ({{ sup.delivery_count }} deliveries)
+                </div>
             </div>
             {% endfor %}
         </div>
     </div>
 
-    <!-- Arrows: collectors -> processor -->
-    <div class="arrows arrows-stack">
-        <div class="arrow">&rarr;</div>
-        <div class="arrow">&rarr;</div>
-        <div class="arrow">&rarr;</div>
-    </div>
+    <div class="arrows"><div class="arrow">&rarr;</div></div>
 
     <!-- Layer 3 — Processing -->
     <div class="layer">
@@ -75,27 +82,27 @@
         <div class="layer-stack">
             <div class="node node-processor">
                 <div class="node-name">OisteBio Girardot SAS</div>
-                <div class="node-loc">Girardot, Cundinamarca &mdash; Colombia</div>
-                <div class="node-cert">Operator: OisteBio GmbH (CH)</div>
-                <div class="node-meta">Output: DEV-P100 refined pyrolysis oil</div>
+                <div class="node-loc">{{ plant_name }}</div>
+                <div class="node-cert">Operator: {{ submitter_company }}</div>
+                <div class="node-meta">
+                    Aggregate input: {{ total_input_kg | fmt_kg }}
+                    &middot; output: {{ product }}
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Arrows: processor -> buyer -->
-    <div class="arrows">
-        <div class="arrow">&rarr;</div>
-    </div>
+    <div class="arrows"><div class="arrow">&rarr;</div></div>
 
     <!-- Layer 4 — Buyer -->
     <div class="layer">
         <div class="layer-label">4. Off-taker (UK)</div>
         <div class="layer-stack">
             <div class="node node-buyer">
-                <div class="node-name">Crown Oil Ltd</div>
+                <div class="node-name">{{ off_taker }}</div>
                 <div class="node-loc">United Kingdom</div>
-                <div class="node-cert">RTFO obligated supplier</div>
-                <div class="node-role">Claims RTFCs against RCF volumes</div>
+                <div class="node-cert">RTFO obligated supplier &mdash; UK RTFO RCF pathway</div>
+                <div class="node-role">Claims RTFCs against verified RCF volumes</div>
             </div>
         </div>
     </div>
@@ -108,18 +115,18 @@
         <h3>Compliance pathways</h3>
         <ul>
             <li>
-                ISCC EU mass balance &mdash;
-                <span class="legend-status-pending">pending certification</span>
-                (chain-of-custody application in progress).
+                ISCC EU mass balance &mdash; chain-of-custody method per ISCC EU
+                System Document 203; per-supplier PoS references reproduced in
+                Annex A.
             </li>
             <li>
-                UK RTFO RCF pathway &mdash;
-                <span class="legend-status-active">active</span>
-                (Track A pre-application).
+                UK RTFO RCF pathway &mdash; Renewable Transport Fuel Obligation
+                Guidance, Parts One &amp; Two; submission to UK DfT Low Carbon
+                Fuels Delivery Unit.
             </li>
             <li>
                 Submission reference: <span class="ref">{{ submission_ref }}</span>
-                &mdash; UK DfT Low Carbon Fuels Delivery Unit.
+                &mdash; reporting period {{ period_label }}.
             </li>
         </ul>
     </div>
@@ -127,25 +134,29 @@
     <div class="legend-card">
         <h3>Feedstock &amp; product</h3>
         <ul>
-            <li>Feedstock: end-of-life tyres (ELT), classified as RCF under UK RTFO Guidance, Chapter 9.</li>
-            <li>Process: catalytic pyrolysis &mdash; OisteBio Girardot SAS facility.</li>
+            <li>Feedstock: end-of-life tyres (ELT), 100 % fossil post-consumer
+                material under ISCC EU 203 (Recycled Carbon Fuel category, Annex II).</li>
+            <li>Process: catalytic pyrolysis &mdash; OisteBio Girardot SAS, Colombia.</li>
             <li>Output product: DEV-P100 refined pyrolysis oil (OisteBio brand).</li>
-            <li>Off-taker: Crown Oil Ltd (UK) &mdash; sole buyer for this submission.</li>
+            <li>Off-taker: {{ off_taker }} &mdash; sole buyer for this submission.</li>
         </ul>
     </div>
 
     <div class="legend-card">
-        <h3>Collecting points &mdash; ANLA</h3>
+        <h3>Supplier breakdown ({{ supplier_count }})</h3>
         <ul>
-            <li>All three Colombian collecting points operate under pending ANLA legalisation; documentary evidence is held in section 03 of this bundle.</li>
-            <li>Aggregated volumes feed a single Girardot intake stream and are reconciled under one ISCC mass-balance group.</li>
-            <li>No EU-based collecting points or intermediate storage participate in this supply chain.</li>
+            <li>All inbound volumes flow from ISCC EU certified collecting points or
+                self-declared ≤5 t/month deliveries (ISCC self-declaration regime).</li>
+            <li>Aggregated under a single Girardot intake stream and reconciled
+                monthly under one ISCC mass-balance group.</li>
+            <li>No EU-based collecting points or intermediate storage participate
+                in this supply chain; flows direct to UK obligated supplier.</li>
         </ul>
     </div>
 
 </section>
 
-<div class="end-stamp">END OF DIAGRAM &mdash; {{ submission_ref }}</div>
+<div class="end-stamp">END OF DIAGRAM &mdash; {{ submission_ref }} &mdash; {{ period_label }}</div>
 
 </body>
 </html>

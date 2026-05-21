@@ -49,6 +49,7 @@ deliverables/RTFO-310125/
 │   └── ersv/                          # eRSV (electronic Recurring Sustainability Verification) per supplier
 ├── 04_compliance/                     # Scheme-level compliance documents
 │   ├── iscc_eu_certificate/           # OisteBio's own ISCC EU certificate (chain of custody)
+│   ├── feedstock_provider_authorisations/  # ANLA environmental permits for Colombian ELT collecting points
 │   └── rtfo_pathway_declaration/      # RTFO pathway declaration for DEV-P100
 ├── 05_audit_trail/                    # Immutable audit log export from DFT backend
 └── MANIFEST.sha256                    # SHA-256 hashes for every file in the bundle

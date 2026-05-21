@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ISCC PoS Status Report — {{ submission_ref }} — {{ period_label }}</title>
+    <link rel="stylesheet" href="stock_carryover.css">
+    <style>
+        /* Inject hash short prefix + submission ref into the running footer.
+           Cover page suppresses these via the named "cover" @page block. */
+        @page {
+            @top-right {
+                content: "ISCC PoS Status — {{ submission_ref }} — {{ period_label }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+            @bottom-left {
+                content: "Hash: {{ self_hash[:12] if self_hash else '—' }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        @page cover {
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-right { content: ""; }
+        }
+
+        /* Local additions: response status pills and request table tweaks. */
+        .pill {
+            display: inline-block;
+            padding: 1.5pt 6pt;
+            font-size: 8.5pt;
+            font-weight: bold;
+            letter-spacing: 0.3pt;
+            border-radius: 2pt;
+            text-transform: uppercase;
+        }
+        .pill-pending {
+            background: #fff3cd;
+            color: #6b4f00;
+            border: 0.4pt solid #e0b400;
+        }
+        .pill-received {
+            background: #d6ecd9;
+            color: #1f5e2a;
+            border: 0.4pt solid #1f8a3a;
+        }
+        .pill-declined {
+            background: #f5d6d6;
+            color: #7a1f1f;
+            border: 0.4pt solid #b03030;
+        }
+
+        .request-table th, .request-table td {
+            vertical-align: top;
+        }
+        .request-table td.scope {
+            font-size: 9pt;
+            color: #333;
+        }
+        .commitment-block {
+            background: #eef2f7;
+            border-left: 3pt solid #1a3a5c;
+            padding: 8pt 12pt;
+            margin: 10pt 0;
+            font-size: 10pt;
+        }
+        .gap-flag {
+            color: #7a1f1f;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+{# =====================================================================
+   PAGE 1 — COVER
+   ===================================================================== #}
+<section class="cover page-cover">
+    <div class="cover-brand">{{ submitter_company }}</div>
+    <div class="cover-tagline">{{ submitter_address }}</div>
+
+    <div class="cover-stamp">Annex — ISCC PoS Status</div>
+    <h1 class="cover-title">Retrospective ISCC PoS Request Status</h1>
+    <div class="cover-sub">{{ period_label }} &middot; {{ plant_name }}</div>
+
+    <table class="cover-meta">
+        <tr><td>Submission reference</td><td><span class="mono">{{ submission_ref }}</span></td></tr>
+        <tr><td>Reporting period</td><td>{{ period_label }} ({{ period }})</td></tr>
+        <tr><td>Plant</td><td>{{ plant_name }}</td></tr>
+        <tr><td>Collecting points covered</td><td>{{ collecting_points_label }}</td></tr>
+        <tr><td>Requests sent</td><td>{{ requests_sent_count }} ({{ request_date_label }})</td></tr>
+        <tr><td>Responses received as of Day 6</td><td>{{ responses_received_count }} of {{ requests_sent_count }}</td></tr>
+        <tr><td>Regulator</td><td>{{ regulator }}</td></tr>
+        <tr><td>Generated</td><td>{{ generated_at }}</td></tr>
+    </table>
+
+    <div class="legal-block">
+        <div class="legal-name">{{ legal_name }}</div>
+        <div>{{ legal_address }}</div>
+        <div>VAT / MWSt: <span class="mono">{{ legal_vat }}</span></div>
+        <div class="muted">Jurisdiction: {{ legal_jurisdiction }}</div>
+    </div>
+</section>
+
+{# =====================================================================
+   PAGE 2 — §1 RETROACTIVE REQUESTS SENT
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="declaration">
+
+    <h2 class="section-title">1. Retroactive ISCC PoS Requests &mdash; Day 1 Outbound</h2>
+
+    <p class="lede">
+        Pursuant to &sect;5 item 1 of the 5-working-day activity plan
+        ({{ submission_ref }}), <strong>{{ submitter_company }}</strong> formally
+        requested retrospective ISCC EU Proofs of Sustainability for the
+        {{ period_label }} input volumes from the verified collecting points,
+        addressed to the ISCC-accredited certifier(s) of record in Colombia.
+        Requests were dispatched on <strong>{{ request_date_label }}</strong>
+        (Day 1) with Crown Oil Limited in CC as the UK obligated supplier.
+    </p>
+
+    <p>
+        The scope of every request is strictly limited to the {{ period_label }}
+        production period; no historical or forward periods are implicated.
+        Volumes per collecting point are reproduced from the operator's
+        digital ingest ledger (see Annex A &mdash; Mass Balance), and the
+        chain-of-custody identifier of each existing supplier ISCC EU
+        certificate is referenced in the request body so the certifier can
+        bind the retrospective PoS to the same mass-balance methodology.
+    </p>
+
+    <h3 class="block-title">Requests dispatched &mdash; one row per collecting point</h3>
+
+    <table class="data-table request-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Collecting point</th>
+                <th>Certifier addressed</th>
+                <th>Contact email</th>
+                <th>Date sent</th>
+                <th class="num">{{ period_short }} kg</th>
+                <th>Scope</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><strong>{{ req.collecting_point }}</strong></td>
+                <td>{{ req.certifier }}</td>
+                <td class="mono">{{ req.contact_email }}</td>
+                <td class="mono">{{ req.date_sent }}</td>
+                <td class="num">{{ req.period_kg | fmt_num }}</td>
+                <td class="scope">{{ req.scope }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="5">Total {{ period_label }} volume under retrospective PoS request</th>
+                <th class="num">{{ requests_total_kg | fmt_num }}</th>
+                <th></th>
+            </tr>
+        </tfoot>
+    </table>
+
+    <p class="block-note">
+        Each request quotes the relevant existing supplier-level ISCC EU
+        certificate as the chain-of-custody anchor and asks the certifier to
+        issue a retrospective per-batch PoS aligned to the {{ period_label }}
+        daily-input ledger. Crown Oil Limited (UK obligated supplier) is in
+        copy on every request. Source-of-truth references for the email
+        timestamps are retained in the OisteBio operator log; bundle audit
+        trail is available on reasonable notice to the Unit.
+    </p>
+
+</section>
+
+{# =====================================================================
+   PAGE 3 — §2 CERTIFIER RESPONSE STATUS
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="declaration">
+
+    <h2 class="section-title">2. Certifier Response Status &mdash; as of Day 6</h2>
+
+    <p class="lede">
+        The following table summarises the response status of each
+        retrospective PoS request as of <strong>{{ response_cutoff_label }}</strong>
+        (Day 6, bundle freeze window prior to ROS submission).
+        Where a certifier has not replied within the working-day window,
+        the row is marked <span class="pill pill-pending">Pending</span> and
+        the gap is carried into the cover-letter Outstanding Items section
+        with the 30-day post-acceptance commitment from &sect;3 below.
+    </p>
+
+    <table class="data-table request-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Collecting point</th>
+                <th>Status</th>
+                <th>Response date</th>
+                <th>Outcome / content</th>
+                <th>Attached doc</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for resp in responses %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><strong>{{ resp.collecting_point }}</strong></td>
+                <td>
+                    {% if resp.status == 'pending' %}
+                        <span class="pill pill-pending">Pending</span>
+                    {% elif resp.status == 'received' %}
+                        <span class="pill pill-received">Received</span>
+                    {% elif resp.status == 'declined' %}
+                        <span class="pill pill-declined">Declined</span>
+                    {% else %}
+                        <span class="pill pill-pending">{{ resp.status }}</span>
+                    {% endif %}
+                </td>
+                <td class="mono">{{ resp.response_date }}</td>
+                <td>{{ resp.outcome }}</td>
+                <td class="mono">{{ resp.attached_doc }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="block-note">
+        <span class="gap-flag">Gap declaration.</span>
+        Any row above marked <em>Pending</em> as of bundle freeze is carried
+        into the cover-letter Outstanding Items section under the wording
+        agreed in &sect;5 item 1 of the 5-working-day activity plan. The
+        absence of an in-window response is recorded but does not block the
+        Day 7 ROS submission, consistent with the &sect;6 risk-register
+        mitigation for "Certifier ISCC non risponde a richiesta PoS entro
+        20 maggio" (probability High, impact Medium).
+    </p>
+
+</section>
+
+{# =====================================================================
+   PAGE 4 — §3 COMMITMENT POST-ACCEPTANCE + §4 SELF-HASH + SIGNATURE
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="methodology">
+
+    <h2 class="section-title">3. Commitment &mdash; Post-acceptance Delivery</h2>
+
+    <div class="commitment-block">
+        <p style="margin: 0;">
+            <strong>{{ submitter_company }}</strong>, in concert with
+            <strong>{{ off_taker }}</strong> (UK obligated supplier of record),
+            hereby commits to deliver to the {{ regulator }} the formal
+            retrospective ISCC EU Proofs of Sustainability for the
+            <strong>{{ period_label }}</strong> input volumes covered by this
+            submission within <strong>thirty (30) calendar days</strong> of
+            formal DfT acceptance of the {{ submission_ref }} bundle.
+        </p>
+        <p style="margin: 6pt 0 0 0;">
+            Where the certifier ultimately declines to issue a retrospective
+            PoS for a given collecting point, {{ submitter_company }} commits
+            to (i) documenting the refusal with the certifier's written
+            statement, (ii) engaging the fallback non-ISCC evidence
+            procedure described in the UK RTFO Guidance Part Two (Carbon
+            and Sustainability), and (iii) notifying the Unit within five
+            (5) working days of receipt of the refusal.
+        </p>
+    </div>
+
+    <p>
+        Crown Oil Limited further offers, on a contingent basis and at the
+        Unit's discretion, to engage an independent ISCC verifier
+        (Bureau Veritas Colombia or SGS Colombia) for a pre-audit of the
+        retrospective PoS evidence pack once issued. Engagement can be
+        initiated within five (5) working days of Unit confirmation.
+    </p>
+
+    <h2 class="section-title" style="margin-top: 20pt;">4. Self-anchoring SHA-256 Digest</h2>
+
+    <p>
+        This document is cryptographically self-anchored via the SHA-256
+        digest reported in the running footer (short prefix
+        <span class="mono">{{ self_hash[:12] if self_hash else '—' }}</span>).
+        The full digest is reproduced in the bundle's
+        <span class="mono">MANIFEST.sha256</span> at root and cross-listed
+        in <span class="mono">09_evidence_index.pdf</span>. A side-car file
+        <span class="mono">03_iscc_pos_status.pdf.sha256</span> accompanies
+        this PDF and is computed by the deterministic renderer
+        (<span class="mono">backend.app.services.pdf_renderer</span>); the
+        renderer guarantees byte-identical output across re-runs so the
+        digest in the cover letter footer remains valid.
+    </p>
+
+    <div class="signature">
+        <div class="sig-label">Signed for and on behalf of {{ submitter_company }}</div>
+        <div class="sig-line">Paolo Ughetti<br>Managing Director</div>
+        <div class="sig-date">Date: {{ signature_date_label }}</div>
+    </div>
+
+    <div class="end-stamp">&mdash; End of ISCC PoS Status Report &mdash;</div>
+
+</section>
+
+</body>
+</html>

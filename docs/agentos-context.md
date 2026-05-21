@@ -1,7 +1,7 @@
 # DFT Project — Analisi approfondita pre-parametrizzazione AgentOS
 
-**Data analisi:** 2026-05-08
-**Versione:** 1.0
+**Data analisi:** 2026-05-08 (refresh 2026-05-20)
+**Versione:** 1.1
 **Scope:** SCENARIO-B — documentazione tecnica completa per configurazione agenti AgentOS
 
 ---
@@ -10,7 +10,7 @@
 
 **Progetto:** Sistema di tracciabilità mass balance per impianto biofuel/recycling Girardot (Colombia).
 
-**Cliente:** TBD (XbitAgency gestisce il progetto, cliente finale da confermare).
+**Cliente:** OisteBio GmbH (Swiss, Zug — Oberneuhofstraße 5 Baar). Unico buyer di output: Crown Oil UK (regulator UK RTFO + DfT). Prodotto finale: **DEV-P100** (refined pyrolysis oil OisteBio brand). Feedstock: **ELT** (end-of-life tyres), NON plastiche. NB: BiNova è il dev studio che costruisce DFT, NON va citato lato cliente.
 
 **Problema risolto:** Sostituisce foglio Excel con `#REF!` errors. Genera audit trail + PDF certificatore ISCC/EU RED II.
 
@@ -37,7 +37,7 @@
 | Backend | FastAPI | 0.x | Async, SQLAlchemy 2.0 |
 | ORM | SQLAlchemy | 2.0 | `async_sessionmaker`, `AsyncSession` |
 | Schemas | Pydantic | v2 | `model_dump()` non `.dict()` |
-| Migrations | Alembic | latest | 8 migration files in `versions/` |
+| Migrations | Alembic | latest | 11 migration files in `versions/` (0001-0011) |
 | DB | PostgreSQL | 16 | Materialized views, GENERATED columns |
 | Auth | JWT (python-jose) | — | Bearer token, 8h TTL, stateless |
 | Password | bcrypt (passlib) | cost 12 | |
@@ -66,14 +66,17 @@ dft-project/
 │   ├── alembic/
 │   │   ├── env.py
 │   │   └── versions/
-│   │       ├── 0001_init_anagrafiche.py        # suppliers, contracts, certificates
-│   │       ├── 0002_add_search_indexes.py      # indici performance (ridondanti rimossi in 0002)
-│   │       ├── 0003_daily_entries.py           # tabella daily_entries + GENERATED column
-│   │       ├── 0004_users_audit_log.py         # users + audit_log
-│   │       ├── 0005_daily_entries_hours_description.py  # campi hours + description aggiunti
-│   │       ├── 0006_certificates_status_updated_at.py   # status + updated_at su certificates
-│   │       ├── 0007_seed_suppliers_certificates.py      # seed dati Girardot
-│   │       └── 0008_materialized_views.py      # mv_mass_balance_daily + mv_mass_balance_monthly
+│   │       ├── 0001_schema.py                          # suppliers, contracts, certificates, daily_entries, users, audit_log
+│   │       ├── 0002_seed.py                            # seed iniziale anagrafiche Girardot
+│   │       ├── 0003_mvs.py                             # mv_mass_balance_daily + mv_mass_balance_monthly
+│   │       ├── 0004_drop_stock_markers.py              # pulizia colonne stock obsolete
+│   │       ├── 0005_production_densities.py            # densità produzione
+│   │       ├── 0006_supplier_rectification_jan2025.py  # rettifica anagrafica fornitori Gen 2025
+│   │       ├── 0007_persist_production_litres.py       # persist litri di produzione
+│   │       ├── 0008_supplier_rename_feb2025.py         # rename + nuovi supplier ELT (PYRCOM, KAL TIRE, EFFICIEN TECH, BOLDER INDUSTRIES)
+│   │       ├── 0009_hide_unused_suppliers.py           # soft-delete legacy CIECOGRAS/ECODIESEL/SANIMAX (cosmetic)
+│   │       ├── 0010_cert_correction_feb2025.py         # 7 nuovi certificati ISCC PoS per i 4 supplier ELT, re-point daily_inputs Feb-Ago 2025
+│   │       └── 0011_purge_hidden_supplier_refs.py      # cleanup riferimenti UI ai legacy supplier nascosti
 │   └── app/
 │       ├── main.py               # FastAPI app, include_router per tutti i router
 │       ├── core/
@@ -135,9 +138,9 @@ dft-project/
 
 | Tabella | Campi chiave | Note |
 |---------|-------------|------|
-| `suppliers` | id, name, code, country, active, notes | Anagrafica fornitori |
+| `suppliers` | id, name, code, country, active, notes | Anagrafica fornitori. Legacy CIECOGRAS/ECODIESEL/SANIMAX soft-deleted via 0009; UI refs purgati via 0011. Supplier ELT attivi post-0008: PYRCOM SAS, KAL TIRE, EFFICIEN TECHNOLOGY, BOLDER INDUSTRIES |
 | `contracts` | id, code, supplier_id, start_date, end_date, total_kg_committed | Contratti fornitore |
-| `certificates` | id, cert_number, supplier_id, issued_at, expires_at, scheme, status | Certificati ISCC |
+| `certificates` | id, cert_number, supplier_id, issued_at, expires_at, scheme, status | Certificati ISCC PoS. 7 nuovi certs aggiunti via 0010 per i 4 supplier ELT (Feb-Ago 2025) |
 | `daily_entries` | 30 campi (vedi §4.1) | Tabella principale — audit + soft delete |
 | `users` | id, email, password_hash, full_name, role, active | Ruoli: admin/operator/viewer/certifier |
 | `audit_log` | user_id, action, table_name, record_id, old_values, new_values | Append-only, JSONB |
@@ -296,26 +299,36 @@ GET /health → {"status": "ok", "version": "0.1.0"}
 | S1-13 | ruff + mypy strict + pre-commit | ✅ DONE |
 | S1-14 | CI GitHub Actions (lint + test on PR) | ⏳ TODO |
 
-### Sprint 2 — Ingest storico + reports ⏳ DA FARE
+### Sprint 2 — Ingest storico + reports ✅ DONE (DFTEN-64..71)
 
 - Parser xlsx Girardot (pandas + openpyxl) → `scripts/ingest_xlsx.py`
 - Script one-shot dry-run + report errori
 - Endpoint `/reports/mass-balance`, `/reports/by-supplier`, `/reports/monthly`
+- Materialized views refresh via AUTOCOMMIT
 
-### Sprint 3 — Frontend dashboard ⏳ DA FARE
+### Sprint 3 — Frontend dashboard integrato 🚧 IN FLIGHT (closure 2026-05-21)
 
-- App Next.js 14 in `/frontend/` (attualmente solo Dockerfile stub)
-- Layout + auth integration (NextAuth credentials)
-- Dashboard KPI + grafici Recharts
-- Tabella entries con filtri (TanStack Table)
+**Decisione architetturale:** estendere `landing/` (Next.js 14 deployed su `oistebio.usenexos.com`) con area protetta `/app/*`. NO `frontend/` separato — single Next.js app, single deploy. Vedi `docs/sprint-3-frontend.md`.
 
-### Sprint 4–6 — Data entry, PDF, deploy ⏳ DA FARE
+- shadcn/ui + UI primitives in `landing/`
+- Auth flow JWT (cookie httpOnly) + middleware su `/app/*`
+- Dashboard KPI + grafici (Recharts)
+- 3 report views: mass-balance daily/monthly, by-supplier, closure-status
+- Anagrafiche read-only (CRUD rinviato a Sprint 4)
 
-- Form nuova entry (DailyEntryForm, 20+ campi)
+### Sprint 4 — Data entry + admin 📋 PIANIFICATO
+
+- Form nuova/edit entry (DailyEntryForm, 20+ campi)
+- Bulk paste modal
+- Pagine admin: suppliers, contracts, certificates, users
+- Audit log viewer
+
+### Sprint 5-7 — PDF, deploy, polish/handover ⏳ BACKLOG
+
 - PDF via WeasyPrint (template ISCC/EU RED II)
-- Deploy Docker su Hetzner
+- Deploy Docker su Hetzner (compose già pronto)
 - QA E2E Playwright
-- Training cliente
+- Documentazione utente + training cliente
 
 ---
 
@@ -348,7 +361,7 @@ async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as c
 ### Migrations Alembic
 
 - Prefisso numerico: `000N_descrizione.py`
-- Prossima: `0009_...` o continuare sequenza
+- Prossima: `0012_...` (0001-0011 già applicate)
 - Run: `alembic upgrade head` dentro container backend
 
 ### File import Excel
@@ -363,7 +376,7 @@ async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as c
 
 | # | Domanda | Default blueprint |
 |---|---------|------------------|
-| 1 | Nome cliente definitivo | TBD |
+| 1 | Nome cliente definitivo | ✅ OisteBio GmbH (CH) — buyer Crown Oil UK |
 | 2 | Multi-impianto futuro? | Solo Girardot |
 | 3 | PDF template fornito da cliente | Template ISCC standard |
 | 4 | Hosting Hetzner o cliente? | Hetzner XbitAgency |
@@ -422,3 +435,12 @@ python scripts/ingest_xlsx.py --file path/to/file.xlsx --dry-run
 - **Folder Drive 2025:** `1jC39kiulY-6utuYsuhY2SgNqRpkQtiB5`
 - **Plane progetto:** DFTEN (DFT Energy) — workspace xbitagency
 - **Repo locale:** `/mnt/c/Users/User/dft-project/` — branch `main`
+
+---
+
+## 15. Changelog
+
+| Data | Refresh | Note |
+|------|---------|------|
+| 2026-05-08 | v1.0 | Documento iniziale (pre-Sprint 2) |
+| 2026-05-20 | v1.1 — sprint 3 closure context (DFTEN-164 / S2.12) | Sprint 2 marcato DONE; Sprint 3 IN FLIGHT (closure 2026-05-21); aggiornata lista migrations a 0001-0011 con descrizioni reali; aggiunta nota supplier ELT post-0008/0009/0010/0011; cliente confermato OisteBio GmbH + buyer Crown Oil UK; feedstock = ELT (non plastiche); next migration prefix = 0012 |

@@ -53,7 +53,7 @@
 
     <div class="cover-signatory">
         <div class="sig-label">Signed for and on behalf of {{ submitter_company }}</div>
-        <div class="sig-line">[CEO_NAME]<br>Chief Executive Officer</div>
+        <div class="sig-line">Paolo Ughetti<br>Managing Director</div>
         <div class="sig-date">Date: ____________________</div>
     </div>
 </section>
@@ -152,7 +152,10 @@
 
     <p class="block-note">
         Daily mass-balance rows, sorted by date ascending. Closure shown as
-        output minus input. Densities applied: EU 0.78 kg/L, PLUS 0.856 kg/L.
+        output minus input. Densities applied for {{ period_label }}:
+        EU {{ totals.eu_density_kgl | fmt_density }} kg/L,
+        PLUS {{ totals.plus_density_kgl | fmt_density }} kg/L
+        (per <span class="mono">product_densities</span> table, migration 0014).
     </p>
 
     <table class="data-table daily-table">
@@ -199,7 +202,73 @@
 </section>
 
 {# =====================================================================
-   PAGE N+1 — SUPPLIER BREAKDOWN
+   PAGE N+1 — BYPRODUCTS (carbon black, syngas, H2O, metal scrap, losses)
+   ===================================================================== #}
+{% if byproducts %}
+<section class="page-break"></section>
+<section class="byproducts">
+
+    <h2 class="section-title">By-Product Streams — {{ period_label }}</h2>
+
+    <p class="block-note">
+        Mass balance breakdown of non-DEV-P100 streams from
+        <span class="mono">daily_production</span>, summed for the reporting
+        period. Carbon black and metal scrap are mechanically separated
+        recovered solids; gas/syngas is the non-condensable pyrolysis vapour
+        (process fuel + flare); H<sub>2</sub>O is recovered process water;
+        losses captures the unaccounted mass needed to close the daily
+        balance.
+    </p>
+
+    <table class="kpi-table">
+        <thead>
+            <tr>
+                <th>Stream</th>
+                <th class="num">Total (kg)</th>
+                <th class="num">Share of input</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Carbon black</td>
+                <td class="num">{{ byproducts.carbon_black_kg | fmt_kg }}</td>
+                <td class="num">{{ byproducts.carbon_black_pct | fmt_pct }}</td>
+            </tr>
+            <tr>
+                <td>Metal scrap</td>
+                <td class="num">{{ byproducts.metal_scrap_kg | fmt_kg }}</td>
+                <td class="num">{{ byproducts.metal_scrap_pct | fmt_pct }}</td>
+            </tr>
+            <tr>
+                <td>Gas / syngas</td>
+                <td class="num">{{ byproducts.gas_syngas_kg | fmt_kg }}</td>
+                <td class="num">{{ byproducts.gas_syngas_pct | fmt_pct }}</td>
+            </tr>
+            <tr>
+                <td>H<sub>2</sub>O (process water)</td>
+                <td class="num">{{ byproducts.h2o_kg | fmt_kg }}</td>
+                <td class="num">{{ byproducts.h2o_pct | fmt_pct }}</td>
+            </tr>
+            <tr>
+                <td>Losses (unaccounted)</td>
+                <td class="num">{{ byproducts.losses_kg | fmt_kg }}</td>
+                <td class="num">{{ byproducts.losses_pct | fmt_pct }}</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <th>Total by-product mass</th>
+                <th class="num">{{ byproducts.total_kg | fmt_kg }}</th>
+                <th class="num">{{ byproducts.total_pct | fmt_pct }}</th>
+            </tr>
+        </tfoot>
+    </table>
+
+</section>
+{% endif %}
+
+{# =====================================================================
+   PAGE N+2 — SUPPLIER BREAKDOWN
    ===================================================================== #}
 <section class="page-break"></section>
 <section class="suppliers">
@@ -269,11 +338,15 @@
     </p>
 
     <p>
-        Volumetric conversions apply nominal product densities at 15&nbsp;°C:
-        <strong>EU-grade 0.78&nbsp;kg/L</strong> and
-        <strong>PLUS-grade 0.856&nbsp;kg/L</strong>, consistent with the operator
-        product specifications and the densities registered in the platform
-        <span class="mono">product_densities</span> table.
+        Volumetric conversions apply monthly product densities at 15&nbsp;°C
+        per the operator's product specifications and the densities registered
+        in the platform <span class="mono">product_densities</span> table
+        (migration 0014). For {{ period_label }}:
+        <strong>EU-grade {{ totals.eu_density_kgl | fmt_density }}&nbsp;kg/L</strong>
+        and
+        <strong>PLUS-grade {{ totals.plus_density_kgl | fmt_density }}&nbsp;kg/L</strong>.
+        Materialised view <span class="mono">mv_mass_balance_daily</span>
+        applies the LATERAL lookup against the latest effective density per day.
     </p>
 
     <p>

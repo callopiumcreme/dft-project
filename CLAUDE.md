@@ -10,7 +10,7 @@
 ## Stack
 
 - **Backend:** FastAPI (Python 3.12) + SQLAlchemy 2.0 async + Pydantic v2 + Alembic
-- **DB:** PostgreSQL 16 — 8 migrations in `backend/alembic/versions/`
+- **DB:** PostgreSQL 16 — 11 migrations in `backend/alembic/versions/` (0001-0011)
 - **Auth:** JWT Bearer, 8h TTL, ruoli: `admin|operator|viewer|certifier`
 - **Frontend:** Next.js 14 App Router — `landing/` (deploy https://oistebio.usenexos.com via PM2 + nginx Hetzner). Sprint 3 estende con `/app/*` protetto JWT
 - **Proxy:** Caddy 2 (non nginx) — auto HTTPS
@@ -25,7 +25,7 @@
 4. **MAI eseguire** `REFRESH MATERIALIZED VIEW CONCURRENTLY` dentro transazione — usare AUTOCOMMIT (vedi `routers/mass_balance.py`)
 5. **Pydantic v2:** `model_dump()` non `.dict()`
 6. **Pre-implementation:** leggere BLUEPRINT.md prima di qualsiasi nuovo feature
-7. **Migrations:** prefisso `000N_descrizione.py`, prossima è `0009_`
+7. **Migrations:** prefisso `000N_descrizione.py`, prossima è `0012_`
 
 ## Stato sprint
 
@@ -33,8 +33,9 @@
 |--------|-------|
 | Sprint 1 — Foundation | ✅ QUASI COMPLETO (manca S1-14 CI) |
 | Sprint 2 — Ingest xlsx + reports | ✅ COMPLETO (DFTEN-64..71 Done) |
-| Sprint 3 — Frontend dashboard integrato | 📋 PIANIFICATO (`docs/sprint-3-frontend.md`) — 10 issue da creare in Plane |
-| Sprint 4-6 — Data entry, PDF, deploy | ⏳ TODO |
+| Sprint 3 — Frontend dashboard integrato | 🚧 IN FLIGHT — chiusura prevista 2026-05-21 |
+| Sprint 4 — Data entry + admin | 📋 PIANIFICATO |
+| Sprint 5-7 — PDF, deploy, polish/handover | ⏳ BACKLOG |
 
 **Decisione Sprint 3:** single Next.js app — estendere `landing/` con `/app/*` protetto. NO `frontend/` separato.
 
@@ -48,7 +49,7 @@
 | `backend/app/routers/mass_balance.py` | Endpoint mv refresh (AUTOCOMMIT) |
 | `backend/app/core/security.py` | JWT + bcrypt |
 | `backend/app/db/session.py` | engine + get_db() |
-| `backend/alembic/versions/` | 8 migration files (0001-0008) |
+| `backend/alembic/versions/` | 11 migration files (0001-0011) |
 | `docker-compose.yml` | Stack completo |
 | `docs/agentos-context.md` | Analisi approfondita AgentOS |
 | `docs/sprint-3-frontend.md` | Sprint 3 — piano frontend integrato in landing/ |

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Evidence Index FINAL — RTFO {{ submission_ref }}</title>
+    <link rel="stylesheet" href="evidence_index.css">
+    <style>
+        @page {
+            @bottom-left {
+                content: "Bundle: {{ submission_ref }} (FINAL)";
+            }
+        }
+        table.data-table { font-size: 7.5pt; }
+        td.path, td.hash { font-family: "Courier New", monospace; word-break: break-all; }
+        td.hash { font-size: 6.5pt; }
+    </style>
+</head>
+<body>
+
+<header class="letterhead">
+    <div class="brand">{{ submitter_company }}</div>
+    <div class="legal">
+        {{ submitter_address }} &middot; MWSt {{ submitter_vat }}
+    </div>
+</header>
+
+<section class="meta">
+    <div class="row">
+        <div>{{ generated_at }}</div>
+        <div>Ref. <span class="ref">{{ submission_ref }}</span></div>
+    </div>
+    <div class="row">
+        <div class="muted">Revision: <strong>FINAL</strong> ({{ draft_status if draft_status else 'bundle freeze' }})</div>
+        <div class="muted">Submission: {{ submission_date_label }}</div>
+    </div>
+</section>
+
+<section class="subject">
+    Evidence index &mdash; bundle <span class="mono">{{ submission_ref }}</span> (production period {{ period }})
+</section>
+
+<section class="body">
+    <p class="lede">
+        The table below enumerates every file in the submission bundle with its SHA-256
+        digest, the story that produced it, the DfT rejection point it addresses
+        (where applicable), and its current status. Total files enumerated:
+        <strong>{{ total_files }}</strong>. The bundle is cryptographically anchored
+        via <span class="mono">MANIFEST.sha256</span> at the bundle root.
+    </p>
+    {% if gap_note %}
+    <p class="lede" style="color:#b45309; background:#fffbeb; border:0.5pt solid #fde68a; padding:4pt 6pt; margin-top:4pt;">
+        &#9888; {{ gap_note }}
+    </p>
+    {% endif %}
+</section>
+
+<section>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th class="col-path">File path (bundle-relative)</th>
+                <th class="col-annex">Story</th>
+                <th class="col-point">DfT point</th>
+                <th class="col-hash">SHA-256</th>
+                <th class="col-status">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr class="{{ row.row_class }}">
+                <td class="path">{{ row.path }}</td>
+                <td>{{ row.story }}</td>
+                <td>{{ row.point }}</td>
+                <td class="hash">{{ row.sha256 }}</td>
+                <td class="status status-{{ row.status_class }}">{{ row.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="legend">
+    <div class="legend-title">Status legend</div>
+    <ul class="legend-list">
+        <li><span class="status-pill status-final">FINAL</span> &mdash; sealed for submission, hash anchored in MANIFEST.sha256</li>
+        <li><span class="status-pill status-pending">PENDING</span> &mdash; placeholder for outstanding item disclosed in cover letter</li>
+        <li><span class="status-pill status-meta">META</span> &mdash; bundle metadata file (README, sidecar, snapshot)</li>
+    </ul>
+</section>
+
+<section class="footer-block">
+    <p class="muted">
+        Anchored at <span class="mono">MANIFEST.sha256</span> (bundle root). Recipient:
+        UK DfT &mdash; LCF Delivery Unit via {{ intermediary_label }}. Sole UK off-taker:
+        {{ off_taker }}. Feedstock: {{ feedstock }}. Product: {{ product }}.
+        Issued by {{ submitter_company }} ({{ submitter_address }}).
+    </p>
+</section>
+
+</body>
+</html>

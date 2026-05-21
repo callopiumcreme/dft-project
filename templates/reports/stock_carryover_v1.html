@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Annex D — Closing Stock Carry-over Declaration — {{ submission_ref }} — {{ period_label }}</title>
+    <link rel="stylesheet" href="stock_carryover.css">
+    <style>
+        @page {
+            @top-right {
+                content: "Annex D — {{ submission_ref }} — {{ period_label }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+            @bottom-left {
+                content: "Hash: {{ annex_d_hash[:12] if annex_d_hash else '—' }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        @page cover {
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-right { content: ""; }
+        }
+        .recon-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9.5pt;
+            margin: 6pt 0 10pt 0;
+        }
+        .recon-table th, .recon-table td {
+            padding: 4pt 8pt;
+            border-bottom: 0.4pt solid #ccc;
+            text-align: left;
+        }
+        .recon-table th {
+            background: #eef2f7;
+            color: #1a3a5c;
+            font-weight: bold;
+        }
+        .recon-table td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-family: "Courier New", "Liberation Mono", monospace;
+        }
+        .recon-table tr.total td {
+            border-top: 1pt solid #1a3a5c;
+            font-weight: bold;
+            background: #f4f6f9;
+        }
+        .audit-anchor {
+            font-size: 8.8pt;
+            color: #555;
+            background: #fafbfd;
+            border-left: 2pt solid #1a3a5c;
+            padding: 6pt 10pt;
+            margin: 8pt 0;
+        }
+        .audit-anchor .mono {
+            font-size: 8.5pt;
+        }
+    </style>
+</head>
+<body>
+
+{# =====================================================================
+   PAGE 1 — COVER
+   ===================================================================== #}
+<section class="cover page-cover">
+    <div class="cover-brand">{{ submitter_company }}</div>
+    <div class="cover-tagline">{{ submitter_address }}</div>
+
+    <div class="cover-stamp">Annex D</div>
+    <h1 class="cover-title">Closing Stock Carry-over Declaration</h1>
+    <div class="cover-sub">{{ period_label }} &middot; {{ plant_name }}</div>
+
+    <table class="cover-meta">
+        <tr><td>Submission reference</td><td><span class="mono">{{ submission_ref }}</span></td></tr>
+        <tr><td>Reporting period</td><td>{{ period_label }} ({{ period }})</td></tr>
+        <tr><td>Plant</td><td>{{ plant_name }}</td></tr>
+        <tr><td>Feedstock class</td><td>{{ feedstock }}</td></tr>
+        <tr><td>Closure delta (end-of-period)</td><td><strong>{{ closing_stock_kg | fmt_kg }}</strong></td></tr>
+        <tr><td>Regulator</td><td>{{ regulator }}</td></tr>
+        <tr><td>Generated</td><td>{{ generated_at }}</td></tr>
+    </table>
+
+    <div class="legal-block">
+        <div class="legal-name">{{ legal_name }}</div>
+        <div>{{ legal_address }}</div>
+        <div>VAT / MWSt: <span class="mono">{{ legal_vat }}</span></div>
+        <div class="muted">Jurisdiction: {{ legal_jurisdiction }}</div>
+    </div>
+</section>
+
+{# =====================================================================
+   PAGE 2 — EXECUTIVE SUMMARY + CLOSURE MATH
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="declaration">
+
+    <h2 class="section-title">1. Executive summary</h2>
+
+    <p class="lede">
+        The end-of-{{ period_label }} stock balance for the
+        <strong>{{ plant_name }}</strong> feedstock-handling line shows
+        <strong>{{ closing_stock_kg | fmt_kg }}</strong> of carry-over
+        inventory. This quantity is the arithmetic difference between the
+        period's total feedstock intake recorded against
+        <span class="mono">daily_inputs</span> and the period's
+        total <span class="mono">kg_to_production</span> recorded against
+        <span class="mono">daily_production</span>. It explains the
+        closure deviation observed across the
+        January–February 2025 monthly mass-balance reports and is fully
+        reversed in the subsequent reporting period (see §4 below).
+    </p>
+
+    <h2 class="section-title">2. Source of the data</h2>
+
+    <p>
+        Primary source: the operator production workbook
+        <span class="mono">{{ source_workbook }}</span>,
+        sheet <span class="mono">JANUARY2025</span>. Ingested into the
+        DFT backend by <span class="mono">scripts/parse_xlsx.py</span> on
+        {{ ingest_date_label }} (commit {{ parser_fix_commit }}). Two
+        DFT tables receive the parsed values:
+    </p>
+    <ul>
+        <li><span class="mono">daily_inputs</span> — one row per supplier
+        delivery (columns A–J of the workbook) tagged with
+        <span class="mono">supplier_id</span>, certificate reference and
+        eRSV number.</li>
+        <li><span class="mono">daily_production</span> — one row per
+        production day (columns K, L, M, O of the workbook) tagged with
+        <span class="mono">kg_to_production</span>, EU/PLUS yields and
+        downstream by-product allocations.</li>
+    </ul>
+
+    <p>
+        Within the JANUARY2025 sheet, {{ kcol_only_row_count }} rows
+        exhibit a <em>K-only</em> signature: column A (date label) is
+        blank, column K (kg_to_production) carries a negative value,
+        and columns L, M, O (EU yield, PLUS yield, by-product total)
+        are unpopulated. These rows record <strong>physical stock
+        withdrawals</strong> from inventory accumulated in prior
+        reporting periods (intermediate ELT pyrolysate retained at the
+        Girardot facility from CROWN008 batch production in late 2024).
+        They are not new intake and are correctly excluded from the
+        <span class="mono">daily_inputs</span> ledger by the parser
+        (<span class="mono">_is_aggregate_prod</span> classifier — see
+        §5 audit-trail anchor).
+    </p>
+
+    <h2 class="section-title">3. Reconciliation — closure delta math</h2>
+
+    <p>
+        The {{ closing_stock_kg | fmt_kg }} closing-stock figure is
+        verifiable by direct query against the DFT production database.
+        The same query reproduces the inverse figure for the immediately
+        subsequent reporting period (February 2025), demonstrating
+        the symmetric carry-over.
+    </p>
+
+    <table class="recon-table">
+        <thead>
+            <tr>
+                <th>Period</th>
+                <th class="num">Σ total_input_kg</th>
+                <th class="num">Σ kg_to_production</th>
+                <th class="num">Closure delta</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ period_label }} ({{ period }})</td>
+                <td class="num">{{ jan_input_kg | fmt_num }}</td>
+                <td class="num">{{ jan_kg_to_production | fmt_num }}</td>
+                <td class="num"><strong>+{{ jan_delta_kg | fmt_num }}</strong></td>
+            </tr>
+            <tr>
+                <td>February 2025 (2025-02)</td>
+                <td class="num">{{ feb_input_kg | fmt_num }}</td>
+                <td class="num">{{ feb_kg_to_production | fmt_num }}</td>
+                <td class="num"><strong>{{ feb_delta_kg | fmt_num }}</strong></td>
+            </tr>
+            <tr class="total">
+                <td>Combined Jan + Feb 2025</td>
+                <td class="num">{{ combined_input_kg | fmt_num }}</td>
+                <td class="num">{{ combined_kg_to_production | fmt_num }}</td>
+                <td class="num">{{ combined_delta_kg | fmt_num }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="callout">
+        End-of-{{ period_label }} closing stock:
+        <span class="qty">{{ closing_stock_kg | fmt_kg }}</span>
+        of ELT-derived intermediate, physically segregated at the
+        {{ plant_name }} feedstock bay and consumed in the opening
+        days of the subsequent reporting period.
+    </div>
+
+</section>
+
+{# =====================================================================
+   PAGE 3 — K-ONLY ROW DETAIL
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="declaration">
+
+    <h3 class="block-title">4. K-only stock-recovery rows — JANUARY2025 sheet</h3>
+
+    <p class="block-note">
+        The table below enumerates every K-only row identified by the
+        parser inside <span class="mono">JANUARY2025</span>. Row numbers
+        are physical positions in the source workbook. Column K values
+        are reproduced verbatim (negative sign denotes stock withdrawal
+        from prior-period inventory). The accumulating subtotal column
+        shows the cumulative stock-recovery profile of the month.
+    </p>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>xlsx row</th>
+                <th>Day label</th>
+                <th class="num">Column K (kg)</th>
+                <th class="num">Subtotal (kg)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in composition_rows %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td class="mono">{{ row.xlsx_row }}</td>
+                <td class="mono">{{ row.date_label }}</td>
+                <td class="num">{{ row.kg | fmt_num }}</td>
+                <td class="num">{{ row.subtotal | fmt_num }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="3">Total — stock-recovery (negative K)</th>
+                <th class="num">{{ kcol_only_total_kg | fmt_num }}</th>
+                <th></th>
+            </tr>
+        </tfoot>
+    </table>
+
+    <p class="block-note">
+        Note on the recovery total vs. closing stock figure: the
+        {{ kcol_only_total_kg | fmt_num }} kg sum of K-only rows
+        represents stock <em>withdrawals</em> during {{ period_label }}
+        (consumption of prior-period inventory). The
+        {{ closing_stock_kg | fmt_kg }} closing-stock figure is the
+        net <em>residual</em> at month-end, computed independently as
+        Σ inputs − Σ kg_to_production (see §3 table). The two quantities
+        are not expected to coincide; they represent different points
+        in the period-level mass-balance equation.
+    </p>
+
+</section>
+
+{# =====================================================================
+   PAGE 4 — AUDIT-TRAIL ANCHOR + METHODOLOGY + SIGNATURE
+   ===================================================================== #}
+<section class="page-break"></section>
+<section class="methodology">
+
+    <h2 class="section-title">5. Audit-trail anchor</h2>
+
+    <div class="audit-anchor">
+        <div><strong>Parser fix:</strong> <span class="mono">{{ parser_fix_commit }}</span> (date {{ parser_fix_date_label }}).
+        Reclassified K-only rows out of the production aggregate path
+        and into stderr-logged stock anomalies; LAST-WINS resolution
+        applied for duplicate daily aggregates per the chain-of-custody
+        method. Reference: project memory
+        <span class="mono">project_xlsx_aggregate_detail_fix</span>.</div>
+        <div><strong>Audit-log table:</strong> <span class="mono">audit_log</span></div>
+        <div><strong>Tables instrumented:</strong> <span class="mono">daily_inputs</span>, <span class="mono">daily_production</span></div>
+        <div><strong>Entries logged:</strong> {{ audit_log_entries_count }} INSERT / UPDATE / SOFT_DELETE records covering re-ingestion of the corrected JANUARY2025 sheet.</div>
+        <div><strong>Audit-log id range:</strong> <span class="mono">{{ audit_log_id_min }}</span> – <span class="mono">{{ audit_log_id_max }}</span></div>
+        <div><strong>Audit-log timestamp window:</strong> <span class="mono">{{ audit_log_window_min }}</span> → <span class="mono">{{ audit_log_window_max }}</span></div>
+    </div>
+
+    <h2 class="section-title">6. Methodology &amp; references</h2>
+
+    <p>
+        <strong>Methodology.</strong> Closing stock is computed as the
+        arithmetic difference between the period sum of
+        <span class="mono">daily_inputs.total_input_kg</span> and the
+        period sum of
+        <span class="mono">daily_production.kg_to_production</span>,
+        both filtered on <span class="mono">deleted_at IS NULL</span>
+        (the project policy disallows hard deletes; rectifications are
+        applied via the <span class="mono">rectified_*</span> column
+        family). Material is physically segregated within the
+        {{ plant_name }} feedstock bay; no commingling with the
+        subsequent period's intake occurs until the stock has been
+        drawn down. This is consistent with the ISCC EU mass-balance
+        method for chain-of-custody accounting (System Document 203,
+        §4) and with the {{ regulator }} expectation that retained
+        intermediates are reported explicitly rather than implied
+        via closure drift.
+    </p>
+
+    <p>
+        This Annex D accompanies submission
+        <span class="mono">{{ submission_ref }}</span> and is to be read
+        with Annex A — Mass Balance Report ({{ period_label }}) and the
+        cover letter of the same submission bundle. The closing-stock
+        quantity declared on the previous page reconciles, on a kilogram
+        basis, with the difference between Annex A's reported intake
+        and Annex A's reported production allocation for the same
+        period.
+    </p>
+
+    <p>
+        This Annex D is cryptographically anchored to the cover letter
+        of the submission bundle via the SHA-256 digest reported in the
+        running footer (short prefix
+        <span class="mono">{{ annex_d_hash[:12] if annex_d_hash else '—' }}</span>).
+        The full digest is published in the side-car file
+        <span class="mono">07_stock_carryover_explanation.pdf.sha256</span>.
+    </p>
+
+    <div class="signature">
+        <div class="sig-label">Signed for and on behalf of {{ submitter_company }}</div>
+        <div class="sig-line">Paolo Ughetti<br>Managing Director</div>
+        <div class="sig-date">Date: ____________________</div>
+    </div>
+
+    <div class="end-stamp">— End of Annex D —</div>
+
+</section>
+
+</body>
+</html>

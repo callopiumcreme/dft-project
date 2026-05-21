@@ -1,8 +1,8 @@
 """Render the Day-1 v0 RTFO cover letter PDF for bundle RTFO-310125.
 
 Story: E1-S1.12 / DFTEN-106 — produces the Day 1 draft cover letter that
-declares the three formally-disclosed gaps (PoS retroactive issuance, ANLA
-authorisations consular legalisation, closing stock 339.865 kg) per the
+declares the formally-disclosed items (PoS retroactive issuance, supplier
+ISCC EU certificate library, closing stock 339.865 kg) per the
 5-working-day activity plan, §5.
 
 Usage:

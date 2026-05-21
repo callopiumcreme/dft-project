@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cover Letter FINAL — RTFO {{ submission_ref }}</title>
+    <link rel="stylesheet" href="cover_letter.css">
+    <style>
+        /* v2 — 8-month bundle scope; hash-anchor table extended to 18 rows */
+        @page {
+            size: A4;
+            margin: 18mm 20mm;
+            @bottom-left {
+                content: "Bundle manifest: {{ manifest_hash_short }}";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        html, body { font-size: 9.5pt; line-height: 1.35; }
+        p { margin: 0 0 6pt 0; }
+        .letterhead { margin-bottom: 12pt; padding-bottom: 4pt; }
+        .meta { margin-bottom: 10pt; }
+        .addressee { margin-bottom: 10pt; line-height: 1.3; }
+        .subject { padding: 4pt 0; margin-bottom: 10pt; }
+        ul.attachments { margin: 0 0 6pt 0; padding-left: 16pt; }
+        ul.attachments li { margin-bottom: 2pt; }
+        ol.outstanding-list { margin: 4pt 0 8pt 0; }
+        ol.outstanding-list li { margin-bottom: 5pt; }
+        table.totals-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            margin: 6pt 0 10pt 0;
+        }
+        table.totals-table th, table.totals-table td {
+            border: 0.5pt solid #888;
+            padding: 3pt 6pt;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.totals-table th {
+            background: #eee;
+            font-weight: bold;
+        }
+        table.totals-table td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        table.hash-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8pt;
+            margin: 6pt 0 10pt 0;
+        }
+        table.hash-table th, table.hash-table td {
+            border: 0.5pt solid #888;
+            padding: 3pt 5pt;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.hash-table th {
+            background: #eee;
+            font-weight: bold;
+        }
+        table.hash-table td.mono {
+            font-family: "Courier New", monospace;
+            font-size: 7pt;
+            word-break: break-all;
+        }
+        .signature { margin-top: 18pt; }
+        .signature .line { margin-top: 20pt; }
+    </style>
+</head>
+<body>
+
+<header class="letterhead">
+    <div class="brand">{{ submitter_company }}</div>
+    <div class="legal">
+        {{ submitter_address }} &middot; MWSt {{ submitter_vat }} &middot; {{ submitter_contact }}
+    </div>
+</header>
+
+<section class="meta">
+    <div class="row">
+        <div>{{ generated_at }}</div>
+        <div>Ref. <span class="ref">{{ submission_ref }}</span></div>
+    </div>
+    <div class="row">
+        <div class="muted">Revision: <strong>FINAL</strong> ({{ draft_status }})</div>
+        <div class="muted">Submission: {{ submission_date_label }}</div>
+    </div>
+</section>
+
+<section class="addressee">
+    <strong>UK Department for Transport</strong><br>
+    Low Carbon Fuels Delivery Unit<br>
+    Great Minster House, 33 Horseferry Road<br>
+    London SW1P 4DR, United Kingdom<br>
+    <span class="muted">c/o {{ intermediary_label }}</span>
+</section>
+
+<section class="subject">
+    Subject: Track A submission &mdash; RTFO RCF pathway, production period {{ period }}
+    ({{ calendar_days }} calendar days, {{ production_months }} monthly reporting periods)
+</section>
+
+<section class="body">
+
+    <p>Dear Sir or Madam,</p>
+
+    <p>
+        On behalf of <strong>{{ submitter_company }}</strong> (Swiss GmbH, MWSt {{ submitter_vat }}),
+        operator of the pyrolysis facility located in Girardot (Cundinamarca, Colombia), we
+        hereby submit the present bundle under the Renewable Transport Fuel Obligation
+        (RTFO) Track A process, in respect of the Recycled Carbon Fuel (RCF) pathway.
+        The submission covers production volumes of <strong>{{ product }}</strong>
+        derived from <strong>{{ feedstock }}</strong> (end-of-life tyre material),
+        processed during the <strong>{{ rtfo_period }}</strong> reporting period
+        (production period {{ period }}, {{ calendar_days }} calendar days across
+        {{ production_months }} monthly reporting periods: {{ months_list }}).
+        The feedstock is sourced exclusively from post-consumer waste tyres and is
+        classified as RCF under the UK RTFO Guidance, Chapter&nbsp;9.
+    </p>
+
+    <p>
+        The off-taker for the volumes covered by this submission is
+        <strong>{{ off_taker }}</strong>, which acts as the UK obligated supplier and
+        will subsequently claim Renewable Transport Fuel Certificates (RTFCs) against the
+        RCF volumes evidenced herein. Crown Oil Ltd is the sole UK buyer of the
+        OisteBio DEV-P100 product; no European intermediaries are involved in the
+        chain of custody for the period covered by this bundle.
+        <strong>OisteBio GmbH does not submit directly to the ROS system; all
+        DfT-facing submissions are handled exclusively by Crown Oil Ltd.</strong>
+    </p>
+
+    <h3>Bundle-level production totals — January–August 2025</h3>
+    <table class="totals-table">
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th class="num">Value</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Total ELT input (feedstock)</td>
+                <td class="num">{{ input_total_kg | fmt_kg }}</td>
+                <td>Sum across 8 monthly mass-balance reports</td>
+            </tr>
+            <tr>
+                <td>DEV-P100 EU output</td>
+                <td class="num">{{ eu_prod_kg | fmt_kg }}</td>
+                <td>EU variant — combined all months</td>
+            </tr>
+            <tr>
+                <td>DEV-P100 PLUS output</td>
+                <td class="num">{{ plus_prod_kg | fmt_kg }}</td>
+                <td>PLUS variant — combined all months</td>
+            </tr>
+            <tr>
+                <td>DEV-P100 EU — volume (litres)</td>
+                <td class="num">{{ eu_prod_litres | fmt_num }} L</td>
+                <td>Per conversion log; density per ASTM D4052</td>
+            </tr>
+            <tr>
+                <td>DEV-P100 PLUS — volume (litres)</td>
+                <td class="num">{{ plus_prod_litres | fmt_num }} L</td>
+                <td>Per conversion log; density per ASTM D4052</td>
+            </tr>
+            <tr>
+                <td>Syngas / process gas</td>
+                <td class="num">{{ gas_syngas_m3 | fmt_num }} m³</td>
+                <td>Combusted on-site; not claimed as RCF volume</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>
+        The Jan&rarr;Feb 2025 closing stock carry-over of
+        <strong>{{ stock_carryover_kg | fmt_kg }}</strong> is declared in
+        Annex&nbsp;D (<span class="mono">06_annex_d_stock_carryover/07_stock_carryover_jan_feb_2025.pdf</span>).
+        This is an intended operational carry-over fully documented and not a
+        mass-balance discrepancy.
+    </p>
+
+    <p>
+        Enclosed with this letter you will find the evidence pack listed in the
+        Evidence Index (<span class="mono">09_evidence_index_FINAL.pdf</span>), which
+        cross-references every document to the specific DfT rejection point it
+        addresses. The bundle is cryptographically anchored via
+        <span class="mono">MANIFEST.sha256</span> at the root of the bundle directory;
+        every individual artifact carries its own SHA-256 side-car. The SHA-256
+        digests of the principal annexes are listed in the integrity table below.
+    </p>
+
+    <h3>Bundle integrity — SHA-256 anchors (principal annexes)</h3>
+    <table class="hash-table">
+        <thead>
+            <tr><th>Annex / file</th><th>Path within bundle</th><th>SHA-256</th></tr>
+        </thead>
+        <tbody>
+        {% for row in hash_anchors %}
+            <tr>
+                <td>{{ row.label }}</td>
+                <td class="mono" style="font-size:7pt;">{{ row.path }}</td>
+                <td class="mono">{{ row.sha256 }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <ul class="attachments">
+        <li><strong>Annex A &mdash; Mass Balance reports &times;8</strong> (January–August 2025), each with full daily detail and supplier breakdown: {{ annex_a_files | join(', ', attribute='month') }};</li>
+        <li><strong>Production conversion logs &times;8</strong> &mdash; per-day kg-to-litre conversion for each production month;</li>
+        <li><strong>Audit trail CSV exports &times;8</strong> &mdash; cryptographic audit log per month (06_audit_trail_export_&lt;month&gt;_2025.csv);</li>
+        <li><strong>Supplier evidence pack</strong> &mdash; ISCC EU certificates, supply contracts, eRSV registry extracts (shared for all 8 months);</li>
+        <li><strong>Compliance pack</strong> &mdash; ISCC EU PoS status, supplier ISCC EU certificates (collecting-point chain), RTFO pathway declaration, supply-chain diagram;</li>
+        <li><strong>Annex D &mdash; Closing Stock Carry-over Declaration</strong> (January&rarr;February 2025), declaring the {{ stock_carryover_kg | fmt_kg }} physically retained at the Girardot facility at end of January 2025.</li>
+    </ul>
+
+    <p>
+        The compliance basis for this submission rests on (i) ISCC EU certification of
+        the chain of custody from waste-tyre collection through pyrolysis to the
+        finished {{ product }} product, ensuring traceability and mass-balance
+        integrity in accordance with ISCC EU System Document 203, and (ii) the UK
+        RTFO RCF eligibility criteria as set out in the RTFO Guidance Part One
+        (Process Guidance) and Part Two (Carbon and Sustainability). ELT (end-of-life
+        tyre) feedstock RCF eligibility applies under UK RTFO only; no EU-market RCF
+        claims are made under this submission.
+    </p>
+
+</section>
+
+<section class="outstanding">
+    <h2 class="block-title">Outstanding items</h2>
+    <p class="block-note">
+        The following items are formally disclosed as residual gaps at the time of
+        submission. Each item is documented in the bundle with its current status and
+        Crown Oil / OisteBio commitments for post-acceptance closure.
+    </p>
+
+    <ol class="outstanding-list">
+        <li>
+            <strong>Retrospective ISCC EU Proofs of Sustainability for three
+            collecting points (Litoplas, Biowaste, Esenttia).</strong> A formal
+            request was submitted to the ISCC-accredited certifier in Colombia;
+            the response is currently pending. Status is documented in Annex
+            <span class="mono">03_supplier_evidence/03_iscc_pos_status.pdf</span>.
+            Crown Oil and OisteBio commit to forwarding the PoS chain to the Unit
+            within 30 days of bundle acceptance, or to documenting refusal and
+            engaging the fallback evidence procedure.
+        </li>
+        <li>
+            <strong>Supplier ISCC EU certificate library &mdash; included in this
+            bundle.</strong> Per-supplier ISCC EU collecting-point / waste-or-residue
+            certificates (PDF originals from each certifier) are filed in folder
+            <span class="mono">03_supplier_evidence/certificates/</span> and indexed
+            in the Evidence Index. ANLA / Ministerio de Ambiente environmental
+            permits are <em>not</em> required for this submission: the UK RTFO RCF
+            pathway recognises ELT chain-of-custody via ISCC EU only, with no
+            Colombia-side environmental-permit dependency on the DfT acceptance
+            path.
+        </li>
+        <li>
+            <strong>ELT RCF eligibility — audit-gated, evidence included in this bundle.</strong>
+            End-of-life tyre feedstock is recognised as RCF under UK RTFO only. Eligibility
+            is established by passing an ISCC audit against the chain-of-custody scope
+            described in ISCC EU System Document 203, which OisteBio has completed for the
+            period covered by this submission. No separate DfT designation letter is required;
+            the audit evidence confirming eligibility is included within this bundle and
+            cross-referenced in the Evidence Index. This item is disclosed for transparency
+            and is <em>not</em> a blocking outstanding gap.
+        </li>
+        <li>
+            <strong>Closing stock of {{ stock_carryover_kg | fmt_kg }} retained at
+            Girardot (January 2025 carry-over).</strong> The closing inventory for
+            January 2025 is documented as an intended operational carry-over, physically
+            retained at the OisteBio Girardot facility and fully allocated to the February
+            2025 opening stock. Composition and reconciliation are documented in
+            <span class="mono">06_annex_d_stock_carryover/07_stock_carryover_jan_feb_2025.pdf</span>
+            (Annex D). This carry-over fully accounts for the closure delta in the January
+            Annex A mass balance and is not a defect.
+        </li>
+    </ol>
+</section>
+
+<section class="body">
+    <p>
+        We kindly request the Low Carbon Fuels Delivery Unit to acknowledge receipt of
+        the present bundle and to confirm next procedural steps, including any
+        clarification requests, additional evidence to be supplied, or scheduling of
+        a technical pre-application meeting. Crown Oil Ltd, as obligated supplier, also
+        offers to engage an independent ISCC verifier (Bureau Veritas Colombia / SGS
+        Colombia) for a pre-audit of the 8-month evidence pack, on request from
+        the Unit. We remain at your full disposal for any further information that may
+        be required.
+    </p>
+
+    <p>Yours faithfully,</p>
+</section>
+
+<section class="signature">
+    <div>For and on behalf of {{ submitter_company }}</div>
+    <div class="line">Paolo Ughetti<br>Managing Director</div>
+</section>
+
+</body>
+</html>
