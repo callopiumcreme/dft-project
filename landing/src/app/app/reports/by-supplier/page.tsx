@@ -8,7 +8,7 @@ type Row = components['schemas']['BySupplierRow'];
 export const dynamic = 'force-dynamic';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const REDIST_FROM = '2025-02-01';
+const REDIST_FROM = '2025-01-01';
 const REDIST_TO = '2025-08-31';
 const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
 const pctFmt = new Intl.NumberFormat('en-GB', {
@@ -90,7 +90,7 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
           Input distribution by supplier · {sorted.length} suppliers
           {useAll
             ? ' · full period (Jan-Aug 2025)'
-            : ` · filter ${from ?? '…'} → ${to ?? '…'}${inRedistWindow ? ' · RTFO 0016 audit window' : ''}`}
+            : ` · filter ${from ?? '…'} → ${to ?? '…'}${inRedistWindow ? ' · RTFO audit window' : ''}`}
         </p>
       </header>
 
@@ -224,11 +224,12 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
       </section>
 
       <p className="mt-4 max-w-reading font-mono text-[0.7rem] leading-relaxed text-ink-mute">
-        Default scope is the RTFO 0016 audit window (Feb 1 → Aug 31, 2025).{' '}
+        Default scope is the RTFO audit window (Jan 1 → Aug 31, 2025).{' '}
         <span className="text-ink-soft">% Total</span> = share of input over all suppliers in
-        scope (LE5TON ≤5 TON aggregate + Jan-only suppliers BIOWASTE / LITOPLAS appear in full
-        period view). Use the <span className="text-ink-soft">Full period</span> link for the
-        Jan-Aug view, or custom dates for any other range.
+        scope. The <span className="text-ink-soft">LE5TON</span> ≤5 TON aggregate and the Jan-only
+        suppliers BIOWASTE / LITOPLAS are included via the{' '}
+        <span className="text-ink-soft">Full period</span> link (scope = all); use custom dates for
+        any other range.
       </p>
     </div>
   );

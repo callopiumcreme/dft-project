@@ -220,12 +220,12 @@ Each month is an expandable row showing **Month**, **Input**, **Output total**, 
 
 **Menu:** Reports → By supplier · **URL:** `/app/reports/by-supplier`
 
-This report shows **how the feedstock input is distributed across suppliers**. By default it opens on the **RTFO audit window (1 February – 31 August 2025)**.
+This report shows **how the feedstock input is distributed across suppliers**. By default it opens on the **RTFO audit window (1 January – 31 August 2025)**.
 
 **Filters:**
 - **From** / **To** date pickers, **Filter** to apply.
-- **Reset to audit window** — returns to 1 Feb – 31 Aug 2025.
-- **Full period** — shows the full Jan–Aug 2025 range.
+- **Reset to audit window** — returns to 1 Jan – 31 Aug 2025.
+- **Full period** — the same Jan–Aug 2025 range with all aggregate / Jan-only suppliers included (scope = all).
 - **Export CSV**.
 
 **KPI tiles:** **Suppliers** (count) · **Total input** (kg) · **Total entries** (number of deliveries).
