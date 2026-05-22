@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
+import { ContractLink } from '@/components/contracts/contract-link';
+import { ContractModalProvider } from '@/components/contracts/contract-modal-provider';
 
 type Contract = components['schemas']['ContractRead'];
 type Supplier = components['schemas']['SupplierRead'];
@@ -81,6 +83,7 @@ export default async function ContractsPage({ searchParams }: PageProps) {
   );
 
   return (
+    <ContractModalProvider>
     <div className="mx-auto max-w-editorial">
       <header className="border-b border-rule pb-6">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">
@@ -215,7 +218,9 @@ export default async function ContractsPage({ searchParams }: PageProps) {
                   key={r.id}
                   className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
                 >
-                  <Td className="text-ink">{r.code}</Td>
+                  <Td className="text-ink">
+                    <ContractLink contractId={r.id} contractCode={r.code} />
+                  </Td>
                   <Td className="text-ink-soft">
                     {sup ? `${sup.code} · ${sup.name}` : '—'}
                   </Td>
@@ -254,6 +259,7 @@ export default async function ContractsPage({ searchParams }: PageProps) {
         </table>
       </section>
     </div>
+    </ContractModalProvider>
   );
 }
 
