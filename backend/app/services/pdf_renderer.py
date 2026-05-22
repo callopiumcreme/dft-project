@@ -110,6 +110,7 @@ def render_to_pdf(
     context: dict[str, Any],
     output_path: Path,
     filters: dict[str, Callable[..., Any]] | None = None,
+    full_fonts: bool = True,
 ) -> RenderResult:
     """Render a Jinja2 template to a deterministic PDF + SHA-256 side-car.
 
@@ -126,6 +127,12 @@ def render_to_pdf(
             registered on a per-call Environment. The renderer builds a fresh
             ``Environment`` for every call so registering filters here does
             NOT leak into other renders — keeping determinism intact.
+        full_fonts: When True (default), embed full font set — required for
+            audit-bundle artefacts whose SHA must be deterministic across
+            renders. When False, fontTools subsets glyphs (~50x smaller PDF)
+            at the cost of non-deterministic output — appropriate for
+            on-flight/ephemeral PDFs (e.g. ``ersv`` popup) that do NOT enter
+            MANIFEST.sha256.
 
     Returns:
         RenderResult with absolute paths, byte size, hex digest, page count,
@@ -163,7 +170,7 @@ def render_to_pdf(
             custom_metadata=False,
             presentational_hints=True,
             uncompressed_pdf=False,
-            full_fonts=True,
+            full_fonts=full_fonts,
         )
     except Exception as exc:  # WeasyPrint raises a wide variety of errors.
         raise PDFRenderError(f"WeasyPrint failed to render {qualified_name}: {exc}") from exc

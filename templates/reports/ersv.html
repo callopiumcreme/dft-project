@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>eRSV {{ ersv_number }}</title>
+    <style>
+        /* --------------------------------------------------------------
+           PAGE — A4 portrait, 14mm margins, running header/footer.
+           -------------------------------------------------------------- */
+        @page {
+            size: A4 portrait;
+            margin: 11mm 12mm 14mm 12mm;
+            @bottom-left {
+                content: "{{ supplier_footer_address or '' }}";
+                font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+                font-size: 7.5pt;
+                color: #666;
+            }
+            @bottom-right {
+                content: "{{ version_label }} — Página " counter(page) " de " counter(pages);
+                font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+                font-size: 7.5pt;
+                color: #666;
+            }
+        }
+
+        html, body {
+            font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+            font-size: 8.5pt;
+            line-height: 1.2;
+            color: #111;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2, h3 { margin: 0; color: {{ primary_color }}; }
+
+        /* --------------------------------------------------------------
+           HEADER STRIP — fecha (right), brand title row, primary band.
+           -------------------------------------------------------------- */
+        .fecha-row {
+            text-align: right;
+            font-size: 8.5pt;
+            color: #444;
+            margin-bottom: 4pt;
+        }
+
+        .title-band {
+            background: {{ primary_color }};
+            color: #fff;
+            text-align: center;
+            padding: 4pt 8pt;
+            font-size: 11.5pt;
+            font-weight: bold;
+            letter-spacing: 0.6pt;
+            text-transform: uppercase;
+        }
+
+        .ersv-num-line {
+            text-align: center;
+            font-family: "Courier New", "Liberation Mono", monospace;
+            font-size: 10pt;
+            margin-top: 2pt;
+            color: {{ primary_color }};
+        }
+
+        /* --------------------------------------------------------------
+           Block sections — supplier (top), recipient, transport.
+           -------------------------------------------------------------- */
+        .section-band {
+            background: #f1f5f9;
+            border-left: 2.5pt solid {{ primary_color }};
+            padding: 3pt 6pt;
+            font-weight: bold;
+            font-size: 9pt;
+            color: {{ primary_color }};
+            text-transform: uppercase;
+            letter-spacing: 0.4pt;
+            margin: 6pt 0 2pt 0;
+        }
+
+        table.kv {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+        }
+
+        table.kv td {
+            padding: 1.5pt 4pt;
+            vertical-align: top;
+            border-bottom: 0.3pt dotted #d1d5db;
+        }
+
+        table.kv td.k {
+            width: 28%;
+            color: #555;
+            font-size: 8pt;
+        }
+
+        table.kv td.v {
+            font-size: 9pt;
+        }
+
+        /* --------------------------------------------------------------
+           Distribuciòn table — 5 cols (Tipo + 3 buckets + Total).
+           -------------------------------------------------------------- */
+        table.dist {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4pt;
+        }
+
+        table.dist th,
+        table.dist td {
+            border: 0.5pt solid #94a3b8;
+            padding: 3pt 5pt;
+            font-size: 8.5pt;
+        }
+
+        table.dist th {
+            background: {{ primary_color }};
+            color: #fff;
+            text-align: center;
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: 0.3pt;
+        }
+
+        table.dist td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        table.dist td.label {
+            font-weight: bold;
+            background: #f8fafc;
+        }
+
+        table.dist tr.total td {
+            font-weight: bold;
+            background: #eef2f6;
+        }
+
+        /* --------------------------------------------------------------
+           Validez documento electrónico — Ley 527/1999.
+           -------------------------------------------------------------- */
+        .firma-digital {
+            margin-top: 8pt;
+            padding: 5pt 8pt;
+            border: 0.5pt solid #94a3b8;
+            border-left: 2.5pt solid {{ primary_color }};
+            background: #f8fafc;
+            font-size: 7.5pt;
+            line-height: 1.35;
+            color: #333;
+            text-align: justify;
+        }
+
+        /* --------------------------------------------------------------
+           Observaciones — neutral OisteBio set.
+           -------------------------------------------------------------- */
+        .observaciones {
+            margin-top: 6pt;
+            font-size: 7.5pt;
+            color: #333;
+        }
+
+        .observaciones .obs-title {
+            font-weight: bold;
+            color: {{ primary_color }};
+            text-transform: uppercase;
+            letter-spacing: 0.4pt;
+            font-size: 8.5pt;
+            margin-bottom: 3pt;
+        }
+
+        .observaciones ol {
+            margin: 0;
+            padding-left: 14pt;
+        }
+
+        .observaciones li {
+            margin-bottom: 2pt;
+        }
+
+        /* --------------------------------------------------------------
+           Footer — brand line below tables (separate from @page footer).
+           -------------------------------------------------------------- */
+        .brand-bottom {
+            margin-top: 6pt;
+            padding-top: 3pt;
+            border-top: 0.5pt solid {{ primary_color }};
+            text-align: center;
+            font-size: 7.5pt;
+            color: {{ primary_color }};
+            letter-spacing: 0.3pt;
+        }
+
+        .doc-meta {
+            margin-top: 2pt;
+            text-align: center;
+            font-family: "Courier New", "Liberation Mono", monospace;
+            font-size: 6.5pt;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+{# ===== Fecha (top-right) ===== #}
+<div class="fecha-row">Fecha: {{ entry_date_eu }}</div>
+
+{# ===== Title band ===== #}
+<div class="title-band">Formato de Recolección eRSV</div>
+<div class="ersv-num-line">N° {{ ersv_number }}</div>
+
+{# ===== Remitente (supplier) ===== #}
+<div class="section-band">Remitente</div>
+<table class="kv">
+    <tr>
+        <td class="k">Nombre</td>
+        <td class="v">{{ supplier_brand_name }}</td>
+    </tr>
+    {% if supplier_address %}
+    <tr>
+        <td class="k">Dirección</td>
+        <td class="v">{{ supplier_address }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td class="k">País del titular</td>
+        <td class="v">{{ holder_country_label or supplier_country }}</td>
+    </tr>
+    {% if loading_address %}
+    <tr>
+        <td class="k">Punto de recogida</td>
+        <td class="v">{{ loading_address }}</td>
+    </tr>
+    {% endif %}
+    {% if supplier_email %}
+    <tr>
+        <td class="k">@</td>
+        <td class="v">{{ supplier_email }}</td>
+    </tr>
+    {% endif %}
+</table>
+
+{# ===== Recogida (recipient) ===== #}
+<div class="section-band">Recogida/Entrega</div>
+<table class="kv">
+    <tr>
+        <td class="k">Nombre empresa</td>
+        <td class="v">{{ recipient_company }}</td>
+    </tr>
+    <tr>
+        <td class="k">Dirección</td>
+        <td class="v">{{ recipient_plant }}</td>
+    </tr>
+    <tr>
+        <td class="k">Peso de llegada</td>
+        <td class="v">{{ total_net_kg_str }}</td>
+    </tr>
+    <tr>
+        <td class="k">@</td>
+        <td class="v">{{ recipient_email }}</td>
+    </tr>
+</table>
+
+{# ===== Transporte ===== #}
+<div class="section-band">Transporte</div>
+<table class="kv">
+    <tr>
+        <td class="k">Empresa transporte</td>
+        <td class="v">{{ transport_company or '—' }}</td>
+    </tr>
+    <tr>
+        <td class="k">Cédula conductor</td>
+        <td class="v">{{ driver_cedula }}</td>
+    </tr>
+    <tr>
+        <td class="k">Nombre conductor</td>
+        <td class="v">{{ driver_name }}</td>
+    </tr>
+    <tr>
+        <td class="k">Placa vehículo</td>
+        <td class="v">{{ vehicle_plate }}</td>
+    </tr>
+    <tr>
+        <td class="k">Tipo de carga</td>
+        <td class="v">ELT — Neumáticos al final de su vida útil</td>
+    </tr>
+    {% if distance_km %}
+    <tr>
+        <td class="k">Distancia origen → Girardot</td>
+        <td class="v">{{ distance_km }} km</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td class="k">Fecha de salida</td>
+        <td class="v">{{ hora_salida_date_eu }}</td>
+    </tr>
+    <tr>
+        <td class="k">Hora de salida</td>
+        <td class="v">{{ hora_salida_time }}</td>
+    </tr>
+    <tr>
+        <td class="k">Fecha de entrega</td>
+        <td class="v">n/a</td>
+    </tr>
+</table>
+
+{# ===== Distribución ===== #}
+<div class="section-band">Distribución del material</div>
+<table class="dist">
+    <thead>
+        <tr>
+            <th>Tipo</th>
+            <th>Automóvil</th>
+            <th>Camión, buses y tractomulas</th>
+            <th>Especial fuera de carretera</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="label">Peso (kg)</td>
+            <td class="num">{{ car_kg_str }}</td>
+            <td class="num">{{ truck_kg_str }}</td>
+            <td class="num">{{ special_kg_str }}</td>
+            <td class="num">{{ total_net_kg_str }}</td>
+        </tr>
+        <tr>
+            <td class="label">Distribución (%)</td>
+            <td class="num">{{ car_pct_str }}</td>
+            <td class="num">{{ truck_pct_str }}</td>
+            <td class="num">{{ special_pct_str }}</td>
+            <td class="num">100,00 %</td>
+        </tr>
+    </tbody>
+</table>
+
+{# ===== Validez documento electrónico ===== #}
+<div class="firma-digital">
+    El presente documento electrónico ha sido firmado digitalmente conforme a la
+    normativa colombiana sobre documentos electrónicos y firma digital, y tiene
+    plena validez jurídica frente a terceros, reemplazando cualquier versión
+    impresa. (Ley 527 de 1999 y normas conexas)
+</div>
+
+{# ===== Observaciones ===== #}
+<div class="observaciones">
+    <div class="obs-title">Observaciones</div>
+    <ol>
+        <li>El remitente declara que el material entregado corresponde exclusivamente a Neumáticos al Final de su Vida Útil (ELT), libre de mezclas con otros residuos no autorizados.</li>
+        <li>El transporte se realiza conforme a las normas vigentes en materia de movilización de residuos sólidos no peligrosos en territorio colombiano.</li>
+        <li>El receptor verifica el peso de llegada en báscula calibrada; cualquier discrepancia &gt; 2% respecto a la salida queda registrada en la sección de notas.</li>
+        <li>La trazabilidad ISCC-EU del lote queda asegurada mediante el número de certificado del remitente y el presente documento eRSV.</li>
+        <li>El presente documento se emite en formato electrónico y constituye soporte válido para la cadena de custodia del sistema de balance de masa de {{ recipient_company }}.</li>
+    </ol>
+    {% if notes and notes != '—' %}
+    <div style="margin-top: 4pt;"><strong>Notas:</strong> {{ notes }}</div>
+    {% endif %}
+</div>
+
+{# ===== Brand bottom ===== #}
+<div class="brand-bottom">
+    {% if supplier_website %}{{ supplier_website }} &middot; {% endif %}{{ version_label }}
+</div>
+<div class="doc-meta">
+    Doc ID {{ doc_id_hash[:16] }} &middot; emitido {{ hora_salida_date_eu }}
+</div>
+
+</body>
+</html>
