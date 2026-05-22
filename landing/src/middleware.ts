@@ -15,6 +15,12 @@ function isSafeNext(path: string): boolean {
 
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
+
+  // Hide marketing landing for now: redirect root to /login.
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+
   const token = req.cookies.get(SESSION_COOKIE)?.value;
 
   const loginUrl = new URL('/login', req.url);
@@ -43,5 +49,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/app', '/app/:path*'],
+  matcher: ['/', '/app', '/app/:path*'],
 };
