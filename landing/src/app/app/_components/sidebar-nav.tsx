@@ -23,6 +23,7 @@ type NavItem = {
   icon: LucideIcon;
   group?: string;
   tooltip?: string;
+  adminOnly?: boolean;
 };
 
 const NAV: NavItem[] = [
@@ -35,13 +36,14 @@ const NAV: NavItem[] = [
   { href: '/app/suppliers', label: 'Suppliers', icon: Users, group: 'Master data' },
   { href: '/app/certificates', label: 'Certificates', icon: Award, group: 'Master data' },
   { href: '/app/contracts', label: 'Contracts', icon: FileText, group: 'Master data' },
-  { href: '/app/users', label: 'Users', icon: UserCog, group: 'Admin' },
+  { href: '/app/users', label: 'Users', icon: UserCog, group: 'Admin', adminOnly: true },
   {
     href: '/app/audit',
     label: 'Audit log',
     icon: History,
     group: 'Admin',
     tooltip: 'Compliance ISCC EU + traceability',
+    adminOnly: true,
   },
 ];
 
@@ -107,10 +109,19 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(href + '/');
 }
 
-export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarNav({
+  onNavigate,
+  role,
+}: {
+  onNavigate?: () => void;
+  role?: string;
+}) {
   const pathname = usePathname();
 
-  const groups = NAV.reduce<Record<string, NavItem[]>>((acc, item) => {
+  const isAdmin = role === 'admin';
+  const visible = NAV.filter((item) => !item.adminOnly || isAdmin);
+
+  const groups = visible.reduce<Record<string, NavItem[]>>((acc, item) => {
     const key = item.group ?? '';
     (acc[key] ||= []).push(item);
     return acc;

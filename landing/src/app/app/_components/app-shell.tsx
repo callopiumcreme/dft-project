@@ -30,7 +30,7 @@ export function AppShell({ children, user }: Props) {
           DFT
         </Link>
         <div className="flex-1 overflow-y-auto">
-          <SidebarNav />
+          <SidebarNav role={user.role} />
         </div>
         <div className="border-t border-rule px-6 py-4 font-mono text-[0.65rem] uppercase tracking-[0.16em] text-ink-mute">
           Mass balance · v0.2
@@ -56,7 +56,7 @@ export function AppShell({ children, user }: Props) {
                 >
                   DFT
                 </Link>
-                <SidebarNav onNavigate={() => setOpen(false)} />
+                <SidebarNav role={user.role} onNavigate={() => setOpen(false)} />
               </SheetContent>
             </Sheet>
             <Breadcrumb />
