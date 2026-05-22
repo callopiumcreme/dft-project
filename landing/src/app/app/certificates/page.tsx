@@ -40,7 +40,25 @@ function sanitizeStatus(v: string | undefined): Status | undefined {
 const ISCC_PUBLIC_SCHEMES = new Set(['ISCC EU', 'ISCC PLUS']);
 const ISCC_CERT_RE = /^[A-Z]{2}\d{3}[- ]?[\d]{6,}$/;
 
+// Real ISCC Hub certificate-file download links, keyed by cert_number exactly
+// as stored in the DB. Source: supplier-provided hub.iscc-system.org URLs
+// (2026-05-22). When present these take priority over the generic search URL.
+const ISCC_FILE_URLS: Record<string, string> = {
+  'ES216-20249051': 'https://hub.iscc-system.org/FileHandler/download/certificateFile/NjY0OTBfSVNDQy1QTFVTLUNlcnQtRVMyMTYtMjAyNDkwNTE=', // PYRCOM
+  'CO222-00000026': 'https://hub.iscc-system.org/FileHandler/download/certificateFile/NjQ1NDZfSVNDQy1QTFVTLUNlcnQtQ08yMjItMDAwMDAwMjY=', // LITOPLAS
+  'CO222-00000027': 'https://hub.iscc-system.org/FileHandler/download/certificateFile/NjQ4ODBfSVNDQy1QTFVTLUNlcnQtQ08yMjItMDAwMDAwMjc=', // ESENTTIA
+  'US201-138762025': 'https://hub.iscc-system.org/FileHandler/download/certificateFile/OTM4MzdfRVUtSVNDQy1DZXJ0LVVTMjAxLTEzODc2MjAyNQ==', // KAL TIRE 2025
+  'US201-138762024': 'https://hub.iscc-system.org/FileHandler/download/certificateFile/NDg4ODZfSVNDQy1QTFVTLUNlcnQtVVMyMDEtMTM4NzYyMDI0', // KAL TIRE 2024
+  'US201-158772025': 'https://hub.iscc-system.org/FileHandler/download/certificateFile/NzcyMTNfSVNDQy1QTFVTLUNlcnQtVVMyMDEtMTU4NzcyMDI1', // EFFICIEN TECH 2025
+  'US201-158772024': 'https://hub.iscc-system.org/FileHandler/download/certificateFile/NDAyNDRfSVNDQy1QTFVTLUNlcnQtVVMyMDEtMTU4NzcyMDI0', // EFFICIEN TECH 2024
+  'US201-120372025': 'https://hub.iscc-system.org/FileHandler/download/certificateFile/ODU5NDhfSVNDQy1QTFVTLUNlcnQtVVMyMDEtMTIwMzcyMDI1', // BOLDER 2025
+  'US201-120372024': 'https://hub.iscc-system.org/FileHandler/download/certificateFile/NDUwODNfSVNDQy1QTFVTLUNlcnQtVVMyMDEtMTIwMzcyMDI0', // BOLDER 2024
+  'PL21990602701': 'https://hub.iscc-system.org/FileHandler/download/certificateFile/Njk3OThfRVUtSVNDQy1DZXJ0LVBMMjE5LTkwNjAyNzAx', // BIOWASTE
+};
+
 function isccPublicUrl(cert: { cert_number: string; scheme: string }): string | null {
+  const fileUrl = ISCC_FILE_URLS[cert.cert_number];
+  if (fileUrl) return fileUrl;
   if (!ISCC_PUBLIC_SCHEMES.has(cert.scheme)) return null;
   if (!ISCC_CERT_RE.test(cert.cert_number)) return null;
   return `https://www.iscc-system.org/?s=${encodeURIComponent(cert.cert_number)}`;
