@@ -37,6 +37,15 @@ function sanitizeStatus(v: string | undefined): Status | undefined {
   return v && (STATUSES as string[]).includes(v) ? (v as Status) : undefined;
 }
 
+const ISCC_PUBLIC_SCHEMES = new Set(['ISCC EU', 'ISCC PLUS']);
+const ISCC_CERT_RE = /^[A-Z]{2}\d{3}[- ]?[\d]{6,}$/;
+
+function isccPublicUrl(cert: { cert_number: string; scheme: string }): string | null {
+  if (!ISCC_PUBLIC_SCHEMES.has(cert.scheme)) return null;
+  if (!ISCC_CERT_RE.test(cert.cert_number)) return null;
+  return `https://www.iscc-system.org/?s=${encodeURIComponent(cert.cert_number)}`;
+}
+
 interface PageProps {
   searchParams: {
     status?: string;
@@ -274,7 +283,26 @@ export default async function CertificatesPage({ searchParams }: PageProps) {
                   key={r.id}
                   className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
                 >
-                  <Td className="text-ink">{r.cert_number}</Td>
+                  <Td className="text-ink">
+                    {(() => {
+                      const url = isccPublicUrl(r);
+                      return url ? (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline decoration-dotted underline-offset-2 hover:text-olive-deep"
+                          title={`Verify ${r.cert_number} on iscc-system.org`}
+                          aria-label={`Open ${r.cert_number} on ISCC site (new tab)`}
+                        >
+                          {r.cert_number}
+                          <span aria-hidden="true" className="ml-1 text-ink-mute">↗</span>
+                        </a>
+                      ) : (
+                        r.cert_number
+                      );
+                    })()}
+                  </Td>
                   <Td className="text-ink-soft">{r.scheme}</Td>
                   <Td>
                     <span
