@@ -15,6 +15,7 @@ from app.routers import (
     daily_production,
     ersv,
     reports,
+    tickets,
 )
 from app.services.mv_refresh import refresh_all_mvs
 
@@ -56,6 +57,7 @@ app.include_router(anagrafica.certificates_router)
 app.include_router(anagrafica.contracts_router)
 app.include_router(daily_inputs.router)
 app.include_router(ersv.router)
+app.include_router(tickets.router)
 app.include_router(daily_production.router)
 app.include_router(reports.router)
 

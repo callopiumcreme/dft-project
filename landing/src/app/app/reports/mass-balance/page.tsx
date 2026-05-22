@@ -5,6 +5,7 @@ import { MonthQuickPicker } from './month-quick-picker';
 import { buildMonthOptions } from './month-utils';
 import { KpiTileTooltip } from './kpi-tile-tooltip';
 import { ErsvLink } from '@/components/ersv';
+import { TicketLink } from '@/components/ticket';
 
 type DailyRow = components['schemas']['MassBalanceDailyRow'];
 type MonthlyRow = components['schemas']['MassBalanceMonthlyRow'];
@@ -527,6 +528,7 @@ function DailyAccordion({
                         <th className="px-2 py-1.5 font-normal">Supplier</th>
                         <th className="px-2 py-1.5 font-normal">Cert / Contract</th>
                         <th className="px-2 py-1.5 font-normal">eRSV</th>
+                        <th className="px-2 py-1.5 font-normal">TICKET</th>
                         <th className="px-2 py-1.5 font-normal">C14</th>
                         <th className="px-2 py-1.5 font-normal">Loaded</th>
                         <th className="px-2 py-1.5 text-right font-normal">Total kg</th>
@@ -562,6 +564,9 @@ function DailyAccordion({
                               ) : (
                                 '—'
                               )}
+                            </td>
+                            <td className="px-2 py-1.5 text-ink-soft">
+                              <TicketLink dailyInputId={e.id} />
                             </td>
                             <td className="px-2 py-1.5 text-ink-soft">
                               {e.c14_analysis || e.c14_value != null ? (
