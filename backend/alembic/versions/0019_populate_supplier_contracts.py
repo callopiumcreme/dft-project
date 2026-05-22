@@ -18,6 +18,10 @@ INSERTs (4 new redistribution suppliers Feb-Aug 2025, no DB row yet):
     KT200125 KALTIRE   → 2025-02-01..2025-08-31, 5,775,000 kg
     PY250125 PYRCOM    → 2025-02-01..2025-08-31, 3,850,000 kg
 
+UPDATE applies regardless of deleted_at: historical contract
+metadata (start/end/kg) is audit-relevant even for contracts that
+were later soft-deleted via UI. deleted_at flag is preserved as-is.
+
 Cleanup soft-deletes:
     id=5 ``-`` orphan placeholder (no supplier_id, ingest artefact)
     id=6 ``E2E-CTR-404437`` test contract leaked into prod
@@ -103,7 +107,6 @@ def upgrade() -> None:
                                  ELSE E'\n' || :note END,
                     updated_at = NOW()
                 WHERE code = :code
-                  AND deleted_at IS NULL
                 """
             ),
             {"start": start, "end": end, "kg": total_kg,
