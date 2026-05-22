@@ -32,9 +32,15 @@ async function safeFetch<T>(path: string, query?: Record<string, string | number
   }
 }
 
+const PERIOD_FROM = '2025-01-01';
+const PERIOD_TO = '2025-08-31';
+
 export default async function AppHomePage() {
   const [daily, closure] = await Promise.all([
-    safeFetch<DailyRow[]>('/reports/mass-balance/daily', { limit: 30 }),
+    safeFetch<DailyRow[]>('/reports/mass-balance/daily', {
+      date_from: PERIOD_FROM,
+      date_to: PERIOD_TO,
+    }),
     safeFetch<ClosureRow[]>('/reports/closure-status'),
   ]);
 
@@ -74,8 +80,8 @@ export default async function AppHomePage() {
         </p>
         <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">Dashboard</h1>
         <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
-          Mass balance KPI — last {sortedDaily.length} days
-          {firstDay && lastDay ? ` (${firstDay} → ${lastDay})` : ''}.
+          Mass balance KPI — RTFO audit window
+          {firstDay && lastDay ? ` (${firstDay} → ${lastDay})` : ' (Jan – Aug 2025)'} · {sortedDaily.length} days.
         </p>
         {fetchFailed && (
           <p className="mt-3 inline-block border border-rule bg-bg-soft px-3 py-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-ink-mute">
@@ -149,7 +155,7 @@ function KpiCard({
         {value}
       </p>
       <p className="mt-2 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-ink-mute">
-        {hint ?? 'Last 30 days'}
+        {hint ?? 'Jan – Aug 2025'}
       </p>
     </Card>
   );
