@@ -6,16 +6,21 @@ Excludes soft-deleted rows by default.
 """
 from __future__ import annotations
 
+import os
+import re
 from datetime import datetime
+from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import AdminUser, ViewerUser
 from app.db.session import get_db
+from app.models.audit_log import AuditLog
 from app.models.certificate import Certificate
 from app.models.contract import Contract
 from app.models.supplier import Supplier
@@ -515,6 +520,88 @@ async def soft_delete_contract(
         changed_by=user.id,
     )
     await db.commit()
+
+
+# ---------- CONTRACT PDF (signed original from Drive, bind-mounted) ----------
+_CONTRACT_PDF_DIR_DEFAULT = Path(__file__).resolve().parents[2] / "data" / "contracts"
+CONTRACT_PDF_DIR = Path(os.environ.get("CONTRACT_PDF_DIR", str(_CONTRACT_PDF_DIR_DEFAULT)))
+_CONTRACT_CODE_RE = re.compile(r"^[A-Z0-9_-]{1,32}$")
+
+
+def _resolve_contract_pdf(code: str) -> Path | None:
+    if not _CONTRACT_CODE_RE.match(code):
+        return None
+    candidate = (CONTRACT_PDF_DIR / f"{code}.pdf").resolve()
+    try:
+        candidate.relative_to(CONTRACT_PDF_DIR.resolve())
+    except ValueError:
+        return None
+    if not candidate.is_file():
+        return None
+    return candidate
+
+
+@contracts_router.get("/{contract_id}/pdf")
+async def get_contract_pdf(
+    contract_id: int,
+    _: ViewerUser,
+    db: DbDep,
+) -> FileResponse:
+    """Inline PDF preview for the modal iframe. No audit (viewing != downloading)."""
+    obj = await _get_contract_or_404(db, contract_id, include_deleted=True)
+    pdf = _resolve_contract_pdf(obj.code)
+    if pdf is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Contract PDF not found for code {obj.code}",
+        )
+    return FileResponse(
+        path=pdf,
+        media_type="application/pdf",
+        headers={
+            "Cache-Control": "private, max-age=300",
+            "Content-Disposition": f'inline; filename="{obj.code}.pdf"',
+        },
+    )
+
+
+@contracts_router.get("/{contract_id}/pdf/download")
+async def download_contract_pdf(
+    contract_id: int,
+    user: ViewerUser,
+    db: DbDep,
+) -> Response:
+    """Audited PDF download (attachment). One audit_log row per download."""
+    obj = await _get_contract_or_404(db, contract_id, include_deleted=True)
+    pdf = _resolve_contract_pdf(obj.code)
+    if pdf is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Contract PDF not found for code {obj.code}",
+        )
+    data = pdf.read_bytes()
+    audit = AuditLog(
+        table_name=CONTRACTS_TABLE,
+        record_id=obj.id,
+        action="insert",
+        old_values=None,
+        new_values={
+            "kind": "CONTRACT_PDF_DOWNLOAD",
+            "code": obj.code,
+            "size_bytes": len(data),
+        },
+        changed_by=user.id,
+    )
+    db.add(audit)
+    await db.commit()
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={
+            "Cache-Control": "no-store",
+            "Content-Disposition": f'attachment; filename="{obj.code}.pdf"',
+        },
+    )
 
 
 @contracts_router.post("/{contract_id}/restore", response_model=ContractRead)
