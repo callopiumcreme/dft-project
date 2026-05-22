@@ -4,6 +4,7 @@ import type { components } from '@/lib/backend-types';
 import { MonthQuickPicker } from './month-quick-picker';
 import { buildMonthOptions } from './month-utils';
 import { KpiTileTooltip } from './kpi-tile-tooltip';
+import { ErsvLink } from '@/components/ersv';
 
 type DailyRow = components['schemas']['MassBalanceDailyRow'];
 type MonthlyRow = components['schemas']['MassBalanceMonthlyRow'];
@@ -555,7 +556,13 @@ function DailyAccordion({
                                 {contract?.code ?? '—'}
                               </span>
                             </td>
-                            <td className="px-2 py-1.5 text-ink-soft">{e.ersv_number ?? '—'}</td>
+                            <td className="px-2 py-1.5 text-ink-soft">
+                              {e.ersv_number ? (
+                                <ErsvLink ersvNumber={e.ersv_number} dailyInputId={e.id} />
+                              ) : (
+                                '—'
+                              )}
+                            </td>
                             <td className="px-2 py-1.5 text-ink-soft">
                               {e.c14_analysis || e.c14_value != null ? (
                                 <>

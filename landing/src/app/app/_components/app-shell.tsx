@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { ErsvModalProvider } from '@/components/ersv';
 import { SidebarNav } from './sidebar-nav';
 import { Breadcrumb } from './breadcrumb';
 import { UserMenu } from './user-menu';
@@ -17,6 +18,7 @@ export function AppShell({ children, user }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
+    <ErsvModalProvider>
     <div className="min-h-dvh bg-bg">
       <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:w-60 md:flex-col md:border-r md:border-rule md:bg-bg">
         <Link
@@ -62,5 +64,6 @@ export function AppShell({ children, user }: Props) {
         <main className="px-4 sm:px-6 lg:px-10 py-8">{children}</main>
       </div>
     </div>
+    </ErsvModalProvider>
   );
 }

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { deleteInputAction } from '@/lib/inputs-actions';
+import { ErsvLink } from '@/components/ersv';
 
 type Input = components['schemas']['DailyInputRead'];
 type Supplier = components['schemas']['SupplierRead'];
@@ -153,7 +154,13 @@ export default async function InputDetailPage({ params, searchParams }: PageProp
             {certificate ? `${certificate.cert_number} · ${certificate.scheme ?? '—'}` : '—'}
           </Row>
           <Row label="Contract">{contract ? contract.code : '—'}</Row>
-          <Row label="eRSV">{input.ersv_number ?? '—'}</Row>
+          <Row label="eRSV">
+            {input.ersv_number ? (
+              <ErsvLink ersvNumber={input.ersv_number} dailyInputId={input.id} />
+            ) : (
+              '—'
+            )}
+          </Row>
         </DataBlock>
 
         <DataBlock title="Weights (kg)">

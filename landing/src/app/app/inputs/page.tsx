@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
+import { ErsvLink } from '@/components/ersv';
 
 type Input = components['schemas']['DailyInputRead'];
 type Supplier = components['schemas']['SupplierRead'];
@@ -205,7 +206,13 @@ export default async function InputsPage({ searchParams }: PageProps) {
                   <Td className="text-ink-soft">
                     {sup ? `${sup.code} · ${sup.name}` : `#${r.supplier_id}`}
                   </Td>
-                  <Td className="text-ink-mute">{r.ersv_number ?? '—'}</Td>
+                  <Td className="text-ink-mute">
+                    {r.ersv_number ? (
+                      <ErsvLink ersvNumber={r.ersv_number} dailyInputId={r.id} />
+                    ) : (
+                      '—'
+                    )}
+                  </Td>
                   <Td className="text-right text-ink-soft">{fmtKg(r.car_kg)}</Td>
                   <Td className="text-right text-ink-soft">{fmtKg(r.truck_kg)}</Td>
                   <Td className="text-right text-ink-soft">{fmtKg(r.special_kg)}</Td>

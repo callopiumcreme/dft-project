@@ -99,6 +99,30 @@ export function apiGet<T>(path: string, opts?: ApiOptions): Promise<T> {
   return request<T>('GET', path, undefined, opts);
 }
 
+export interface ApiFetchOptions {
+  method?: string;
+  query?: ApiOptions['query'];
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+  noAuth?: boolean;
+  token?: string;
+  cache?: RequestCache;
+  body?: BodyInit | null;
+}
+
+export async function apiFetch(path: string, init: ApiFetchOptions = {}): Promise<Response> {
+  const headers: Record<string, string> = { ...(init.headers ?? {}) };
+  const token = resolveToken({ noAuth: init.noAuth, token: init.token });
+  if (token && !headers.Authorization) headers.Authorization = `Bearer ${token}`;
+  return fetch(buildUrl(path, init.query), {
+    method: init.method ?? 'GET',
+    headers,
+    body: init.body ?? undefined,
+    signal: init.signal,
+    cache: init.cache ?? 'no-store',
+  });
+}
+
 export function apiPost<T>(path: string, body?: unknown, opts?: ApiOptions): Promise<T> {
   return request<T>('POST', path, body, opts);
 }
