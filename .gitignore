@@ -12,8 +12,15 @@ secrets/
 *.csv
 data/
 !backend/alembic/versions/data/
+!backend/app/data/
+!backend/app/data/**
 client-data/
 imports/
+
+# eRSV scratch artefacts (rendering smoke-test outputs)
+/ersv_test.html
+/ersv_test.pdf
+/ersv_test_v2.pdf
 
 # --- Python ---
 __pycache__/
