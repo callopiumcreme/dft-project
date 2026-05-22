@@ -21,7 +21,7 @@ function safeNext(raw: unknown): string {
 }
 
 export async function loginAction(_prev: LoginState, fd: FormData): Promise<LoginState> {
-  const email = String(fd.get('email') ?? '').trim();
+  const email = String(fd.get('email') ?? '').trim().toLowerCase();
   const password = String(fd.get('password') ?? '');
   const next = safeNext(fd.get('next'));
 
