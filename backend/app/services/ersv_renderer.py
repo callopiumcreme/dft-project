@@ -34,13 +34,12 @@ Outbound eRSV (OisteBio → Crown Oil):
          2026 still gets ``CO/25/...``.
   seq  = 1-based sequential counter per year, zero-padded to 3 digits.
          Counter is independent per year — ``CO/25/...`` and ``CO/26/...``
-         each maintain their own sequence.
+         each maintain their own sequence. Per-year starting offset is
+         applied via ``_OUTBOUND_START_SEQ`` (e.g. 2025 starts at 007 per
+         cliente direction 2026-05-23, positions 001-006 reserved/used
+         outside this system).
 
-Example: ``CO/25/007``
-
-OPEN ITEM for cliente: the proposta doc shows ``CO/25/007/...`` — the
-trailing ``...`` segment is not yet defined (quarter? buyer code? week?).
-Current implementation uses 3 segments only.  Confirm before going live.
+Example: ``CO/25/007`` (first 2025 outbound), ``CO/25/008`` (second), …
 
 Allocation is idempotent: once ``consignment.ersv_outbound_no`` is set it
 is never auto-changed by a render call.  Admin-only ``regenerate`` endpoint
@@ -609,16 +608,26 @@ class ConsignmentNotFoundError(LookupError):
 
 _NEXT_SEQ_SQL = text(
     """
-    SELECT COALESCE(
-        MAX(
-            CAST(split_part(ersv_outbound_no, '/', 3) AS integer)
-        ), 0
-    ) + 1
+    SELECT GREATEST(
+        COALESCE(
+            MAX(CAST(split_part(ersv_outbound_no, '/', 3) AS integer)),
+            0
+        ) + 1,
+        :min_start
+    )
     FROM consignment
     WHERE ersv_outbound_no LIKE :pattern
       AND deleted_at IS NULL
     """
 )
+
+# Per-year starting sequence offsets for outbound numbering.
+# Cliente direction (2026-05-23): first 2025 outbound = ``CO/25/007``
+# (positions 001-006 reserved/used outside this system). Years not listed
+# fall back to seq starting at 1.
+_OUTBOUND_START_SEQ: dict[str, int] = {
+    "25": 7,
+}
 
 # Pick the year that the shipment / consignment belongs to. The ``yy`` segment
 # of ``CO/{yy}/{seq:03d}`` must reflect the consignment's actual year — NOT
@@ -669,13 +678,18 @@ async def _allocate_outbound_no(year_2digit: str, db: AsyncSession) -> str:
     """Return the next available CO/{yy}/{seq:03d} string for the given year.
 
     Pattern-matches existing ``consignment.ersv_outbound_no`` values of the
-    form ``CO/{yy}/%`` and returns MAX(seq)+1. The ``seq`` counter is
-    per-year (independent of other years), so ``CO/25/...`` and ``CO/26/...``
-    each maintain their own sequence. Thread-safe only within a single
-    transaction — callers must commit before releasing the session.
+    form ``CO/{yy}/%`` and returns MAX(seq)+1, floored at the year's starting
+    offset (see ``_OUTBOUND_START_SEQ``). The ``seq`` counter is per-year
+    (independent of other years), so ``CO/25/...`` and ``CO/26/...`` each
+    maintain their own sequence. Thread-safe only within a single transaction
+    — callers must commit before releasing the session.
     """
     pattern = f"CO/{year_2digit}/%"
-    result = await db.execute(_NEXT_SEQ_SQL, {"pattern": pattern})
+    min_start = _OUTBOUND_START_SEQ.get(year_2digit, 1)
+    result = await db.execute(
+        _NEXT_SEQ_SQL,
+        {"pattern": pattern, "min_start": min_start},
+    )
     seq: int = result.scalar_one()
     return f"CO/{year_2digit}/{seq:03d}"
 

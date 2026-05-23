@@ -210,6 +210,12 @@ async def test_outbound_number_format(db_session: AsyncSession) -> None:
         f"Expected consecutive sequence: got {no_a} then {no_b}"
     )
 
+    # Starting offset (cliente direction 2026-05-23): 2025 starts at 007.
+    # Any minted 2025 outbound must therefore have seq >= 7.
+    assert seq_a >= 7, (
+        f"Expected seq >= 7 for 2025 (cliente offset), got {no_a!r}"
+    )
+
 
 # ---------------------------------------------------------------------------
 # test_outbound_year_derived_from_shipment_year
@@ -443,3 +449,71 @@ async def test_outbound_pdf_returns_bytes(
     no_header = resp.headers.get("X-Ersv-Outbound-No")
     assert no_header is not None
     assert re.match(r"^CO/\d{2}/\d{3}$", no_header), f"Bad format: {no_header!r}"
+
+
+# ---------------------------------------------------------------------------
+# test_outbound_2025_starts_at_seq_007
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_outbound_2025_starts_at_seq_007(db_session: AsyncSession) -> None:
+    """Cliente direction (2026-05-23): first 2025 outbound = CO/25/007.
+
+    Positions 001-006 are reserved/used outside this system. When the DB has
+    no prior CO/25/* row, the allocator must skip to 007 instead of starting
+    at 001.
+    """
+    from app.services.ersv_renderer import _OUTBOUND_START_SEQ, _allocate_outbound_no
+
+    # Sanity: the offset table actually maps 2025 → 7
+    assert _OUTBOUND_START_SEQ.get("25") == 7, (
+        "Cliente offset for 2025 must be 7 (CO/25/007 is the first outbound)"
+    )
+
+    # Soft-delete any existing CO/25/* rows so the allocator floor is exercised.
+    # We don't lose audit trail: deleted_at is set, original number preserved.
+    # Tombstone the number column so the UNIQUE constraint frees up.
+    await db_session.execute(
+        text(
+            """
+            UPDATE consignment
+            SET deleted_at = NOW(),
+                ersv_outbound_no = ersv_outbound_no || '__expired_' || id::text
+            WHERE ersv_outbound_no LIKE 'CO/25/%'
+              AND deleted_at IS NULL
+            """
+        )
+    )
+    await db_session.commit()
+
+    try:
+        # With zero live CO/25/* rows, MAX(seq)+1 = 1; GREATEST(1, 7) = 7
+        next_no = await _allocate_outbound_no("25", db_session)
+        assert next_no == "CO/25/007", (
+            f"Expected first 2025 outbound = CO/25/007 (cliente offset), got {next_no!r}"
+        )
+
+        # 2026 has no offset → default starts at 001
+        next_no_2026 = await _allocate_outbound_no("26", db_session)
+        # Only assert format + seq < 7 (i.e. no offset applied for 2026)
+        assert re.match(r"^CO/26/\d{3}$", next_no_2026), (
+            f"Bad format: {next_no_2026!r}"
+        )
+        seq_2026 = int(next_no_2026.split("/")[2])
+        assert seq_2026 < 7 or seq_2026 == 1, (
+            f"2026 must not inherit 2025 offset; got seq {seq_2026}"
+        )
+    finally:
+        # Restore any rows we tombstoned so other tests aren't affected
+        await db_session.execute(
+            text(
+                """
+                UPDATE consignment
+                SET deleted_at = NULL,
+                    ersv_outbound_no = split_part(ersv_outbound_no, '__expired_', 1)
+                WHERE ersv_outbound_no LIKE 'CO/25/%\\_\\_expired\\_%' ESCAPE '\\'
+                """
+            )
+        )
+        await db_session.commit()
