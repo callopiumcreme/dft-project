@@ -150,8 +150,8 @@ def _load_branding(supplier_code: str) -> dict[str, Any]:
 def _pct(numerator: object, denominator: object) -> str:
     """Format ``num/den`` as ``42,15 %`` with EU comma decimal."""
     try:
-        n = float(numerator) if numerator is not None else 0.0
-        d = float(denominator) if denominator is not None else 0.0
+        n = float(numerator) if numerator is not None else 0.0  # type: ignore[arg-type]
+        d = float(denominator) if denominator is not None else 0.0  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return _PLACEHOLDER
     if d <= 0:

@@ -6,7 +6,7 @@ Soft delete: DELETE sets deleted_at = NOW(), never removes DB row.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -150,7 +150,7 @@ async def soft_delete_off_taker(
     """Soft delete (sets deleted_at). Admin only. DB row is never removed."""
     obj = await _get_or_404(db, off_taker_id)
     old = model_snapshot(obj)
-    obj.deleted_at = datetime.utcnow()
+    obj.deleted_at = datetime.now(UTC).replace(tzinfo=None)
     await db.flush()
     await db.refresh(obj)
     await write_audit(

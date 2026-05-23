@@ -19,7 +19,7 @@ Business rules validated before DB insert:
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -90,7 +90,7 @@ def _validate_leg_mass_balance(body: ShipmentLegCreate) -> None:
     """
     if body.kg_in < body.kg_out:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
                 f"kg_in ({body.kg_in}) must be >= kg_out ({body.kg_out}): "
                 "mass cannot be created in a shipment leg"
@@ -99,7 +99,7 @@ def _validate_leg_mass_balance(body: ShipmentLegCreate) -> None:
     if body.leg_type.value == "utb_transload":
         if body.kg_stock_residual is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(
                     "kg_stock_residual is required for leg_type='utb_transload': "
                     "the UTB residual stock must be explicitly accounted for"
@@ -109,7 +109,7 @@ def _validate_leg_mass_balance(body: ShipmentLegCreate) -> None:
         # Allow small float drift; we use Decimal so compare directly
         if body.kg_out != expected_out:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(
                     f"For utb_transload: kg_in ({body.kg_in}) must equal "
                     f"kg_out ({body.kg_out}) + kg_stock_residual ({body.kg_stock_residual}). "
@@ -279,7 +279,7 @@ async def soft_delete_leg(
     """Soft delete a leg (sets deleted_at). Admin only. DB row is never removed."""
     obj = await _get_leg_or_404(db, leg_id)
     old = model_snapshot(obj)
-    obj.deleted_at = datetime.utcnow()
+    obj.deleted_at = datetime.now(UTC).replace(tzinfo=None)
     await db.flush()
     await db.refresh(obj)
     await write_audit(
