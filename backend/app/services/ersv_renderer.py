@@ -20,6 +20,25 @@ multiple rows match, the renderer logs a warning and returns the first.
 The PDF render is dispatched via ``anyio.to_thread.run_sync`` because
 WeasyPrint is CPU-bound and would otherwise block the event loop for
 hundreds of milliseconds on every request.
+
+Outbound eRSV (OisteBio → Crown Oil):
+--------------------------------------
+``render_ersv_outbound`` generates an outbound declaration keyed on a
+``consignment_id``.  Numbering format: ``CO/{yy}/{seq:03d}``
+
+  CO   = Colombia (country of dispatch / OisteBio operations)
+  yy   = 2-digit year   (e.g. 25 for 2025)
+  seq  = 1-based sequential counter per year, zero-padded to 3 digits
+
+Example: ``CO/25/007``
+
+OPEN ITEM for cliente: the proposta doc shows ``CO/25/007/...`` — the
+trailing ``...`` segment is not yet defined (quarter? buyer code? week?).
+Current implementation uses 3 segments only.  Confirm before going live.
+
+Allocation is idempotent: once ``consignment.ersv_outbound_no`` is set it
+is never auto-changed by a render call.  Admin-only ``regenerate`` endpoint
+is the only path that can assign a new number.
 """
 
 from __future__ import annotations
@@ -27,11 +46,12 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 import tempfile
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import anyio.to_thread
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -512,12 +532,383 @@ async def render_ersv_to_pdf(
     )
 
 
+# ---------------------------------------------------------------------------
+# Outbound eRSV — numbering, data structures, renderer
+# ---------------------------------------------------------------------------
+
+# Format: CO/{yy}/{seq:03d}
+# CO  = Colombia (country of dispatch / OisteBio plant)
+# yy  = 2-digit year (e.g. "25")
+# seq = 1-based sequential counter per year, 3 digits zero-padded
+#
+# OPEN ITEM: proposta §0 Q2 shows "CO/25/007/..." — trailing segment TBD.
+# Current implementation: 3 segments only. Confirm with cliente before go-live.
+_OUTBOUND_NO_RE = re.compile(r"^CO/(\d{2})/(\d{3})$")
+_OUTBOUND_TEMPLATE = "ersv_outbound.html"
+
+# OisteBio issuer constants (Swiss GmbH, Baar — memory confirmed)
+_OISTEBIO_NAME = "OisteBio GmbH"
+_OISTEBIO_ADDRESS = "Oberneuhofstrasse 5, 6340 Baar, Switzerland"
+_OISTEBIO_EMAIL = "info@oistebio.ch"
+_OISTEBIO_VAT = "CHE-234.625.162 MWSt"
+_OISTEBIO_PLANT = "Cra. 9 #32, Girardot, Cundinamarca — Colombia"
+_OISTEBIO_SIGNATORY = "Paolo Ughetti"  # CEO (memory: Geschäftsführer + chairman)
+
+# Product constants — DEV-P100 refined pyrolysis oil density
+_DEV_P100_DENSITY_KG_PER_L: float = 0.78  # kg/L; litres = kg / 0.78
+
+# Feedstock — ALWAYS end-of-life tyres (ELT), NEVER "plastic"
+_FEEDSTOCK_CATEGORY = "end-of-life tyres (ELT)"
+_FEEDSTOCK_COUNTRY = "Colombia"
+
+# ISCC GHG values from the real PoS (OISCRO-0013-25, page 2)
+_GHG_EP = "12.33"   # Ep — processing
+_GHG_ETD = "4.63"  # Etd — transport
+_GHG_TOTAL = "16.95"  # gCO2eq/MJ
+_GHG_SAVING_PCT = "81.96%"
+
+
+@dataclass(frozen=True, slots=True)
+class ErsvOutboundHtmlArtifact:
+    """Outcome of a successful outbound eRSV HTML render."""
+
+    html: str
+    consignment_id: int
+    ersv_outbound_no: str
+
+
+@dataclass(frozen=True, slots=True)
+class ErsvOutboundPdfArtifact:
+    """Outcome of a successful outbound eRSV PDF render."""
+
+    pdf_bytes: bytes
+    pdf_sha256: str
+    page_count: int
+    consignment_id: int
+    ersv_outbound_no: str
+    rendered_at: datetime
+
+
+class ConsignmentNotFoundError(LookupError):
+    """Raised when consignment_id is not present or soft-deleted."""
+
+    def __init__(self, consignment_id: int) -> None:
+        super().__init__(f"Consignment not found: {consignment_id}")
+        self.consignment_id = consignment_id
+
+
+# ---------------------------------------------------------------------------
+# Numbering helper
+# ---------------------------------------------------------------------------
+
+_NEXT_SEQ_SQL = text(
+    """
+    SELECT COALESCE(
+        MAX(
+            CAST(split_part(ersv_outbound_no, '/', 3) AS integer)
+        ), 0
+    ) + 1
+    FROM consignment
+    WHERE ersv_outbound_no LIKE :pattern
+      AND deleted_at IS NULL
+    """
+)
+
+
+async def _allocate_outbound_no(year_2digit: str, db: AsyncSession) -> str:
+    """Return the next available CO/{yy}/{seq:03d} string for the given year.
+
+    Pattern-matches existing ``consignment.ersv_outbound_no`` values of the
+    form ``CO/{yy}/%`` and returns MAX(seq)+1. Thread-safe only within a
+    single transaction — callers must commit before releasing the session.
+    """
+    pattern = f"CO/{year_2digit}/%"
+    result = await db.execute(_NEXT_SEQ_SQL, {"pattern": pattern})
+    seq: int = result.scalar_one()
+    return f"CO/{year_2digit}/{seq:03d}"
+
+
+# ---------------------------------------------------------------------------
+# Data fetch SQL for outbound rendering
+# ---------------------------------------------------------------------------
+
+_FETCH_CONSIGNMENT_SQL = text(
+    """
+    SELECT
+        c.id,
+        c.code,
+        c.off_taker_id,
+        c.contract_ref,
+        c.product_grade,
+        c.prod_date_from,
+        c.prod_date_to,
+        c.total_kg,
+        c.ersv_outbound_no,
+        c.port_rsv_no,
+        c.status,
+        c.notes,
+        c.updated_at,
+        -- off_taker fields
+        ot.code   AS off_taker_code,
+        ot.name   AS off_taker_name,
+        ot.country AS off_taker_country,
+        ot.address AS off_taker_address
+    FROM consignment c
+    JOIN off_taker ot ON ot.id = c.off_taker_id
+    WHERE c.id = :cid
+      AND c.deleted_at IS NULL
+    """
+)
+
+_FETCH_LEGS_SQL = text(
+    """
+    SELECT id, seq, leg_type, document_type, document_ref,
+           document_date, carrier, origin_node, destination_node,
+           kg_in, kg_out, kg_stock_residual, notes
+    FROM shipment_leg
+    WHERE consignment_id = :cid
+      AND deleted_at IS NULL
+    ORDER BY seq ASC
+    """
+)
+
+_FETCH_POS_SQL = text(
+    """
+    SELECT pos_number, pdf_ref, kg_net
+    FROM consignment_pos
+    WHERE consignment_id = :cid
+    ORDER BY pos_number ASC
+    """
+)
+
+
+def _fmt_kg_short(value: object) -> str:
+    """Format Decimal/float as ``1 234,567 kg`` (3 decimal, EU style) or ``—``."""
+    if value is None:
+        return _PLACEHOLDER
+    try:
+        return f"{_format_thousands(float(value), decimals=3)} kg"  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return _PLACEHOLDER
+
+
+def _derive_litres(kg: object) -> str:
+    """Derive litres from kg at DEV-P100 density 0.78 kg/L."""
+    if kg is None:
+        return _PLACEHOLDER
+    try:
+        litres = float(kg) / _DEV_P100_DENSITY_KG_PER_L  # type: ignore[arg-type]
+        return f"{_format_thousands(litres, decimals=0)} L"
+    except (TypeError, ValueError, ZeroDivisionError):
+        return _PLACEHOLDER
+
+
+def _build_outbound_context(
+    cons: dict[str, Any],
+    legs: list[dict[str, Any]],
+    pos_list: list[dict[str, Any]],
+    issue_date: date,
+) -> dict[str, Any]:
+    """Assemble the Jinja2 context for the outbound eRSV template."""
+    total_kg = cons.get("total_kg")
+    prod_from = cons.get("prod_date_from")
+    prod_to = cons.get("prod_date_to")
+
+    generated_at = datetime.now(UTC)
+
+    return {
+        # Document identity
+        "ersv_outbound_no": cons["ersv_outbound_no"],
+        "issue_date_eu": issue_date.strftime("%d/%m/%Y"),
+        "issue_date_iso": issue_date.isoformat(),
+        "generated_at_human": generated_at.strftime("%d/%m/%Y %H:%M UTC"),
+        # Issuer — OisteBio (Swiss GmbH, Baar)
+        "issuer_name": _OISTEBIO_NAME,
+        "issuer_address": _OISTEBIO_ADDRESS,
+        "issuer_email": _OISTEBIO_EMAIL,
+        "issuer_vat": _OISTEBIO_VAT,
+        "issuer_plant": _OISTEBIO_PLANT,
+        "signatory_name": _OISTEBIO_SIGNATORY,
+        "signing_place": "Baar, Switzerland",
+        # Buyer — Crown Oil (from off_taker DB row)
+        "buyer_name": cons.get("off_taker_name") or "Crown Oil Ltd",
+        "buyer_code": cons.get("off_taker_code") or "CROWN-OIL-UK",
+        "buyer_country": cons.get("off_taker_country") or "GB",
+        "buyer_address": cons.get("off_taker_address") or "Bury, UK",
+        # Consignment
+        "consignment_code": cons["code"],
+        "consignment_id": cons["id"],
+        "product_grade": cons.get("product_grade") or "DEV-P100",
+        "contract_ref": cons.get("contract_ref") or _PLACEHOLDER,
+        "port_rsv_no": cons.get("port_rsv_no") or _PLACEHOLDER,
+        "status": cons.get("status") or _PLACEHOLDER,
+        # Quantities
+        "total_kg_str": _fmt_kg_short(total_kg),
+        "total_litres_str": _derive_litres(total_kg),
+        # Production window
+        "prod_date_from": prod_from.strftime("%d/%m/%Y") if prod_from else _PLACEHOLDER,
+        "prod_date_to": prod_to.strftime("%d/%m/%Y") if prod_to else _PLACEHOLDER,
+        # Sustainability
+        "feedstock_category": _FEEDSTOCK_CATEGORY,
+        "feedstock_country": _FEEDSTOCK_COUNTRY,
+        "ghg_ep": _GHG_EP,
+        "ghg_etd": _GHG_ETD,
+        "ghg_total": _GHG_TOTAL,
+        "ghg_saving_pct": _GHG_SAVING_PCT,
+        # Chain of custody legs
+        "legs": legs,
+        # Proof-of-Sustainability list
+        "pos_list": pos_list,
+        "pos_count": len(pos_list),
+        # Formatting helpers (called in template via filters)
+        "placeholder": _PLACEHOLDER,
+        # Style constants — mirror inbound palette
+        "primary_color": "#1a3a5c",
+        "version_label": "eRSV-OUT v.2025.1.0",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Sync PDF render (worker thread)
+# ---------------------------------------------------------------------------
+
+
+def _render_outbound_pdf_sync(
+    context: dict[str, Any], output_path: Path
+) -> tuple[bytes, str, int]:
+    """Blocking PDF render for outbound eRSV — invoked from worker thread."""
+    result = render_to_pdf(
+        f"reports/{_OUTBOUND_TEMPLATE}",
+        context,
+        output_path,
+        filters={"fmt_kg": _fmt_kg, "fmt_kg_short": _fmt_kg_short},
+        full_fonts=False,  # ephemeral/advisory document — no SHA anchoring required
+    )
+    pdf_bytes = result.pdf_path.read_bytes()
+    return pdf_bytes, result.pdf_sha256, result.page_count
+
+
+# ---------------------------------------------------------------------------
+# Public outbound renderer API
+# ---------------------------------------------------------------------------
+
+
+async def render_ersv_outbound(
+    consignment_id: int,
+    db: AsyncSession,
+    format: Literal["html", "pdf"] = "html",
+    *,
+    issue_date: date | None = None,
+    force_new_no: bool = False,
+) -> ErsvOutboundHtmlArtifact | ErsvOutboundPdfArtifact:
+    """Render an outbound eRSV for the given consignment.
+
+    Args:
+        consignment_id: PK of the ``consignment`` row.
+        db:             Active async DB session.
+        format:         ``"html"`` (default) or ``"pdf"``.
+        issue_date:     Override the issue date printed on the document;
+                        defaults to today (UTC).
+        force_new_no:   When ``True``, allocate a brand-new ``ersv_outbound_no``
+                        even if one is already stored — used by the admin
+                        ``/regenerate`` endpoint.  WARNING: permanently
+                        replaces the stored number.
+
+    Raises:
+        ConsignmentNotFoundError: if the consignment does not exist or is soft-deleted.
+    """
+    if issue_date is None:
+        issue_date = datetime.now(UTC).date()
+
+    # --- Load consignment + off_taker ---
+    result = await db.execute(_FETCH_CONSIGNMENT_SQL, {"cid": consignment_id})
+    row = result.mappings().one_or_none()
+    if row is None:
+        raise ConsignmentNotFoundError(consignment_id)
+    cons = dict(row)
+
+    # --- Idempotent number allocation ---
+    existing_no: str | None = cons.get("ersv_outbound_no")
+    if existing_no is None or force_new_no:
+        yy = issue_date.strftime("%y")
+        new_no = await _allocate_outbound_no(yy, db)
+        # Persist immediately so concurrent renders don't get the same number
+        await db.execute(
+            text(
+                "UPDATE consignment SET ersv_outbound_no = :no, updated_at = NOW() "
+                "WHERE id = :cid"
+            ),
+            {"no": new_no, "cid": consignment_id},
+        )
+        await db.commit()
+        cons["ersv_outbound_no"] = new_no
+    # else: already set — leave untouched (idempotent)
+
+    # --- Load legs + PoS ---
+    legs_result = await db.execute(_FETCH_LEGS_SQL, {"cid": consignment_id})
+    legs: list[dict[str, Any]] = [dict(r) for r in legs_result.mappings().all()]
+    # Format kg values for template display
+    for leg in legs:
+        leg["kg_in_str"] = _fmt_kg_short(leg.get("kg_in"))
+        leg["kg_out_str"] = _fmt_kg_short(leg.get("kg_out"))
+        doc_date = leg.get("document_date")
+        leg["document_date_eu"] = (
+            doc_date.strftime("%d/%m/%Y") if doc_date is not None else _PLACEHOLDER
+        )
+
+    pos_result = await db.execute(_FETCH_POS_SQL, {"cid": consignment_id})
+    pos_list: list[dict[str, Any]] = [dict(r) for r in pos_result.mappings().all()]
+    for pos in pos_list:
+        pos["kg_net_str"] = _fmt_kg_short(pos.get("kg_net"))
+
+    # --- Build Jinja context ---
+    context = _build_outbound_context(cons, legs, pos_list, issue_date)
+
+    # --- HTML render ---
+    env = Environment(
+        loader=FileSystemLoader(str(TEMPLATES_DIR)),
+        autoescape=select_autoescape(("html", "htm", "xml")),
+        keep_trailing_newline=True,
+    )
+    env.filters["fmt_kg"] = _fmt_kg
+    env.filters["fmt_kg_short"] = _fmt_kg_short
+    template = env.get_template(f"reports/{_OUTBOUND_TEMPLATE}")
+    html = template.render(**context)
+
+    if format == "html":
+        return ErsvOutboundHtmlArtifact(
+            html=html,
+            consignment_id=consignment_id,
+            ersv_outbound_no=cons["ersv_outbound_no"],
+        )
+
+    # --- PDF render ---
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_pdf = Path(tmpdir) / f"ersv_outbound_{consignment_id}.pdf"
+        pdf_bytes, sha256_hex, page_count = await anyio.to_thread.run_sync(
+            _render_outbound_pdf_sync, context, tmp_pdf
+        )
+
+    return ErsvOutboundPdfArtifact(
+        pdf_bytes=pdf_bytes,
+        pdf_sha256=sha256_hex,
+        page_count=page_count,
+        consignment_id=consignment_id,
+        ersv_outbound_no=cons["ersv_outbound_no"],
+        rendered_at=datetime.now(UTC),
+    )
+
+
 __all__ = [
+    "ConsignmentNotFoundError",
     "ErsvHtmlArtifact",
     "ErsvNotFoundError",
+    "ErsvOutboundHtmlArtifact",
+    "ErsvOutboundPdfArtifact",
     "ErsvRenderArtifact",
     "fetch_ersv_row",
     "is_regenerated",
+    "render_ersv_outbound",
     "render_ersv_to_html",
     "render_ersv_to_pdf",
 ]
