@@ -27,8 +27,14 @@ Outbound eRSV (OisteBio → Crown Oil):
 ``consignment_id``.  Numbering format: ``CO/{yy}/{seq:03d}``
 
   CO   = Colombia (country of dispatch / OisteBio operations)
-  yy   = 2-digit year   (e.g. 25 for 2025)
-  seq  = 1-based sequential counter per year, zero-padded to 3 digits
+  yy   = 2-digit year of the **shipment / consignment** (NOT the wall
+         clock at minting time) — derived from ``prod_date_to`` (preferred),
+         ``prod_date_from``, first ``shipment_leg.document_date``, or
+         ``created_at`` in that order. A Q3 2025 consignment minted in
+         2026 still gets ``CO/25/...``.
+  seq  = 1-based sequential counter per year, zero-padded to 3 digits.
+         Counter is independent per year — ``CO/25/...`` and ``CO/26/...``
+         each maintain their own sequence.
 
 Example: ``CO/25/007``
 
@@ -614,13 +620,59 @@ _NEXT_SEQ_SQL = text(
     """
 )
 
+# Pick the year that the shipment / consignment belongs to. The ``yy`` segment
+# of ``CO/{yy}/{seq:03d}`` must reflect the consignment's actual year — NOT
+# the wall-clock year at minting time. Priority order:
+#   1. ``consignment.prod_date_to``        — end of production window (export date proxy)
+#   2. ``consignment.prod_date_from``      — start of production window
+#   3. min(``shipment_leg.document_date``) — first bl_ocean / seq=1 leg
+#   4. ``consignment.created_at``          — DB row creation
+#   5. ``datetime.now(UTC)``               — last-resort fallback
+_FETCH_SHIPMENT_YEAR_SQL = text(
+    """
+    SELECT
+        c.prod_date_to,
+        c.prod_date_from,
+        c.created_at,
+        (
+            SELECT MIN(sl.document_date)
+            FROM shipment_leg sl
+            WHERE sl.consignment_id = c.id
+              AND sl.deleted_at IS NULL
+              AND (sl.seq = 1 OR sl.leg_type = 'bl_ocean')
+        ) AS first_leg_date
+    FROM consignment c
+    WHERE c.id = :cid
+      AND c.deleted_at IS NULL
+    """
+)
+
+
+async def _shipment_year_for(consignment_id: int, db: AsyncSession) -> int:
+    """Return the year that the consignment's outbound eRSV should be keyed on.
+
+    See ``_FETCH_SHIPMENT_YEAR_SQL`` for the priority order. Raises
+    ``ConsignmentNotFoundError`` if the row is missing or soft-deleted.
+    """
+    result = await db.execute(_FETCH_SHIPMENT_YEAR_SQL, {"cid": consignment_id})
+    row = result.mappings().one_or_none()
+    if row is None:
+        raise ConsignmentNotFoundError(consignment_id)
+    for key in ("prod_date_to", "prod_date_from", "first_leg_date", "created_at"):
+        value = row[key]
+        if value is not None:
+            return int(value.year)
+    return int(datetime.now(UTC).year)
+
 
 async def _allocate_outbound_no(year_2digit: str, db: AsyncSession) -> str:
     """Return the next available CO/{yy}/{seq:03d} string for the given year.
 
     Pattern-matches existing ``consignment.ersv_outbound_no`` values of the
-    form ``CO/{yy}/%`` and returns MAX(seq)+1. Thread-safe only within a
-    single transaction — callers must commit before releasing the session.
+    form ``CO/{yy}/%`` and returns MAX(seq)+1. The ``seq`` counter is
+    per-year (independent of other years), so ``CO/25/...`` and ``CO/26/...``
+    each maintain their own sequence. Thread-safe only within a single
+    transaction — callers must commit before releasing the session.
     """
     pattern = f"CO/{year_2digit}/%"
     result = await db.execute(_NEXT_SEQ_SQL, {"pattern": pattern})
@@ -830,7 +882,11 @@ async def render_ersv_outbound(
     # --- Idempotent number allocation ---
     existing_no: str | None = cons.get("ersv_outbound_no")
     if existing_no is None or force_new_no:
-        yy = issue_date.strftime("%y")
+        # Derive ``yy`` from the consignment's shipment year, NOT the wall
+        # clock — a 2025 Q3 consignment minted in 2026 must still produce
+        # ``CO/25/...``. See ``_shipment_year_for`` for the priority order.
+        shipment_year = await _shipment_year_for(consignment_id, db)
+        yy = f"{shipment_year % 100:02d}"
         new_no = await _allocate_outbound_no(yy, db)
         # Persist immediately so concurrent renders don't get the same number
         await db.execute(

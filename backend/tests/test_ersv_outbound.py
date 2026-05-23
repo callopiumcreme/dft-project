@@ -2,6 +2,8 @@
 
 Test matrix:
   - test_outbound_number_format: helper allocates CO/25/001, then CO/25/002
+  - test_outbound_year_derived_from_shipment_year: a 2025 consignment minted
+    in 2026 produces ``CO/25/...`` (regression: not wall-clock year).
   - test_outbound_idempotent_number: rendering same consignment twice keeps same no.
   - test_outbound_html_contains_buyer_and_pos: HTML for CONS-2025-Q3-CROWN has
     "Crown Oil" and at least one "OISCRO-" PoS string.
@@ -19,12 +21,8 @@ surfaces them clearly.
 from __future__ import annotations
 
 import os
-
-# Environment must be set before any app import
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://dft:testonly@172.22.0.2:5432/dft")
-os.environ.setdefault("JWT_SECRET", "changeme-dft-secret-key-2026")
-
 import re
+from typing import AsyncIterator
 
 import pytest
 import pytest_asyncio
@@ -36,15 +34,16 @@ from sqlalchemy.pool import NullPool
 from app.db.session import get_db
 from app.main import app
 
+# DATABASE_URL / JWT_SECRET + auth-bypass override are configured by conftest.py.
 _engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
 _factory: async_sessionmaker[AsyncSession] = async_sessionmaker(_engine, expire_on_commit=False)
 
 # ---------------------------------------------------------------------------
-# DB / HTTP session overrides
+# DB session override (auth override is installed by conftest.py)
 # ---------------------------------------------------------------------------
 
 
-async def _override_get_db():  # type: ignore[return]
+async def _override_get_db() -> AsyncIterator[AsyncSession]:
     async with _factory() as session:
         yield session
 
@@ -53,72 +52,12 @@ app.dependency_overrides[get_db] = _override_get_db
 
 
 @pytest_asyncio.fixture
-async def client() -> AsyncClient:  # type: ignore[misc]
+async def client() -> AsyncIterator[AsyncClient]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        yield ac  # type: ignore[misc]
+        yield ac
 
 
-@pytest_asyncio.fixture
-async def db_session() -> AsyncSession:  # type: ignore[misc]
-    async with _factory() as session:
-        yield session  # type: ignore[misc]
-
-
-@pytest_asyncio.fixture
-async def admin_token(client: AsyncClient) -> str:
-    resp = await client.post(
-        "/auth/login",
-        json={"email": "admin@dft-project.com", "password": "changeme"},
-    )
-    assert resp.status_code == 200, f"admin login failed: {resp.text}"
-    return str(resp.json()["access_token"])
-
-
-@pytest_asyncio.fixture
-async def admin_headers(admin_token: str) -> dict[str, str]:
-    return {"Authorization": f"Bearer {admin_token}"}
-
-
-@pytest_asyncio.fixture
-async def operator_token(client: AsyncClient) -> str:
-    """Obtain a JWT for the operator user if it exists; otherwise create one via admin."""
-    # Try the known operator user first; fall back to admin credentials for creation.
-    resp = await client.post(
-        "/auth/login",
-        json={"email": "operator@dft-project.com", "password": "changeme"},
-    )
-    if resp.status_code == 200:
-        return str(resp.json()["access_token"])
-    # Create a temporary operator for this test run via the admin API
-    admin_resp = await client.post(
-        "/auth/login",
-        json={"email": "admin@dft-project.com", "password": "changeme"},
-    )
-    assert admin_resp.status_code == 200
-    a_token = admin_resp.json()["access_token"]
-    create_resp = await client.post(
-        "/admin/users",
-        json={
-            "email": "operator-test-ersv@dft-project.com",
-            "password": "changeme",
-            "role": "operator",
-        },
-        headers={"Authorization": f"Bearer {a_token}"},
-    )
-    assert create_resp.status_code in (201, 200, 409), (
-        f"could not create operator user: {create_resp.text}"
-    )
-    op_resp = await client.post(
-        "/auth/login",
-        json={"email": "operator-test-ersv@dft-project.com", "password": "changeme"},
-    )
-    assert op_resp.status_code == 200
-    return str(op_resp.json()["access_token"])
-
-
-@pytest_asyncio.fixture
-async def operator_headers(operator_token: str) -> dict[str, str]:
-    return {"Authorization": f"Bearer {operator_token}"}
+# admin_headers / operator_headers / db_session come from conftest.py.
 
 
 # ---------------------------------------------------------------------------
@@ -149,19 +88,42 @@ async def _create_scratch_consignment(
     code: str,
     *,
     clear_outbound_no: bool = False,
+    prod_date_from: str = "2025-06-01",
+    prod_date_to: str = "2025-08-31",
 ) -> int:
-    """Insert (or reuse) a minimal consignment for testing. Returns its id."""
+    """Insert (or reuse) a minimal consignment for testing. Returns its id.
+
+    ``prod_date_from`` / ``prod_date_to`` default to a Q3 2025 window so
+    minted ``ersv_outbound_no`` values land in the ``CO/25/...`` family
+    regardless of the wall-clock year at test time.
+    """
+    from datetime import date as _date
+
+    pdf_obj = _date.fromisoformat(prod_date_from)
+    pdt_obj = _date.fromisoformat(prod_date_to)
     await db.execute(
         text(
             """
             INSERT INTO consignment
-                (code, off_taker_id, product_grade, status, total_kg, created_at, updated_at)
+                (code, off_taker_id, product_grade, status, total_kg,
+                 prod_date_from, prod_date_to, created_at, updated_at)
             VALUES
-                (:code, :ot_id, 'DEV-P100', 'draft', 10000.000, NOW(), NOW())
-            ON CONFLICT (code) DO UPDATE SET updated_at = NOW()
+                (:code, :ot_id, 'DEV-P100', 'draft', 10000.000,
+                 :pdf, :pdt, NOW(), NOW())
+            ON CONFLICT (code) DO UPDATE
+                SET updated_at      = NOW(),
+                    prod_date_from  = EXCLUDED.prod_date_from,
+                    prod_date_to    = EXCLUDED.prod_date_to,
+                    -- Resurrect rows soft-deleted by a previous test run
+                    deleted_at      = NULL
             """
         ),
-        {"code": code, "ot_id": crown_oil_id},
+        {
+            "code": code,
+            "ot_id": crown_oil_id,
+            "pdf": pdf_obj,
+            "pdt": pdt_obj,
+        },
     )
     if clear_outbound_no:
         await db.execute(
@@ -186,7 +148,7 @@ async def _create_scratch_consignment(
 
 @pytest.mark.asyncio
 async def test_outbound_number_format(db_session: AsyncSession) -> None:
-    """Number helper allocates CO/25/001, then CO/25/002 for the same year."""
+    """Number helper allocates CO/25/NNN, then CO/25/NNN+1 for the same year."""
     from app.services.ersv_renderer import _allocate_outbound_no
 
     crown_id = await _ensure_crown_oil(db_session)
@@ -196,10 +158,12 @@ async def test_outbound_number_format(db_session: AsyncSession) -> None:
     code_b = "CONS-ERSV-OUT-NUM-B"
 
     id_a = await _create_scratch_consignment(
-        db_session, crown_id, code_a, clear_outbound_no=True
+        db_session, crown_id, code_a, clear_outbound_no=True,
+        prod_date_from="2025-06-01", prod_date_to="2025-08-31",
     )
     id_b = await _create_scratch_consignment(
-        db_session, crown_id, code_b, clear_outbound_no=True
+        db_session, crown_id, code_b, clear_outbound_no=True,
+        prod_date_from="2025-06-01", prod_date_to="2025-08-31",
     )
 
     # Clear any prior outbound numbers on these two rows so the counter
@@ -245,6 +209,48 @@ async def test_outbound_number_format(db_session: AsyncSession) -> None:
     assert seq_b == seq_a + 1, (
         f"Expected consecutive sequence: got {no_a} then {no_b}"
     )
+
+
+# ---------------------------------------------------------------------------
+# test_outbound_year_derived_from_shipment_year
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_outbound_year_derived_from_shipment_year(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    db_session: AsyncSession,
+) -> None:
+    """Regression: yy segment comes from consignment shipment year, not wall clock.
+
+    A consignment with ``prod_date_to = 2025-08-31`` minted in 2026 (or any
+    later year) MUST produce ``CO/25/...`` — not ``CO/26/...``.
+
+    This guards against the bug where ``_allocate_outbound_no`` used
+    ``datetime.now().year`` for the ``yy`` segment.
+    """
+    crown_id = await _ensure_crown_oil(db_session)
+    cons_id = await _create_scratch_consignment(
+        db_session,
+        crown_id,
+        "CONS-ERSV-OUT-YEAR-25",
+        clear_outbound_no=True,
+        prod_date_from="2025-06-01",
+        prod_date_to="2025-08-31",
+    )
+
+    resp = await client.get(
+        f"/ersv/outbound/{cons_id}?format=html",
+        headers=admin_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    minted_no = resp.headers.get("X-Ersv-Outbound-No")
+    assert minted_no is not None, "Render must return X-Ersv-Outbound-No header"
+    assert minted_no.startswith("CO/25/"), (
+        f"Expected CO/25/..., got {minted_no!r} — bug: yy taken from wall clock?"
+    )
+    assert re.match(r"^CO/25/\d{3}$", minted_no), f"Bad format: {minted_no!r}"
 
 
 # ---------------------------------------------------------------------------
