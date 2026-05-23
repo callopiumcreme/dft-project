@@ -10,10 +10,7 @@ Tests:
 from __future__ import annotations
 
 import os
-
-# Must be set before any app import
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://dft:testonly@172.22.0.2:5432/dft")
-os.environ.setdefault("JWT_SECRET", "changeme-dft-secret-key-2026")
+from typing import AsyncIterator
 
 import pytest
 import pytest_asyncio
@@ -25,11 +22,12 @@ from sqlalchemy.pool import NullPool
 from app.db.session import get_db
 from app.main import app
 
+# DATABASE_URL / JWT_SECRET + auth-bypass override are configured by conftest.py.
 _engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
 _factory: async_sessionmaker[AsyncSession] = async_sessionmaker(_engine, expire_on_commit=False)
 
 
-async def _override_get_db():  # type: ignore[return]
+async def _override_get_db() -> AsyncIterator[AsyncSession]:
     async with _factory() as session:
         yield session
 
@@ -43,52 +41,21 @@ app.dependency_overrides[get_db] = _override_get_db
 
 
 @pytest_asyncio.fixture
-async def client() -> AsyncClient:  # type: ignore[misc]
+async def client() -> AsyncIterator[AsyncClient]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        yield ac  # type: ignore[misc]
+        yield ac
 
 
 @pytest_asyncio.fixture
-async def admin_token(client: AsyncClient) -> str:
-    """Obtain a JWT for the admin user (admin@dft-project.com)."""
-    resp = await client.post(
-        "/auth/login",
-        json={"email": "admin@dft-project.com", "password": "changeme"},
-    )
-    assert resp.status_code == 200, f"admin login failed: {resp.text}"
-    return str(resp.json()["access_token"])
+async def auth_headers(admin_headers: dict[str, str]) -> dict[str, str]:
+    """Back-compat alias used by tests below — admin-authenticated headers."""
+    return admin_headers
 
 
 @pytest_asyncio.fixture
-async def auth_headers(admin_token: str) -> dict[str, str]:
-    return {"Authorization": f"Bearer {admin_token}"}
-
-
-@pytest_asyncio.fixture
-async def db_session() -> AsyncSession:  # type: ignore[misc]
-    async with _factory() as session:
-        yield session  # type: ignore[misc]
-
-
-# Re-use conftest fixture via direct SQL so we stay independent of conftest
-@pytest_asyncio.fixture
-async def crown_oil_id(db_session: AsyncSession) -> int:
+async def crown_oil_id(crown_oil_off_taker: dict[str, object]) -> int:
     """Ensure Crown Oil UK off_taker exists; return its id."""
-    await db_session.execute(
-        text(
-            """
-            INSERT INTO off_taker (code, name, country, address, created_at, updated_at)
-            VALUES ('CROWN-OIL-UK', 'Crown Oil Ltd', 'GB', 'Bury, UK', NOW(), NOW())
-            ON CONFLICT (code) DO UPDATE
-                SET updated_at = NOW()
-            """
-        )
-    )
-    await db_session.commit()
-    row = await db_session.execute(
-        text("SELECT id FROM off_taker WHERE code = 'CROWN-OIL-UK'")
-    )
-    return int(row.scalar_one())
+    return int(crown_oil_off_taker["id"])
 
 
 # ---------------------------------------------------------------------------

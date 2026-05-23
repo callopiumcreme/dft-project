@@ -23,6 +23,21 @@ Auth bypass:
   role; any other value yields admin. Pre-existing tests that POST to
   ``/auth/login`` still work because the override only kicks in on routes that
   depend on ``_get_current_user`` — ``/auth/login`` does not.
+
+Idempotent test data:
+
+  An autouse fixture (``_cleanup_scratch_rows``) records a baseline ``MAX(id)``
+  on the scratch tables before each test, then **soft-deletes** any new rows
+  matching the test-only code prefixes after the test finishes:
+
+    - ``CONS-TEST-*``, ``CONS-VALIDATE-*``, ``CONS-ERSV-OUT-*``, ``CONS-SOFT-DELETE-*``
+    - ``TEST-BUYER-*``
+
+  Soft-delete (NOT hard-delete) preserves audit trail and respects the
+  project-wide soft-delete invariant. Pos / production_link / shipment_unit
+  rows have no soft-delete column; the autouse fixture hard-deletes them
+  only when their parent consignment is one of the scratch consignments,
+  which is consistent with the FK ON DELETE CASCADE behaviour.
 """
 from __future__ import annotations
 
@@ -36,7 +51,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 
 if TYPE_CHECKING:
-    from app.models.user import User  # noqa: F401
+    from app.models.user import User
 
 # ---------------------------------------------------------------------------
 # Env loading — prefer real .env via python-dotenv, fall back to os.environ
@@ -66,6 +81,30 @@ _engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
 _factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
     _engine, expire_on_commit=False
 )
+
+
+# ---------------------------------------------------------------------------
+# Scratch-row prefixes — kept in one place so all cleanup code agrees.
+# ---------------------------------------------------------------------------
+_SCRATCH_CONSIGNMENT_PREFIXES: tuple[str, ...] = (
+    "CONS-TEST-",
+    "CONS-VALIDATE-",
+    "CONS-ERSV-OUT-",
+    "CONS-SOFT-DELETE-",
+)
+_SCRATCH_OFF_TAKER_PREFIXES: tuple[str, ...] = (
+    "TEST-BUYER-",
+)
+
+
+def _consignment_prefix_clause(column: str = "code") -> str:
+    """Build a SQL ``OR``-chain matching any scratch-consignment prefix."""
+    return " OR ".join(f"{column} LIKE '{p}%'" for p in _SCRATCH_CONSIGNMENT_PREFIXES)
+
+
+def _off_taker_prefix_clause(column: str = "code") -> str:
+    """Build a SQL ``OR``-chain matching any scratch-off_taker prefix."""
+    return " OR ".join(f"{column} LIKE '{p}%'" for p in _SCRATCH_OFF_TAKER_PREFIXES)
 
 
 # ---------------------------------------------------------------------------
@@ -190,3 +229,118 @@ async def crown_oil_off_taker(db_session: AsyncSession) -> dict[str, object]:
     )
     record = row.mappings().one()
     return dict(record)
+
+
+# ---------------------------------------------------------------------------
+# Autouse cleanup — soft-delete scratch rows created during each test.
+# ---------------------------------------------------------------------------
+
+
+async def _purge_scratch_rows(session: AsyncSession) -> None:
+    """Soft-delete + rename-out any rows matching scratch prefixes.
+
+    Soft-deletes the consignment / shipment_leg / off_taker rows AND rewrites
+    their ``code`` to a unique tombstone (``<code>__expired_<id>``) so the
+    next test run can re-use the original code without tripping the unique
+    constraint. Hard-deletes the child shipment_unit / consignment_pos /
+    consignment_production_link rows (no soft-delete column).
+
+    Idempotent: matches by current code prefix, ignores already-tombstoned rows.
+    """
+    cons_clause = _consignment_prefix_clause("code")
+    ot_clause = _off_taker_prefix_clause("code")
+
+    # Collect scratch consignment ids (only those NOT yet tombstoned).
+    cons_ids_result = await session.execute(
+        text(
+            f"""
+            SELECT id FROM consignment
+            WHERE ({cons_clause})
+              AND code NOT LIKE '%__expired_%'
+            """
+        )
+    )
+    scratch_cons_ids: list[int] = [int(r[0]) for r in cons_ids_result.all()]
+
+    if scratch_cons_ids:
+        await session.execute(
+            text(
+                """
+                DELETE FROM shipment_unit
+                WHERE leg_id IN (
+                    SELECT id FROM shipment_leg
+                    WHERE consignment_id = ANY(:cids)
+                )
+                """
+            ),
+            {"cids": scratch_cons_ids},
+        )
+        await session.execute(
+            text("DELETE FROM consignment_pos WHERE consignment_id = ANY(:cids)"),
+            {"cids": scratch_cons_ids},
+        )
+        await session.execute(
+            text(
+                "DELETE FROM consignment_production_link "
+                "WHERE consignment_id = ANY(:cids)"
+            ),
+            {"cids": scratch_cons_ids},
+        )
+        # Soft-delete shipment_leg rows (no code column, so no rename needed).
+        await session.execute(
+            text(
+                "UPDATE shipment_leg SET deleted_at = NOW() "
+                "WHERE consignment_id = ANY(:cids) "
+                "  AND deleted_at IS NULL"
+            ),
+            {"cids": scratch_cons_ids},
+        )
+        # Soft-delete + tombstone-rename consignment rows so the unique
+        # constraint on ``code`` is freed for the next test run.
+        await session.execute(
+            text(
+                """
+                UPDATE consignment
+                SET deleted_at = COALESCE(deleted_at, NOW()),
+                    code       = code || '__expired_' || id
+                WHERE id = ANY(:cids)
+                """
+            ),
+            {"cids": scratch_cons_ids},
+        )
+
+    # Same treatment for scratch off_takers.
+    await session.execute(
+        text(
+            f"""
+            UPDATE off_taker
+            SET deleted_at = COALESCE(deleted_at, NOW()),
+                code       = code || '__expired_' || id
+            WHERE ({ot_clause})
+              AND code NOT LIKE '%__expired_%'
+            """
+        )
+    )
+
+    await session.commit()
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def _cleanup_scratch_rows() -> AsyncIterator[None]:
+    """Soft-delete + tombstone scratch rows BEFORE and AFTER each test.
+
+    - PRE-test:  purge any leftover scratch rows from earlier runs so the
+      unique constraints on ``consignment.code`` / ``off_taker.code`` are
+      free for fresh inserts inside the test.
+    - POST-test: purge again so the DB is clean for the next test.
+
+    Strategy: rows matching a scratch prefix (and not already tombstoned)
+    are soft-deleted AND have their code rewritten to ``<code>__expired_<id>``.
+    This preserves the soft-delete audit trail (deleted_at populated, row
+    still present) while making the original code available again.
+    """
+    async with _factory() as session:
+        await _purge_scratch_rows(session)
+    yield
+    async with _factory() as session:
+        await _purge_scratch_rows(session)
