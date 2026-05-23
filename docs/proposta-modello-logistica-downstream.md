@@ -1,9 +1,28 @@
 # Proposta modello dati — Logistica downstream (D → H)
 
-> **Status:** DRAFT per discussione cliente · **Data:** 2026-05-23
+> **Status:** LOCKED post decisioni cliente · **Data:** 2026-05-23
 > **Prerequisito:** `docs/stato-e-gap-catena.md` (gap analysis)
 > **Scope:** chiudere la gamba a valle (vendita EU → Cartagena → BL transoceanico → UTB BV travaso → MRN UK → consegna Bury)
 > **Vincolo:** non rompere niente di esistente (A–C: `daily_inputs`/`daily_production`/`certificates` restano intatti)
+
+---
+
+## 0. Decisioni cliente (2026-05-23) — LOCKED
+
+| Q | Decisione | Impatto modello |
+|---|-----------|------------------|
+| **Q1** | **b)** tabella ponte M:N `consignment_production_link(consignment_id, prod_date, kg_allocated)` | `daily_production` resta intatto; allocazione kg per consignment via tabella ponte |
+| **Q2** | OisteBio emette suo eRSV outbound. **Formato numerazione esempio:** `CO/25/007/...` (CO=Colombia, 25=anno, 007=seq — formato esatto da confermare) | Estensione renderer eRSV con `direction = outbound`; consignment ha `ersv_outbound_no` |
+| **Q3** | Tutti i 20 PoS vanno a Crown Oil. **20 file** `OutgoingMaterial_Declaration_OISCRO-0013..0032-25.pdf` esistono già in `gdrive:DFT_2025/POS TO CROWN/`. Default confermato → 1 consignment + N PoS via tabella `consignment_pos` | Tabella `consignment_pos(consignment_id, pos_number, pdf_ref)` |
+| **Q4** | **a)** campo `kg_stock_residual` su `utb_transload` leg | No entità separata `utb_stock` per ora |
+| **Q5** | **b)** 1 `shipment_leg` per BL + tabella `shipment_unit(leg_id, container_ref, kg_net)` con granularità container | Mass-balance per BL (aggregato) + tracciamento container-level |
+| **Q6** | OK nuova sezione `/app/logistics` in nav | Sidebar landing aggiunge link Logistics |
+| **Q7** | Default → solo backfill audit window Jan–Aug 2025 | Migration data backfill solo per i 2 BL e 20 PoS del period |
+| **Q8** | OK workflow status `consignment` | Auto-update via trigger su last leg + UI button manuale |
+
+**Note Q2/Q3 da chiarire:**
+- Format esatto `CO/25/007/...` — cliente da definire ultimo segmento (Q? settimana? mese?)
+- I PoS `OISCRO-XXXX-25` sono Outgoing Material Declaration ISCC (PoS standard). L'eRSV outbound `CO/25/007/...` è documento **distinto** dal PoS? O coincide? **Da confermare**.
 
 ---
 
