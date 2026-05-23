@@ -1,0 +1,93 @@
+/**
+ * Hand-crafted types for the logistics downstream model.
+ * Matches ConsignmentDetail shape from the /consignments API (api-builder #2).
+ * Regenerate from /openapi.json when backend is reachable:
+ *   cd landing && npm run gen-types
+ */
+
+export type ConsignmentStatus =
+  | 'draft'
+  | 'loaded'
+  | 'in_transit'
+  | 'at_utb'
+  | 'delivered_uk'
+  | 'closed';
+
+export type LegType =
+  | 'plant_to_port'
+  | 'port_loading'
+  | 'bl_ocean'
+  | 'utb_transload'
+  | 'nl_to_uk_export'
+  | 'delivery_uk';
+
+export interface OffTaker {
+  id: number;
+  code: string;
+  name: string;
+  country: string;
+  address: string | null;
+  notes: string | null;
+}
+
+export interface ShipmentUnit {
+  id: number;
+  container_ref: string | null;
+  flexitank_ref: string | null;
+  kg_gross: string | null;
+  kg_tare: string | null;
+  kg_net: string | null;
+}
+
+export interface ShipmentLeg {
+  id: number;
+  seq: number;
+  leg_type: LegType;
+  document_type: string | null;
+  document_ref: string | null;
+  document_date: string | null;
+  carrier: string | null;
+  origin_node: string;
+  destination_node: string;
+  kg_in: string;
+  kg_out: string;
+  kg_stock_residual: string | null;
+  notes: string | null;
+  units: ShipmentUnit[];
+}
+
+export interface ConsignmentPos {
+  id: number;
+  pos_number: string;
+  pdf_ref: string | null;
+  kg_net: string | null;
+}
+
+export interface ProductionLink {
+  prod_date: string;
+  kg_allocated: string;
+}
+
+export interface ConsignmentSummary {
+  id: number;
+  code: string;
+  off_taker_id: number;
+  off_taker: OffTaker;
+  product_grade: string;
+  prod_date_from: string;
+  prod_date_to: string;
+  total_kg: string;
+  ersv_outbound_no: string | null;
+  port_rsv_no: string | null;
+  status: ConsignmentStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface ConsignmentDetail extends ConsignmentSummary {
+  legs: ShipmentLeg[];
+  pos: ConsignmentPos[];
+  production_links: ProductionLink[];
+}

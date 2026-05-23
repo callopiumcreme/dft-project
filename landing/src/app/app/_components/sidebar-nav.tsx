@@ -14,6 +14,7 @@ import {
   Factory,
   UserCog,
   History,
+  Route,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ const NAV: NavItem[] = [
   { href: '/app/reports/mass-balance', label: 'Mass balance', icon: Scale, group: 'Reports' },
   { href: '/app/reports/by-supplier', label: 'By supplier', icon: Users, group: 'Reports' },
   { href: '/app/reports/closure-status', label: 'Daily closure', icon: Scale, group: 'Reports' },
+  { href: '/app/logistics', label: 'Logistics', icon: Route, group: 'Downstream', tooltip: 'Consignments & chain of custody' },
   { href: '/app/suppliers', label: 'Suppliers', icon: Users, group: 'Master data' },
   { href: '/app/certificates', label: 'Certificates', icon: Award, group: 'Master data' },
   { href: '/app/contracts', label: 'Contracts', icon: FileText, group: 'Master data' },
