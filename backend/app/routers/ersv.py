@@ -8,18 +8,20 @@ Inbound routes (supply events → daily_inputs), all viewer+ JWT-gated:
 
 Outbound routes (OisteBio → Crown Oil, source = consignment):
 
-- ``GET /ersv/outbound`` → list all outbound declarations (paginated).
-- ``GET /ersv/outbound/{consignment_id}?format=html|pdf`` → render outbound
-  eRSV for the given consignment; allocates ``ersv_outbound_no`` on first
-  call (idempotent thereafter). Auth: viewer+.
-- ``POST /ersv/outbound/{consignment_id}/regenerate`` → admin-only; force
-  a new ``ersv_outbound_no`` and write an audit log row.
+- ``GET /ersv/outbound`` → list all outbound declarations (per-PoS row).
+- ``GET /ersv/outbound/{consignment_id}/{pos_number}?format=html|pdf`` →
+  render outbound eRSV for one (consignment, PoS) pair; allocates
+  ``consignment_pos.ersv_outbound_no`` on first call (idempotent thereafter).
+  Auth: viewer+.
+- ``POST /ersv/outbound/{consignment_id}/{pos_number}/regenerate`` →
+  admin-only; force a new ``ersv_outbound_no`` for that PoS and write an
+  audit log row.
 
-Numbering format for outbound: ``CO/{yy}/{seq:03d}``
+Numbering format for outbound: ``CO/{yy}/{seq:03d}`` — one number per PoS row
+  (cliente direction 2026-05-23: 20 PoS = 20 separate eRSV documents).
   CO  = Colombia (country of dispatch / OisteBio plant)
   yy  = 2-digit year (e.g. "25" for 2025)
   seq = 1-based per-year counter, zero-padded to 3 digits
-OPEN ITEM: proposta §0 Q2 trailing segment TBD — confirm with cliente.
 
 Path parameter on inbound routes uses the Starlette ``:path`` converter so
 the embedded ``/`` in ``NNNNN/YY`` matches without URL-encoding gymnastics.
@@ -49,6 +51,7 @@ from app.schemas.ersv import ErsvDetail
 from app.services.ersv_renderer import (
     ConsignmentNotFoundError,
     ErsvNotFoundError,
+    PosNotFoundError,
     fetch_ersv_row,
     is_regenerated,
     render_ersv_outbound,
@@ -96,23 +99,25 @@ def _filename_for(ersv_number: str) -> str:
 
 
 class OutboundListItem(BaseModel):
-    """Single row in the outbound declaration list."""
+    """Single row in the outbound declaration list — one per PoS."""
 
     model_config = ConfigDict(from_attributes=True)
 
     consignment_id: int
     code: str
+    pos_number: str
     ersv_outbound_no: str | None
     issued_at: date | None  # prod_date_from used as proxy issue date
     off_taker_code: str
     off_taker_name: str
-    total_kg: float | None
+    kg_net: float | None
 
 
 class RegenerateResponse(BaseModel):
-    """Returned by POST /ersv/outbound/{id}/regenerate."""
+    """Returned by POST /ersv/outbound/{id}/{pos}/regenerate."""
 
     consignment_id: int
+    pos_number: str
     ersv_outbound_no: str
     previous_no: str | None
 
@@ -126,16 +131,19 @@ _LIST_OUTBOUND_SQL = text(
     SELECT
         c.id              AS consignment_id,
         c.code            AS code,
-        c.ersv_outbound_no,
+        cp.pos_number     AS pos_number,
+        cp.ersv_outbound_no,
         c.prod_date_from  AS issued_at,
         ot.code           AS off_taker_code,
         ot.name           AS off_taker_name,
-        CAST(c.total_kg AS double precision) AS total_kg
-    FROM consignment c
+        CAST(cp.kg_net AS double precision) AS kg_net
+    FROM consignment_pos cp
+    JOIN consignment c ON c.id = cp.consignment_id
     JOIN off_taker ot ON ot.id = c.off_taker_id
     WHERE c.deleted_at IS NULL
       AND ot.deleted_at IS NULL
-    ORDER BY c.id DESC
+      AND cp.deleted_at IS NULL
+    ORDER BY c.id DESC, cp.pos_number ASC
     LIMIT :limit OFFSET :offset
     """
 )
@@ -166,16 +174,20 @@ async def list_outbound_declarations(
     return [dict(r) for r in result.mappings().all()]
 
 
-@router.get("/outbound/{consignment_id}")
+@router.get("/outbound/{consignment_id}/{pos_number}")
 async def get_outbound_ersv(
     consignment_id: int,
+    pos_number: str,
     _: ViewerUser,
     db: DbDep,
     format: Annotated[str, Query(pattern="^(html|pdf)$")] = "html",
 ) -> Response:
-    """Render the outbound eRSV for ``consignment_id``.
+    """Render the outbound eRSV for a single Proof-of-Sustainability row.
 
-    - First call allocates a ``CO/{yy}/{seq:03d}`` number and persists it.
+    Cliente direction (2026-05-23): one eRSV per PoS. ``CO/{yy}/{seq:03d}`` is
+    minted on first request and persisted on the ``consignment_pos`` row.
+
+    - First call allocates a number and persists it on the PoS row.
     - Subsequent calls return the same number (idempotent).
     - ``?format=html`` (default): returns ``text/html``.
     - ``?format=pdf``: returns ``application/pdf`` (audited to audit_log).
@@ -183,6 +195,7 @@ async def get_outbound_ersv(
     try:
         artefact = await render_ersv_outbound(
             consignment_id,
+            pos_number,
             db,
             format=format,  # type: ignore[arg-type]
         )
@@ -190,6 +203,14 @@ async def get_outbound_ersv(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Consignment not found: {consignment_id}",
+        ) from exc
+    except PosNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"PoS not found: consignment_id={consignment_id} "
+                f"pos_number={pos_number}"
+            ),
         ) from exc
     except PDFRenderError as exc:
         raise HTTPException(
@@ -200,12 +221,13 @@ async def get_outbound_ersv(
     if format == "pdf":
         pdf_artefact: ErsvOutboundPdfArtifact = artefact  # type: ignore[assignment]
         audit = AuditLog(
-            table_name="consignment",
+            table_name="consignment_pos",
             record_id=consignment_id,
             action="insert",
             old_values=None,
             new_values={
                 "kind": "ERSV_OUTBOUND_PDF_EXPORT",
+                "pos_number": pos_number,
                 "ersv_outbound_no": pdf_artefact.ersv_outbound_no,
                 "sha256": pdf_artefact.pdf_sha256,
                 "page_count": pdf_artefact.page_count,
@@ -225,6 +247,7 @@ async def get_outbound_ersv(
                 "X-Content-SHA256": pdf_artefact.pdf_sha256,
                 "Content-Disposition": f'attachment; filename="{filename}"',
                 "X-Ersv-Outbound-No": pdf_artefact.ersv_outbound_no,
+                "X-Pos-Number": pos_number,
             },
         )
 
@@ -235,41 +258,52 @@ async def get_outbound_ersv(
         headers={
             "Cache-Control": "private, max-age=0, must-revalidate",
             "X-Ersv-Outbound-No": html_artefact.ersv_outbound_no,
+            "X-Pos-Number": pos_number,
         },
     )
 
 
-@router.post("/outbound/{consignment_id}/regenerate", response_model=RegenerateResponse)
+@router.post(
+    "/outbound/{consignment_id}/{pos_number}/regenerate",
+    response_model=RegenerateResponse,
+)
 async def regenerate_outbound_number(
     consignment_id: int,
+    pos_number: str,
     user: AdminUser,
     db: DbDep,
 ) -> RegenerateResponse:
-    """Admin-only: force-allocate a new ``ersv_outbound_no`` for the consignment.
+    """Admin-only: force-allocate a new ``ersv_outbound_no`` for a PoS row.
 
     The previous number is permanently replaced. An audit log entry is written
     with ``old_values.ersv_outbound_no`` = previous number so the change is
     traceable. Only admins may call this endpoint.
     """
-    # Fetch current state
+    # Fetch current state of the PoS row
     result = await db.execute(
         text(
-            "SELECT id, ersv_outbound_no, updated_at "
-            "FROM consignment WHERE id = :cid AND deleted_at IS NULL"
+            "SELECT consignment_id, pos_number, ersv_outbound_no "
+            "FROM consignment_pos "
+            "WHERE consignment_id = :cid AND pos_number = :pos "
+            "  AND deleted_at IS NULL"
         ),
-        {"cid": consignment_id},
+        {"cid": consignment_id, "pos": pos_number},
     )
     row = result.mappings().one_or_none()
     if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Consignment not found: {consignment_id}",
+            detail=(
+                f"PoS not found: consignment_id={consignment_id} "
+                f"pos_number={pos_number}"
+            ),
         )
     previous_no: str | None = row["ersv_outbound_no"]
 
     try:
         artefact = await render_ersv_outbound(
             consignment_id,
+            pos_number,
             db,
             format="html",
             force_new_no=True,
@@ -279,18 +313,30 @@ async def regenerate_outbound_number(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Consignment not found: {consignment_id}",
         ) from exc
+    except PosNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"PoS not found: consignment_id={consignment_id} "
+                f"pos_number={pos_number}"
+            ),
+        ) from exc
 
     html_artefact: ErsvOutboundHtmlArtifact = artefact  # type: ignore[assignment]
     new_no = html_artefact.ersv_outbound_no
 
     # Write audit entry — action='update' (changing an existing field value)
     audit = AuditLog(
-        table_name="consignment",
+        table_name="consignment_pos",
         record_id=consignment_id,
         action="update",
-        old_values={"ersv_outbound_no": previous_no},
+        old_values={
+            "pos_number": pos_number,
+            "ersv_outbound_no": previous_no,
+        },
         new_values={
             "kind": "ERSV_OUTBOUND_REGENERATE",
+            "pos_number": pos_number,
             "ersv_outbound_no": new_no,
         },
         changed_by=user.id,
@@ -300,6 +346,7 @@ async def regenerate_outbound_number(
 
     return RegenerateResponse(
         consignment_id=consignment_id,
+        pos_number=pos_number,
         ersv_outbound_no=new_no,
         previous_no=previous_no,
     )

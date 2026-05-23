@@ -587,9 +587,8 @@
 </div>
 {% endif %}
 
-{# ===== Proof of Sustainability (PoS) list ===== #}
-<div class="section-band">Linked Proof of Sustainability (PoS) — {{ pos_count }} document(s)</div>
-{% if pos_list %}
+{# ===== Proof of Sustainability (PoS) — single row referenced by this eRSV ===== #}
+<div class="section-band">Proof of Sustainability (PoS) — this declaration</div>
 <table class="pos">
     <thead>
         <tr>
@@ -599,26 +598,19 @@
         </tr>
     </thead>
     <tbody>
-        {% for pos in pos_list %}
         <tr>
-            <td class="pos-num">{{ pos.pos_number }}</td>
-            <td class="num">{{ pos.kg_net_str }}</td>
+            <td class="pos-num">{{ pos_number }}</td>
+            <td class="num">{{ total_kg_str }}</td>
             <td style="text-align:center; font-size:7pt;">
-                {% if pos.pdf_ref %}
+                {% if pos_pdf_ref and pos_pdf_ref != placeholder %}
                 <span style="color:#1a3a5c;">&#10003;</span>
                 {% else %}
                 <span style="color:#aaa;">—</span>
                 {% endif %}
             </td>
         </tr>
-        {% endfor %}
     </tbody>
 </table>
-{% else %}
-<div style="font-size:8pt; color:#888; font-style:italic; margin-top:4pt;">
-    No PoS documents linked to this consignment.
-</div>
-{% endif %}
 
 {# ===== Legal notice ===== #}
 <div class="legal-notice">

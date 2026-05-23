@@ -97,6 +97,12 @@ class ConsignmentPosCreate(BaseModel):
     pos_number: str = Field(..., min_length=1)
     pdf_ref: str | None = None
     kg_net: Annotated[Decimal | None, Field(default=None, gt=0, decimal_places=3)] = None
+    ghg_ep: Annotated[Decimal | None, Field(default=None, ge=0, decimal_places=2)] = None
+    ghg_etd: Annotated[Decimal | None, Field(default=None, ge=0, decimal_places=2)] = None
+    ghg_total: Annotated[Decimal | None, Field(default=None, ge=0, decimal_places=2)] = None
+    ghg_saving_pct: Annotated[
+        Decimal | None, Field(default=None, ge=0, le=100, decimal_places=2)
+    ] = None
 
 
 class ConsignmentPosOut(BaseModel):
@@ -106,7 +112,13 @@ class ConsignmentPosOut(BaseModel):
     pos_number: str
     pdf_ref: str | None
     kg_net: Decimal | None
+    ersv_outbound_no: str | None = None
+    ghg_ep: Decimal | None = None
+    ghg_etd: Decimal | None = None
+    ghg_total: Decimal | None = None
+    ghg_saving_pct: Decimal | None = None
     created_at: datetime
+    deleted_at: datetime | None = None
 
 
 # ---------------------------------------------------------------------------

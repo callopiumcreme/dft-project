@@ -216,7 +216,6 @@ export default async function LogisticsPage({ searchParams }: PageProps) {
               <Th>Prod dates</Th>
               <ThNum>Total kg</ThNum>
               <Th>Status</Th>
-              <Th>eRSV outbound</Th>
               <Th className="text-right">
                 <span className="sr-only">Open</span>
               </Th>
@@ -225,7 +224,7 @@ export default async function LogisticsPage({ searchParams }: PageProps) {
           <tbody>
             {consignments.length === 0 && !fetchError && (
               <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-ink-mute">
+                <td colSpan={7} className="px-3 py-8 text-center text-ink-mute">
                   No consignments match the selected filter.
                 </td>
               </tr>
@@ -254,11 +253,6 @@ export default async function LogisticsPage({ searchParams }: PageProps) {
                     >
                       {STATUS_LABEL[s]}
                     </span>
-                  </Td>
-                  <Td className="text-ink-soft">
-                    {c.ersv_outbound_no ?? (
-                      <span className="text-ink-mute">—</span>
-                    )}
                   </Td>
                   <Td className="text-right">
                     <Link

@@ -81,10 +81,12 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
   }
 
   const status = isStatus(consignment.status) ? consignment.status : 'draft';
-  const ersvBase = `/ersv/outbound/${consignment.id}`;
 
   // Aggregate unit count across all legs
   const totalUnits = consignment.legs.reduce((s, l) => s + l.units.length, 0);
+
+  // Per-PoS eRSV is per-row now (since 0022). Count allocated for header chip.
+  const ersvAllocated = consignment.pos.filter((p) => p.ersv_outbound_no).length;
 
   return (
     <div className="mx-auto max-w-editorial">
@@ -114,28 +116,7 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-2 font-mono text-[0.7rem] uppercase tracking-[0.14em]">
-            {consignment.ersv_outbound_no && (
-              <>
-                <a
-                  href={`${ersvBase}?format=html`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="border border-ink bg-ink px-3 py-1.5 text-bg hover:bg-ink-soft"
-                >
-                  Render eRSV outbound
-                </a>
-                <a
-                  href={`${ersvBase}?format=pdf`}
-                  download
-                  className="border border-olive-deep bg-olive-deep px-3 py-1.5 text-bg hover:bg-olive"
-                >
-                  Download eRSV PDF
-                </a>
-              </>
-            )}
-          </div>
+          {/* eRSV is per-PoS since 0022 — render/download buttons live on each PoS row below */}
         </div>
 
         {/* Meta */}
@@ -145,9 +126,9 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
           >
             {STATUS_LABEL[status]}
           </span>
-          {consignment.ersv_outbound_no && (
+          {consignment.pos.length > 0 && (
             <span className="inline-block border border-rule bg-bg px-2 py-0.5 font-mono text-[0.65rem] uppercase text-ink-soft">
-              eRSV {consignment.ersv_outbound_no}
+              eRSV {ersvAllocated}/{consignment.pos.length} allocated
             </span>
           )}
           {consignment.port_rsv_no && (
@@ -204,30 +185,63 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
                   <Th>PoS number</Th>
                   <ThNum>kg net</ThNum>
                   <Th>PDF</Th>
+                  <Th>eRSV outbound</Th>
+                  <Th className="text-right">
+                    <span className="sr-only">Render</span>
+                  </Th>
                 </tr>
               </thead>
               <tbody>
-                {consignment.pos.map((p) => (
-                  <tr
-                    key={p.id}
-                    className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
-                  >
-                    <Td className="text-ink">{p.pos_number}</Td>
-                    <TdNum>{fmtKg(p.kg_net)}</TdNum>
-                    <Td>
-                      {p.pdf_ref ? (
-                        <span
-                          className="cursor-help font-mono text-[0.65rem] uppercase tracking-[0.1em] text-ink-mute underline decoration-dotted underline-offset-2"
-                          title={`Stored on Google Drive: ${p.pdf_ref}`}
-                        >
-                          gdrive
+                {consignment.pos.map((p) => {
+                  const ersvBase = `/ersv/outbound/${consignment.id}/${encodeURIComponent(p.pos_number)}`;
+                  return (
+                    <tr
+                      key={`${p.consignment_id}-${p.pos_number}`}
+                      className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
+                    >
+                      <Td className="text-ink">{p.pos_number}</Td>
+                      <TdNum>{fmtKg(p.kg_net)}</TdNum>
+                      <Td>
+                        {p.pdf_ref ? (
+                          <span
+                            className="cursor-help font-mono text-[0.65rem] uppercase tracking-[0.1em] text-ink-mute underline decoration-dotted underline-offset-2"
+                            title={`Stored on Google Drive: ${p.pdf_ref}`}
+                          >
+                            gdrive
+                          </span>
+                        ) : (
+                          <span className="text-ink-mute">—</span>
+                        )}
+                      </Td>
+                      <Td className="text-ink-soft">
+                        {p.ersv_outbound_no ?? (
+                          <span className="text-ink-mute">—</span>
+                        )}
+                      </Td>
+                      <Td className="text-right">
+                        <span className="inline-flex gap-1">
+                          <a
+                            href={`${ersvBase}?format=html`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="border border-ink bg-ink px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em] text-bg hover:bg-ink-soft"
+                            aria-label={`Render eRSV for ${p.pos_number}`}
+                          >
+                            HTML
+                          </a>
+                          <a
+                            href={`${ersvBase}?format=pdf`}
+                            download
+                            className="border border-olive-deep bg-olive-deep px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em] text-bg hover:bg-olive"
+                            aria-label={`Download eRSV PDF for ${p.pos_number}`}
+                          >
+                            PDF
+                          </a>
                         </span>
-                      ) : (
-                        <span className="text-ink-mute">—</span>
-                      )}
-                    </Td>
-                  </tr>
-                ))}
+                      </Td>
+                    </tr>
+                  );
+                })}
                 <tr className="border-t border-rule bg-bg font-semibold text-ink">
                   <Td>TOT</Td>
                   <TdNum>
@@ -238,12 +252,15 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
                     )}
                   </TdNum>
                   <Td>{null}</Td>
+                  <Td>{null}</Td>
+                  <Td>{null}</Td>
                 </tr>
               </tbody>
             </table>
           </div>
           <p className="mt-2 font-mono text-[0.68rem] text-ink-mute">
             PoS = Outgoing Material Declaration ISCC (OISCRO-XXXX-25 series).
+            Each PoS carries its own outbound eRSV (CO/{'{yy}'}/{'{seq}'}) + GHG values per cliente direction 2026-05-23.
             PDFs stored on Google Drive — download via direct gdrive path.
           </p>
         </section>

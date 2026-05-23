@@ -1,28 +1,28 @@
-"""Tests for the outbound eRSV renderer and endpoints.
+"""Tests for the outbound eRSV renderer and endpoints (per-PoS, post 0022).
+
+Cliente direction (2026-05-23): outbound eRSV is keyed on a PoS row, not on a
+consignment. ``CO/{yy}/{seq:03d}`` is stored on ``consignment_pos.ersv_outbound_no``
+and the API path is ``/ersv/outbound/{consignment_id}/{pos_number}``.
 
 Test matrix:
-  - test_outbound_number_format: helper allocates CO/25/001, then CO/25/002
-  - test_outbound_year_derived_from_shipment_year: a 2025 consignment minted
-    in 2026 produces ``CO/25/...`` (regression: not wall-clock year).
-  - test_outbound_idempotent_number: rendering same consignment twice keeps same no.
-  - test_outbound_html_contains_buyer_and_pos: HTML for CONS-2025-Q3-CROWN has
-    "Crown Oil" and at least one "OISCRO-" PoS string.
+  - test_outbound_number_format: helper allocates CO/25/NNN, then CO/25/NNN+1
+    against ``consignment_pos`` rows.
+  - test_outbound_year_derived_from_shipment_year: 2025 consignment minted in
+    2026 → ``CO/25/...`` (regression: not wall-clock year).
+  - test_outbound_idempotent_number: rendering same (cid, pos) twice → same no.
+  - test_outbound_html_contains_buyer_and_pos: HTML for a PoS row contains
+    buyer "Crown Oil", the PoS number, and ``end-of-life tyres``.
   - test_outbound_regenerate_admin_only: POST /regenerate as operator → 403;
     as admin → 200 with a new number.
-  - test_outbound_pdf_returns_bytes: PDF endpoint returns non-empty bytes with
-    application/pdf content-type.
-
-DB note: tests that hit the live DB require the stack to be up and the
-backfill from #4 to have been applied (CONS-2025-Q3-CROWN + PoS rows).
-When the DB is unreachable, tests that depend on it are collected but will
-fail with a connection error — they are NOT skipped so the CI pipeline
-surfaces them clearly.
+  - test_outbound_pdf_returns_bytes: PDF endpoint returns non-empty bytes.
+  - test_outbound_2025_starts_at_seq_007: when DB has no prior CO/25/* row,
+    allocator returns CO/25/007 (cliente offset).
 """
 from __future__ import annotations
 
 import os
 import re
-from typing import AsyncIterator
+from typing import TYPE_CHECKING
 
 import pytest
 import pytest_asyncio
@@ -34,13 +34,12 @@ from sqlalchemy.pool import NullPool
 from app.db.session import get_db
 from app.main import app
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
 # DATABASE_URL / JWT_SECRET + auth-bypass override are configured by conftest.py.
 _engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
 _factory: async_sessionmaker[AsyncSession] = async_sessionmaker(_engine, expire_on_commit=False)
-
-# ---------------------------------------------------------------------------
-# DB session override (auth override is installed by conftest.py)
-# ---------------------------------------------------------------------------
 
 
 async def _override_get_db() -> AsyncIterator[AsyncSession]:
@@ -61,7 +60,7 @@ async def client() -> AsyncIterator[AsyncClient]:
 
 
 # ---------------------------------------------------------------------------
-# Helper: ensure Crown Oil off_taker and a scratch consignment exist
+# Helpers
 # ---------------------------------------------------------------------------
 
 
@@ -76,9 +75,7 @@ async def _ensure_crown_oil(db: AsyncSession) -> int:
         )
     )
     await db.commit()
-    r = await db.execute(
-        text("SELECT id FROM off_taker WHERE code = 'CROWN-OIL-UK'")
-    )
+    r = await db.execute(text("SELECT id FROM off_taker WHERE code = 'CROWN-OIL-UK'"))
     return int(r.scalar_one())
 
 
@@ -87,15 +84,13 @@ async def _create_scratch_consignment(
     crown_oil_id: int,
     code: str,
     *,
-    clear_outbound_no: bool = False,
     prod_date_from: str = "2025-06-01",
     prod_date_to: str = "2025-08-31",
 ) -> int:
     """Insert (or reuse) a minimal consignment for testing. Returns its id.
 
-    ``prod_date_from`` / ``prod_date_to`` default to a Q3 2025 window so
-    minted ``ersv_outbound_no`` values land in the ``CO/25/...`` family
-    regardless of the wall-clock year at test time.
+    Production window defaults to Q3 2025 so any per-PoS outbound number
+    minted lands in the ``CO/25/...`` family regardless of wall-clock time.
     """
     from datetime import date as _date
 
@@ -114,31 +109,57 @@ async def _create_scratch_consignment(
                 SET updated_at      = NOW(),
                     prod_date_from  = EXCLUDED.prod_date_from,
                     prod_date_to    = EXCLUDED.prod_date_to,
-                    -- Resurrect rows soft-deleted by a previous test run
                     deleted_at      = NULL
             """
         ),
-        {
-            "code": code,
-            "ot_id": crown_oil_id,
-            "pdf": pdf_obj,
-            "pdt": pdt_obj,
-        },
+        {"code": code, "ot_id": crown_oil_id, "pdf": pdf_obj, "pdt": pdt_obj},
     )
-    if clear_outbound_no:
-        await db.execute(
-            text(
-                "UPDATE consignment SET ersv_outbound_no = NULL, updated_at = NOW() "
-                "WHERE code = :code"
-            ),
-            {"code": code},
-        )
     await db.commit()
     r = await db.execute(
         text("SELECT id FROM consignment WHERE code = :code"),
         {"code": code},
     )
     return int(r.scalar_one())
+
+
+async def _attach_pos(
+    db: AsyncSession,
+    cons_id: int,
+    pos_number: str,
+    kg_net: float = 9000.000,
+    *,
+    clear_outbound_no: bool = True,
+) -> None:
+    """Insert or reactivate a PoS row attached to the consignment.
+
+    The autouse cleanup in conftest tombstones PoS rows whose pos_number
+    starts with one of the scratch prefixes — pass a prefix-matching string
+    so reruns can re-insert.
+    """
+    await db.execute(
+        text(
+            """
+            INSERT INTO consignment_pos
+                (consignment_id, pos_number, kg_net,
+                 ghg_ep, ghg_etd, ghg_total, ghg_saving_pct)
+            VALUES
+                (:cid, :pos, :kg, 12.33, 4.63, 16.95, 81.96)
+            ON CONFLICT (consignment_id, pos_number) DO UPDATE
+                SET kg_net = EXCLUDED.kg_net,
+                    deleted_at = NULL
+            """
+        ),
+        {"cid": cons_id, "pos": pos_number, "kg": kg_net},
+    )
+    if clear_outbound_no:
+        await db.execute(
+            text(
+                "UPDATE consignment_pos SET ersv_outbound_no = NULL "
+                "WHERE consignment_id = :cid AND pos_number = :pos"
+            ),
+            {"cid": cons_id, "pos": pos_number},
+        )
+    await db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -148,70 +169,47 @@ async def _create_scratch_consignment(
 
 @pytest.mark.asyncio
 async def test_outbound_number_format(db_session: AsyncSession) -> None:
-    """Number helper allocates CO/25/NNN, then CO/25/NNN+1 for the same year."""
+    """Allocator returns CO/25/NNN against consignment_pos, then NNN+1."""
     from app.services.ersv_renderer import _allocate_outbound_no
 
     crown_id = await _ensure_crown_oil(db_session)
-
-    # Use unique codes so these scratch rows don't clash with real data
-    code_a = "CONS-ERSV-OUT-NUM-A"
-    code_b = "CONS-ERSV-OUT-NUM-B"
-
-    id_a = await _create_scratch_consignment(
-        db_session, crown_id, code_a, clear_outbound_no=True,
-        prod_date_from="2025-06-01", prod_date_to="2025-08-31",
+    cons_id = await _create_scratch_consignment(
+        db_session, crown_id, "CONS-ERSV-OUT-NUM"
     )
-    id_b = await _create_scratch_consignment(
-        db_session, crown_id, code_b, clear_outbound_no=True,
-        prod_date_from="2025-06-01", prod_date_to="2025-08-31",
-    )
-
-    # Clear any prior outbound numbers on these two rows so the counter
-    # is predictable *for these rows only*.  Other rows with CO/25/... that
-    # exist in the DB will shift the absolute sequence, so we only assert
-    # the FORMAT and the ordering, not the absolute seq numbers.
-    await db_session.execute(
-        text(
-            "UPDATE consignment SET ersv_outbound_no = NULL "
-            "WHERE id = ANY(:ids)"
-        ),
-        {"ids": [id_a, id_b]},
-    )
-    await db_session.commit()
+    await _attach_pos(db_session, cons_id, "POS-ERSV-OUT-NUM-A")
+    await _attach_pos(db_session, cons_id, "POS-ERSV-OUT-NUM-B")
 
     no_a = await _allocate_outbound_no("25", db_session)
-    # Persist so the next call sees it
     await db_session.execute(
         text(
-            "UPDATE consignment SET ersv_outbound_no = :no WHERE id = :id"
+            "UPDATE consignment_pos SET ersv_outbound_no = :no "
+            "WHERE consignment_id = :cid AND pos_number = :pos"
         ),
-        {"no": no_a, "id": id_a},
+        {"no": no_a, "cid": cons_id, "pos": "POS-ERSV-OUT-NUM-A"},
     )
     await db_session.commit()
 
     no_b = await _allocate_outbound_no("25", db_session)
     await db_session.execute(
         text(
-            "UPDATE consignment SET ersv_outbound_no = :no WHERE id = :id"
+            "UPDATE consignment_pos SET ersv_outbound_no = :no "
+            "WHERE consignment_id = :cid AND pos_number = :pos"
         ),
-        {"no": no_b, "id": id_b},
+        {"no": no_b, "cid": cons_id, "pos": "POS-ERSV-OUT-NUM-B"},
     )
     await db_session.commit()
 
-    # Format assertions
     _pattern = re.compile(r"^CO/25/\d{3}$")
     assert _pattern.match(no_a), f"Expected CO/25/NNN, got {no_a!r}"
     assert _pattern.match(no_b), f"Expected CO/25/NNN, got {no_b!r}"
 
-    # Ordering: seq(b) = seq(a) + 1
     seq_a = int(no_a.split("/")[2])
     seq_b = int(no_b.split("/")[2])
     assert seq_b == seq_a + 1, (
         f"Expected consecutive sequence: got {no_a} then {no_b}"
     )
 
-    # Starting offset (cliente direction 2026-05-23): 2025 starts at 007.
-    # Any minted 2025 outbound must therefore have seq >= 7.
+    # Cliente offset 2026-05-23: 2025 starts at 007.
     assert seq_a >= 7, (
         f"Expected seq >= 7 for 2025 (cliente offset), got {no_a!r}"
     )
@@ -228,26 +226,20 @@ async def test_outbound_year_derived_from_shipment_year(
     admin_headers: dict[str, str],
     db_session: AsyncSession,
 ) -> None:
-    """Regression: yy segment comes from consignment shipment year, not wall clock.
-
-    A consignment with ``prod_date_to = 2025-08-31`` minted in 2026 (or any
-    later year) MUST produce ``CO/25/...`` — not ``CO/26/...``.
-
-    This guards against the bug where ``_allocate_outbound_no`` used
-    ``datetime.now().year`` for the ``yy`` segment.
-    """
+    """yy segment comes from consignment shipment year, not wall clock."""
     crown_id = await _ensure_crown_oil(db_session)
     cons_id = await _create_scratch_consignment(
         db_session,
         crown_id,
         "CONS-ERSV-OUT-YEAR-25",
-        clear_outbound_no=True,
         prod_date_from="2025-06-01",
         prod_date_to="2025-08-31",
     )
+    pos_no = "POS-ERSV-OUT-YEAR"
+    await _attach_pos(db_session, cons_id, pos_no)
 
     resp = await client.get(
-        f"/ersv/outbound/{cons_id}?format=html",
+        f"/ersv/outbound/{cons_id}/{pos_no}?format=html",
         headers=admin_headers,
     )
     assert resp.status_code == 200, resp.text
@@ -270,18 +262,16 @@ async def test_outbound_idempotent_number(
     admin_headers: dict[str, str],
     db_session: AsyncSession,
 ) -> None:
-    """Rendering the same consignment twice returns the same ersv_outbound_no."""
+    """Rendering same (cid, pos) twice returns the same ersv_outbound_no."""
     crown_id = await _ensure_crown_oil(db_session)
     cons_id = await _create_scratch_consignment(
-        db_session,
-        crown_id,
-        "CONS-ERSV-OUT-IDEM",
-        clear_outbound_no=True,
+        db_session, crown_id, "CONS-ERSV-OUT-IDEM"
     )
+    pos_no = "POS-ERSV-OUT-IDEM"
+    await _attach_pos(db_session, cons_id, pos_no)
 
-    # First render — allocates number
     resp1 = await client.get(
-        f"/ersv/outbound/{cons_id}?format=html",
+        f"/ersv/outbound/{cons_id}/{pos_no}?format=html",
         headers=admin_headers,
     )
     assert resp1.status_code == 200, resp1.text
@@ -289,9 +279,8 @@ async def test_outbound_idempotent_number(
     assert no1 is not None, "First render must return X-Ersv-Outbound-No header"
     assert re.match(r"^CO/\d{2}/\d{3}$", no1), f"Bad format: {no1!r}"
 
-    # Second render — must return the same number
     resp2 = await client.get(
-        f"/ersv/outbound/{cons_id}?format=html",
+        f"/ersv/outbound/{cons_id}/{pos_no}?format=html",
         headers=admin_headers,
     )
     assert resp2.status_code == 200, resp2.text
@@ -310,44 +299,27 @@ async def test_outbound_html_contains_buyer_and_pos(
     admin_headers: dict[str, str],
     db_session: AsyncSession,
 ) -> None:
-    """HTML for a consignment with Crown Oil buyer and PoS rows contains expected text."""
+    """HTML contains buyer, PoS number, feedstock label, and no forbidden strings."""
     crown_id = await _ensure_crown_oil(db_session)
     cons_id = await _create_scratch_consignment(
-        db_session,
-        crown_id,
-        "CONS-ERSV-OUT-HTML",
-        clear_outbound_no=True,
+        db_session, crown_id, "CONS-ERSV-OUT-HTML"
     )
-
-    # Attach a PoS row so the template table is populated
-    await db_session.execute(
-        text(
-            """
-            INSERT INTO consignment_pos (consignment_id, pos_number, kg_net)
-            VALUES (:cid, 'OISCRO-0013-25', 9000.000)
-            ON CONFLICT (consignment_id, pos_number) DO UPDATE SET kg_net = 9000.000
-            """
-        ),
-        {"cid": cons_id},
-    )
-    await db_session.commit()
+    pos_no = "POS-ERSV-OUT-OISCRO-0013-25"
+    await _attach_pos(db_session, cons_id, pos_no, kg_net=25021.000)
 
     resp = await client.get(
-        f"/ersv/outbound/{cons_id}?format=html",
+        f"/ersv/outbound/{cons_id}/{pos_no}?format=html",
         headers=admin_headers,
     )
     assert resp.status_code == 200, resp.text
     html = resp.text
 
     assert "Crown Oil" in html, "HTML must contain buyer name 'Crown Oil'"
-    assert "OISCRO-" in html, "HTML must contain at least one OISCRO- PoS reference"
+    assert pos_no in html, f"HTML must contain PoS number {pos_no!r}"
     assert "end-of-life tyres" in html, "HTML must mention feedstock as end-of-life tyres"
     assert "DEV-P100" in html, "HTML must mention product grade DEV-P100"
-    # Negative check — must never say "plastic"
     assert "plastic" not in html.lower(), "HTML must NOT contain the word 'plastic'"
-    # Must not mention BiNova (dev studio — never in client docs)
     assert "binova" not in html.lower(), "HTML must NOT mention BiNova"
-    # Swiss GmbH address check
     assert "Baar" in html, "HTML must mention Baar (OisteBio registered address)"
 
 
@@ -363,35 +335,31 @@ async def test_outbound_regenerate_admin_only(
     operator_headers: dict[str, str],
     db_session: AsyncSession,
 ) -> None:
-    """POST /ersv/outbound/{id}/regenerate: operator → 403; admin → 200 with new number."""
+    """POST /ersv/outbound/{cid}/{pos}/regenerate: operator → 403; admin → 200."""
     crown_id = await _ensure_crown_oil(db_session)
     cons_id = await _create_scratch_consignment(
-        db_session,
-        crown_id,
-        "CONS-ERSV-OUT-REGEN",
-        clear_outbound_no=True,
+        db_session, crown_id, "CONS-ERSV-OUT-REGEN"
     )
+    pos_no = "POS-ERSV-OUT-REGEN"
+    await _attach_pos(db_session, cons_id, pos_no)
 
-    # First, ensure a number exists by doing an initial render
     init_resp = await client.get(
-        f"/ersv/outbound/{cons_id}?format=html",
+        f"/ersv/outbound/{cons_id}/{pos_no}?format=html",
         headers=admin_headers,
     )
     assert init_resp.status_code == 200
     initial_no = init_resp.headers.get("X-Ersv-Outbound-No")
 
-    # Operator must be rejected
     op_resp = await client.post(
-        f"/ersv/outbound/{cons_id}/regenerate",
+        f"/ersv/outbound/{cons_id}/{pos_no}/regenerate",
         headers=operator_headers,
     )
     assert op_resp.status_code == 403, (
         f"Expected 403 for operator, got {op_resp.status_code}: {op_resp.text}"
     )
 
-    # Admin must succeed
     admin_resp = await client.post(
-        f"/ersv/outbound/{cons_id}/regenerate",
+        f"/ersv/outbound/{cons_id}/{pos_no}/regenerate",
         headers=admin_headers,
     )
     assert admin_resp.status_code == 200, (
@@ -399,10 +367,10 @@ async def test_outbound_regenerate_admin_only(
     )
     data = admin_resp.json()
     assert data["consignment_id"] == cons_id
+    assert data["pos_number"] == pos_no
     assert data["previous_no"] == initial_no
     new_no = data["ersv_outbound_no"]
     assert re.match(r"^CO/\d{2}/\d{3}$", new_no), f"Bad format: {new_no!r}"
-    # New number must be different from the old one
     assert new_no != initial_no, "Regenerate must produce a new number"
 
 
@@ -420,14 +388,13 @@ async def test_outbound_pdf_returns_bytes(
     """PDF endpoint returns non-empty bytes with application/pdf content-type."""
     crown_id = await _ensure_crown_oil(db_session)
     cons_id = await _create_scratch_consignment(
-        db_session,
-        crown_id,
-        "CONS-ERSV-OUT-PDF",
-        clear_outbound_no=True,
+        db_session, crown_id, "CONS-ERSV-OUT-PDF"
     )
+    pos_no = "POS-ERSV-OUT-PDF"
+    await _attach_pos(db_session, cons_id, pos_no)
 
     resp = await client.get(
-        f"/ersv/outbound/{cons_id}?format=pdf",
+        f"/ersv/outbound/{cons_id}/{pos_no}?format=pdf",
         headers=admin_headers,
     )
     assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
@@ -440,12 +407,10 @@ async def test_outbound_pdf_returns_bytes(
     pdf_bytes = resp.content
     assert len(pdf_bytes) > 0, "PDF response must not be empty"
 
-    # Verify it starts with the PDF magic bytes
     assert pdf_bytes[:4] == b"%PDF", (
         f"Response does not start with %PDF magic: {pdf_bytes[:8]!r}"
     )
 
-    # X-Ersv-Outbound-No header must be present
     no_header = resp.headers.get("X-Ersv-Outbound-No")
     assert no_header is not None
     assert re.match(r"^CO/\d{2}/\d{3}$", no_header), f"Bad format: {no_header!r}"
@@ -460,26 +425,26 @@ async def test_outbound_pdf_returns_bytes(
 async def test_outbound_2025_starts_at_seq_007(db_session: AsyncSession) -> None:
     """Cliente direction (2026-05-23): first 2025 outbound = CO/25/007.
 
-    Positions 001-006 are reserved/used outside this system. When the DB has
-    no prior CO/25/* row, the allocator must skip to 007 instead of starting
-    at 001.
+    With zero live CO/25/* rows on ``consignment_pos`` (the allocator's source
+    after 0022), the allocator must skip to 007 instead of starting at 001.
     """
     from app.services.ersv_renderer import _OUTBOUND_START_SEQ, _allocate_outbound_no
 
-    # Sanity: the offset table actually maps 2025 → 7
     assert _OUTBOUND_START_SEQ.get("25") == 7, (
         "Cliente offset for 2025 must be 7 (CO/25/007 is the first outbound)"
     )
 
-    # Soft-delete any existing CO/25/* rows so the allocator floor is exercised.
-    # We don't lose audit trail: deleted_at is set, original number preserved.
-    # Tombstone the number column so the UNIQUE constraint frees up.
+    # Tombstone any live CO/25/* numbers on consignment_pos so the allocator
+    # floor is exercised. UNIQUE partial index frees up because we mangle the
+    # column AND set deleted_at. Audit trail preserved (number recoverable by
+    # split_part on '__expired_').
     await db_session.execute(
         text(
             """
-            UPDATE consignment
+            UPDATE consignment_pos
             SET deleted_at = NOW(),
-                ersv_outbound_no = ersv_outbound_no || '__expired_' || id::text
+                ersv_outbound_no = ersv_outbound_no || '__expired_'
+                                   || consignment_id::text || '_' || pos_number
             WHERE ersv_outbound_no LIKE 'CO/25/%'
               AND deleted_at IS NULL
             """
@@ -488,15 +453,12 @@ async def test_outbound_2025_starts_at_seq_007(db_session: AsyncSession) -> None
     await db_session.commit()
 
     try:
-        # With zero live CO/25/* rows, MAX(seq)+1 = 1; GREATEST(1, 7) = 7
         next_no = await _allocate_outbound_no("25", db_session)
         assert next_no == "CO/25/007", (
             f"Expected first 2025 outbound = CO/25/007 (cliente offset), got {next_no!r}"
         )
 
-        # 2026 has no offset → default starts at 001
         next_no_2026 = await _allocate_outbound_no("26", db_session)
-        # Only assert format + seq < 7 (i.e. no offset applied for 2026)
         assert re.match(r"^CO/26/\d{3}$", next_no_2026), (
             f"Bad format: {next_no_2026!r}"
         )
@@ -505,14 +467,14 @@ async def test_outbound_2025_starts_at_seq_007(db_session: AsyncSession) -> None
             f"2026 must not inherit 2025 offset; got seq {seq_2026}"
         )
     finally:
-        # Restore any rows we tombstoned so other tests aren't affected
+        # Restore tombstoned rows so other tests / real data aren't affected.
         await db_session.execute(
             text(
-                """
-                UPDATE consignment
+                r"""
+                UPDATE consignment_pos
                 SET deleted_at = NULL,
                     ersv_outbound_no = split_part(ersv_outbound_no, '__expired_', 1)
-                WHERE ersv_outbound_no LIKE 'CO/25/%\\_\\_expired\\_%' ESCAPE '\\'
+                WHERE ersv_outbound_no LIKE 'CO/25/%\_\_expired\_%' ESCAPE '\'
                 """
             )
         )

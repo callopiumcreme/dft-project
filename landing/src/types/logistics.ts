@@ -57,10 +57,19 @@ export interface ShipmentLeg {
 }
 
 export interface ConsignmentPos {
-  id: number;
+  consignment_id: number;
   pos_number: string;
   pdf_ref: string | null;
   kg_net: string | null;
+  /** Per-PoS outbound eRSV number (CO/{yy}/{seq:03d}). Null until allocated. */
+  ersv_outbound_no: string | null;
+  /** GHG values (gCO2eq/MJ for Ep/Etd/total; percent for saving). */
+  ghg_ep: string | null;
+  ghg_etd: string | null;
+  ghg_total: string | null;
+  ghg_saving_pct: string | null;
+  created_at: string;
+  deleted_at: string | null;
 }
 
 export interface ProductionLink {

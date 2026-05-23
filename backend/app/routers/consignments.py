@@ -176,10 +176,13 @@ async def get_consignment_detail(
         )
         leg_details.append(leg_detail)
 
-    # PoS
+    # PoS (active only — soft-deleted rows hidden from detail view)
     pos_result = await db.execute(
         select(ConsignmentPos)
-        .where(ConsignmentPos.consignment_id == consignment_id)
+        .where(
+            ConsignmentPos.consignment_id == consignment_id,
+            ConsignmentPos.deleted_at.is_(None),
+        )
         .order_by(ConsignmentPos.pos_number)
     )
     pos_list = [ConsignmentPosOut.model_validate(p) for p in pos_result.scalars().all()]
@@ -296,6 +299,32 @@ async def attach_pos(
     """
     # Verify parent exists and is not deleted
     await _get_or_404(db, consignment_id)
+
+    # Composite PK is (consignment_id, pos_number). If an existing row is
+    # soft-deleted, revive it; otherwise INSERT. Active duplicate → 409.
+    existing = (
+        await db.execute(
+            select(ConsignmentPos).where(
+                ConsignmentPos.consignment_id == consignment_id,
+                ConsignmentPos.pos_number == body.pos_number,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        if existing.deleted_at is None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="pos_number already exists for this consignment",
+            )
+        # Revive: clear deleted_at, refresh payload from body (ersv_outbound_no
+        # is intentionally NOT cleared — preserve historical allocation).
+        existing.deleted_at = None
+        for k, v in body.model_dump(exclude={"pos_number"}).items():
+            setattr(existing, k, v)
+        await db.commit()
+        await db.refresh(existing)
+        return existing
+
     obj = ConsignmentPos(
         consignment_id=consignment_id,
         **body.model_dump(),
@@ -324,14 +353,17 @@ async def detach_pos(
     user: AdminUser,
     db: DbDep,
 ) -> None:
-    """Hard-delete a PoS association. ConsignmentPos has no deleted_at — hard delete is correct.
+    """Soft-delete a PoS association (sets deleted_at).
 
-    No audit written for association rows (noise-reduction decision).
+    Since 0022 consignment_pos carries an outbound eRSV number under a partial
+    UNIQUE index (active rows only). Soft-deleting frees the number for reuse
+    while preserving the historical row. No audit written (association row).
     """
     result = await db.execute(
         select(ConsignmentPos).where(
             ConsignmentPos.consignment_id == consignment_id,
             ConsignmentPos.pos_number == pos_number,
+            ConsignmentPos.deleted_at.is_(None),
         )
     )
     obj = result.scalar_one_or_none()
@@ -339,7 +371,7 @@ async def detach_pos(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="PoS not found for this consignment"
         )
-    await db.delete(obj)
+    obj.deleted_at = datetime.now(UTC)
     await db.commit()
 
 

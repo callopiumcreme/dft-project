@@ -465,8 +465,22 @@ async def run_backfill(session: AsyncSession) -> None:
     # ------------------------------------------------------------------ #
     # 5. consignment_pos — composite PK (consignment_id, pos_number)     #
     #    → ON CONFLICT DO UPDATE is safe.                                 #
+    #                                                                     #
+    # Per cliente direction 2026-05-23: each PoS is its own outbound      #
+    # eRSV with its own GHG triple. Until per-PoS lab measurements are    #
+    # supplied we seed ISCC reference values (PoS page 2 standard set).   #
+    # ``ersv_outbound_no`` is left NULL here — the renderer allocates     #
+    # ``CO/{yy}/{seq:03d}`` lazily and idempotently on first render.      #
+    # The ON CONFLICT clause preserves an existing ``ersv_outbound_no``    #
+    # (audit safety) and only overwrites GHG values if they are NULL.     #
     # ------------------------------------------------------------------ #
     deliveries = _read_deliveries()
+
+    # ISCC PoS reference values (gCO2eq/MJ; saving in %).
+    GHG_EP_DEFAULT = Decimal("12.33")
+    GHG_ETD_DEFAULT = Decimal("4.63")
+    GHG_TOTAL_DEFAULT = Decimal("16.95")
+    GHG_SAVING_PCT_DEFAULT = Decimal("81.96")
 
     for row_data in deliveries:
         pos_number = row_data["pos_crown_no"].strip()
@@ -477,12 +491,24 @@ async def run_backfill(session: AsyncSession) -> None:
             text(
                 """
                 INSERT INTO consignment_pos
-                    (consignment_id, pos_number, pdf_ref, kg_net, created_at)
+                    (consignment_id, pos_number, pdf_ref, kg_net,
+                     ghg_ep, ghg_etd, ghg_total, ghg_saving_pct,
+                     created_at)
                 VALUES
-                    (:consignment_id, :pos_number, :pdf_ref, :kg_net, NOW())
+                    (:consignment_id, :pos_number, :pdf_ref, :kg_net,
+                     :ghg_ep, :ghg_etd, :ghg_total, :ghg_saving_pct,
+                     NOW())
                 ON CONFLICT (consignment_id, pos_number) DO UPDATE
-                    SET pdf_ref    = EXCLUDED.pdf_ref,
-                        kg_net     = EXCLUDED.kg_net
+                    SET pdf_ref        = EXCLUDED.pdf_ref,
+                        kg_net         = EXCLUDED.kg_net,
+                        ghg_ep         = COALESCE(consignment_pos.ghg_ep,
+                                                  EXCLUDED.ghg_ep),
+                        ghg_etd        = COALESCE(consignment_pos.ghg_etd,
+                                                  EXCLUDED.ghg_etd),
+                        ghg_total      = COALESCE(consignment_pos.ghg_total,
+                                                  EXCLUDED.ghg_total),
+                        ghg_saving_pct = COALESCE(consignment_pos.ghg_saving_pct,
+                                                  EXCLUDED.ghg_saving_pct)
                 """
             ),
             {
@@ -490,6 +516,10 @@ async def run_backfill(session: AsyncSession) -> None:
                 "pos_number": pos_number,
                 "pdf_ref": pdf_ref,
                 "kg_net": kg_net,
+                "ghg_ep": GHG_EP_DEFAULT,
+                "ghg_etd": GHG_ETD_DEFAULT,
+                "ghg_total": GHG_TOTAL_DEFAULT,
+                "ghg_saving_pct": GHG_SAVING_PCT_DEFAULT,
             },
         )
 
@@ -588,12 +618,12 @@ async def verify(session: AsyncSession) -> bool:
     )
     bl2_count = int(bl2_units_row.scalar_one())
 
-    # consignment_pos count and sum
+    # consignment_pos count and sum (active rows only — 0022 adds deleted_at)
     pos_row = await session.execute(
         text(
             "SELECT COUNT(*) AS cnt, COALESCE(SUM(kg_net), 0) AS total "
             "FROM consignment_pos "
-            "WHERE consignment_id = :cid"
+            "WHERE consignment_id = :cid AND deleted_at IS NULL"
         ),
         {"cid": cons_id},
     )

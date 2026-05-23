@@ -24,7 +24,8 @@ hundreds of milliseconds on every request.
 Outbound eRSV (OisteBio → Crown Oil):
 --------------------------------------
 ``render_ersv_outbound`` generates an outbound declaration keyed on a
-``consignment_id``.  Numbering format: ``CO/{yy}/{seq:03d}``
+``(consignment_id, pos_number)`` pair — one document per Proof-of-Sustainability
+row (cliente direction 2026-05-23). Numbering format: ``CO/{yy}/{seq:03d}``
 
   CO   = Colombia (country of dispatch / OisteBio operations)
   yy   = 2-digit year of the **shipment / consignment** (NOT the wall
@@ -41,9 +42,9 @@ Outbound eRSV (OisteBio → Crown Oil):
 
 Example: ``CO/25/007`` (first 2025 outbound), ``CO/25/008`` (second), …
 
-Allocation is idempotent: once ``consignment.ersv_outbound_no`` is set it
-is never auto-changed by a render call.  Admin-only ``regenerate`` endpoint
-is the only path that can assign a new number.
+Allocation is idempotent: once ``consignment_pos.ersv_outbound_no`` is set
+for a PoS row it is never auto-changed by a render call.  Admin-only
+``regenerate`` endpoint is the only path that can assign a new number.
 """
 
 from __future__ import annotations
@@ -579,6 +580,7 @@ class ErsvOutboundHtmlArtifact:
 
     html: str
     consignment_id: int
+    pos_number: str
     ersv_outbound_no: str
 
 
@@ -590,6 +592,7 @@ class ErsvOutboundPdfArtifact:
     pdf_sha256: str
     page_count: int
     consignment_id: int
+    pos_number: str
     ersv_outbound_no: str
     rendered_at: datetime
 
@@ -600,6 +603,17 @@ class ConsignmentNotFoundError(LookupError):
     def __init__(self, consignment_id: int) -> None:
         super().__init__(f"Consignment not found: {consignment_id}")
         self.consignment_id = consignment_id
+
+
+class PosNotFoundError(LookupError):
+    """Raised when the (consignment_id, pos_number) pair is missing or soft-deleted."""
+
+    def __init__(self, consignment_id: int, pos_number: str) -> None:
+        super().__init__(
+            f"PoS not found: consignment_id={consignment_id} pos_number={pos_number}"
+        )
+        self.consignment_id = consignment_id
+        self.pos_number = pos_number
 
 
 # ---------------------------------------------------------------------------
@@ -615,7 +629,7 @@ _NEXT_SEQ_SQL = text(
         ) + 1,
         :min_start
     )
-    FROM consignment
+    FROM consignment_pos
     WHERE ersv_outbound_no LIKE :pattern
       AND deleted_at IS NULL
     """
@@ -740,10 +754,23 @@ _FETCH_LEGS_SQL = text(
 
 _FETCH_POS_SQL = text(
     """
-    SELECT pos_number, pdf_ref, kg_net
+    SELECT pos_number, pdf_ref, kg_net,
+           ersv_outbound_no, ghg_ep, ghg_etd, ghg_total, ghg_saving_pct
     FROM consignment_pos
     WHERE consignment_id = :cid
+      AND deleted_at IS NULL
     ORDER BY pos_number ASC
+    """
+)
+
+_FETCH_SINGLE_POS_SQL = text(
+    """
+    SELECT consignment_id, pos_number, pdf_ref, kg_net,
+           ersv_outbound_no, ghg_ep, ghg_etd, ghg_total, ghg_saving_pct
+    FROM consignment_pos
+    WHERE consignment_id = :cid
+      AND pos_number = :pos
+      AND deleted_at IS NULL
     """
 )
 
@@ -769,22 +796,52 @@ def _derive_litres(kg: object) -> str:
         return _PLACEHOLDER
 
 
+def _fmt_decimal(value: object, fallback: str) -> str:
+    """Format a Decimal/float/None as ``12,33`` EU style; ``fallback`` on None."""
+    if value is None:
+        return fallback
+    try:
+        return f"{float(value):.2f}".replace(".", ",")  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return fallback
+
+
 def _build_outbound_context(
     cons: dict[str, Any],
     legs: list[dict[str, Any]],
-    pos_list: list[dict[str, Any]],
+    pos: dict[str, Any],
     issue_date: date,
 ) -> dict[str, Any]:
-    """Assemble the Jinja2 context for the outbound eRSV template."""
-    total_kg = cons.get("total_kg")
+    """Assemble the Jinja2 context for the outbound eRSV template — single PoS.
+
+    Per cliente direction 2026-05-23, every outbound declaration is keyed on a
+    single ``consignment_pos`` row (1 eRSV per PoS). GHG values, kg_net, PoS
+    number, and ersv_outbound_no all come from that row; the consignment-level
+    fields supply only the parent-lot metadata (code, product grade, parties,
+    chain-of-custody legs).
+    """
     prod_from = cons.get("prod_date_from")
     prod_to = cons.get("prod_date_to")
+    pos_kg = pos.get("kg_net")
 
     generated_at = datetime.now(UTC)
 
+    # Per-PoS GHG values fall back to ISCC defaults when the row has NULLs.
+    ghg_ep = _fmt_decimal(pos.get("ghg_ep"), _GHG_EP)
+    ghg_etd = _fmt_decimal(pos.get("ghg_etd"), _GHG_ETD)
+    ghg_total = _fmt_decimal(pos.get("ghg_total"), _GHG_TOTAL)
+    saving_raw = pos.get("ghg_saving_pct")
+    ghg_saving_pct = (
+        f"{float(saving_raw):.2f}%".replace(".", ",")
+        if saving_raw is not None
+        else _GHG_SAVING_PCT
+    )
+
     return {
-        # Document identity
-        "ersv_outbound_no": cons["ersv_outbound_no"],
+        # Document identity — eRSV scoped to a single PoS
+        "ersv_outbound_no": pos["ersv_outbound_no"],
+        "pos_number": pos["pos_number"],
+        "pos_pdf_ref": pos.get("pdf_ref") or _PLACEHOLDER,
         "issue_date_eu": issue_date.strftime("%d/%m/%Y"),
         "issue_date_iso": issue_date.isoformat(),
         "generated_at_human": generated_at.strftime("%d/%m/%Y %H:%M UTC"),
@@ -801,31 +858,28 @@ def _build_outbound_context(
         "buyer_code": cons.get("off_taker_code") or "CROWN-OIL-UK",
         "buyer_country": cons.get("off_taker_country") or "GB",
         "buyer_address": cons.get("off_taker_address") or "Bury, UK",
-        # Consignment
+        # Consignment (parent context)
         "consignment_code": cons["code"],
         "consignment_id": cons["id"],
         "product_grade": cons.get("product_grade") or "DEV-P100",
         "contract_ref": cons.get("contract_ref") or _PLACEHOLDER,
         "port_rsv_no": cons.get("port_rsv_no") or _PLACEHOLDER,
         "status": cons.get("status") or _PLACEHOLDER,
-        # Quantities
-        "total_kg_str": _fmt_kg_short(total_kg),
-        "total_litres_str": _derive_litres(total_kg),
-        # Production window
+        # Quantities — PoS row, not parent consignment
+        "total_kg_str": _fmt_kg_short(pos_kg),
+        "total_litres_str": _derive_litres(pos_kg),
+        # Production window (parent)
         "prod_date_from": prod_from.strftime("%d/%m/%Y") if prod_from else _PLACEHOLDER,
         "prod_date_to": prod_to.strftime("%d/%m/%Y") if prod_to else _PLACEHOLDER,
-        # Sustainability
+        # Sustainability — per-PoS GHG (fall back to ISCC defaults if NULL)
         "feedstock_category": _FEEDSTOCK_CATEGORY,
         "feedstock_country": _FEEDSTOCK_COUNTRY,
-        "ghg_ep": _GHG_EP,
-        "ghg_etd": _GHG_ETD,
-        "ghg_total": _GHG_TOTAL,
-        "ghg_saving_pct": _GHG_SAVING_PCT,
-        # Chain of custody legs
+        "ghg_ep": ghg_ep,
+        "ghg_etd": ghg_etd,
+        "ghg_total": ghg_total,
+        "ghg_saving_pct": ghg_saving_pct,
+        # Chain of custody legs (parent)
         "legs": legs,
-        # Proof-of-Sustainability list
-        "pos_list": pos_list,
-        "pos_count": len(pos_list),
         # Formatting helpers (called in template via filters)
         "placeholder": _PLACEHOLDER,
         # Style constants — mirror inbound palette
@@ -861,40 +915,58 @@ def _render_outbound_pdf_sync(
 
 async def render_ersv_outbound(
     consignment_id: int,
+    pos_number: str,
     db: AsyncSession,
     format: Literal["html", "pdf"] = "html",
     *,
     issue_date: date | None = None,
     force_new_no: bool = False,
 ) -> ErsvOutboundHtmlArtifact | ErsvOutboundPdfArtifact:
-    """Render an outbound eRSV for the given consignment.
+    """Render an outbound eRSV for one Proof-of-Sustainability row.
+
+    Cliente direction (2026-05-23): outbound numbering and GHG values are
+    PER-POS, not per-consignment. A consignment with 20 PoS therefore yields
+    20 distinct outbound documents. The eRSV number is stored on the
+    ``consignment_pos`` row (column ``ersv_outbound_no``).
 
     Args:
-        consignment_id: PK of the ``consignment`` row.
+        consignment_id: PK of the ``consignment`` row (parent).
+        pos_number:     ``consignment_pos.pos_number`` for the target row.
         db:             Active async DB session.
         format:         ``"html"`` (default) or ``"pdf"``.
         issue_date:     Override the issue date printed on the document;
                         defaults to today (UTC).
         force_new_no:   When ``True``, allocate a brand-new ``ersv_outbound_no``
-                        even if one is already stored — used by the admin
-                        ``/regenerate`` endpoint.  WARNING: permanently
+                        even if one is already stored on the PoS — used by the
+                        admin ``/regenerate`` endpoint. WARNING: permanently
                         replaces the stored number.
 
     Raises:
         ConsignmentNotFoundError: if the consignment does not exist or is soft-deleted.
+        PosNotFoundError:         if the (consignment_id, pos_number) pair does not
+                                  exist or is soft-deleted.
     """
     if issue_date is None:
         issue_date = datetime.now(UTC).date()
 
-    # --- Load consignment + off_taker ---
+    # --- Load consignment + off_taker (parent metadata) ---
     result = await db.execute(_FETCH_CONSIGNMENT_SQL, {"cid": consignment_id})
     row = result.mappings().one_or_none()
     if row is None:
         raise ConsignmentNotFoundError(consignment_id)
     cons = dict(row)
 
-    # --- Idempotent number allocation ---
-    existing_no: str | None = cons.get("ersv_outbound_no")
+    # --- Load target PoS row ---
+    pos_row = await db.execute(
+        _FETCH_SINGLE_POS_SQL, {"cid": consignment_id, "pos": pos_number}
+    )
+    pos_mapping = pos_row.mappings().one_or_none()
+    if pos_mapping is None:
+        raise PosNotFoundError(consignment_id, pos_number)
+    pos: dict[str, Any] = dict(pos_mapping)
+
+    # --- Idempotent number allocation on the PoS row ---
+    existing_no: str | None = pos.get("ersv_outbound_no")
     if existing_no is None or force_new_no:
         # Derive ``yy`` from the consignment's shipment year, NOT the wall
         # clock — a 2025 Q3 consignment minted in 2026 must still produce
@@ -902,22 +974,21 @@ async def render_ersv_outbound(
         shipment_year = await _shipment_year_for(consignment_id, db)
         yy = f"{shipment_year % 100:02d}"
         new_no = await _allocate_outbound_no(yy, db)
-        # Persist immediately so concurrent renders don't get the same number
+        # Persist immediately so concurrent renders don't collide.
         await db.execute(
             text(
-                "UPDATE consignment SET ersv_outbound_no = :no, updated_at = NOW() "
-                "WHERE id = :cid"
+                "UPDATE consignment_pos SET ersv_outbound_no = :no "
+                "WHERE consignment_id = :cid AND pos_number = :pos"
             ),
-            {"no": new_no, "cid": consignment_id},
+            {"no": new_no, "cid": consignment_id, "pos": pos_number},
         )
         await db.commit()
-        cons["ersv_outbound_no"] = new_no
+        pos["ersv_outbound_no"] = new_no
     # else: already set — leave untouched (idempotent)
 
-    # --- Load legs + PoS ---
+    # --- Load chain-of-custody legs (consignment-scoped) ---
     legs_result = await db.execute(_FETCH_LEGS_SQL, {"cid": consignment_id})
     legs: list[dict[str, Any]] = [dict(r) for r in legs_result.mappings().all()]
-    # Format kg values for template display
     for leg in legs:
         leg["kg_in_str"] = _fmt_kg_short(leg.get("kg_in"))
         leg["kg_out_str"] = _fmt_kg_short(leg.get("kg_out"))
@@ -926,13 +997,8 @@ async def render_ersv_outbound(
             doc_date.strftime("%d/%m/%Y") if doc_date is not None else _PLACEHOLDER
         )
 
-    pos_result = await db.execute(_FETCH_POS_SQL, {"cid": consignment_id})
-    pos_list: list[dict[str, Any]] = [dict(r) for r in pos_result.mappings().all()]
-    for pos in pos_list:
-        pos["kg_net_str"] = _fmt_kg_short(pos.get("kg_net"))
-
-    # --- Build Jinja context ---
-    context = _build_outbound_context(cons, legs, pos_list, issue_date)
+    # --- Build Jinja context (per-PoS) ---
+    context = _build_outbound_context(cons, legs, pos, issue_date)
 
     # --- HTML render ---
     env = Environment(
@@ -949,12 +1015,13 @@ async def render_ersv_outbound(
         return ErsvOutboundHtmlArtifact(
             html=html,
             consignment_id=consignment_id,
-            ersv_outbound_no=cons["ersv_outbound_no"],
+            pos_number=pos_number,
+            ersv_outbound_no=pos["ersv_outbound_no"],
         )
 
     # --- PDF render ---
     with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_pdf = Path(tmpdir) / f"ersv_outbound_{consignment_id}.pdf"
+        tmp_pdf = Path(tmpdir) / f"ersv_outbound_{consignment_id}_{pos_number}.pdf"
         pdf_bytes, sha256_hex, page_count = await anyio.to_thread.run_sync(
             _render_outbound_pdf_sync, context, tmp_pdf
         )
@@ -964,7 +1031,8 @@ async def render_ersv_outbound(
         pdf_sha256=sha256_hex,
         page_count=page_count,
         consignment_id=consignment_id,
-        ersv_outbound_no=cons["ersv_outbound_no"],
+        pos_number=pos_number,
+        ersv_outbound_no=pos["ersv_outbound_no"],
         rendered_at=datetime.now(UTC),
     )
 
@@ -976,6 +1044,7 @@ __all__ = [
     "ErsvOutboundHtmlArtifact",
     "ErsvOutboundPdfArtifact",
     "ErsvRenderArtifact",
+    "PosNotFoundError",
     "fetch_ersv_row",
     "is_regenerated",
     "render_ersv_outbound",
