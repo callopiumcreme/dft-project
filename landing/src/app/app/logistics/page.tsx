@@ -98,15 +98,21 @@ export default async function LogisticsPage({ searchParams }: PageProps) {
     else fetchError = 'unknown error';
   }
 
-  // KPI computations
+  // KPI computations — sourced from chain-derived backend fields,
+  // not from status alone (a consignment can be at_utb while having
+  // already moved most kg downstream via delivery_uk legs).
   const totalConsignments = consignments.length;
   const totalKgShipped = consignments.reduce((s, c) => s + (Number(c.total_kg) || 0), 0);
-  const delivered = consignments.filter(
-    (c) => c.status === 'delivered_uk' || c.status === 'closed',
+  // UTB residual = real stock still sitting at UTB transload (kg_stock_residual)
+  const utbResidual = consignments.reduce(
+    (s, c) => s + (Number(c.kg_residual_utb) || 0),
+    0,
   );
-  const atUtb = consignments.filter((c) => c.status === 'at_utb');
-  // UTB residual = consignments with status at_utb (total kg still in transit)
-  const utbResidual = atUtb.reduce((s, c) => s + (Number(c.total_kg) || 0), 0);
+  // Delivered UK = sum of kg_out on delivery_uk legs (works regardless of status)
+  const deliveredKg = consignments.reduce(
+    (s, c) => s + (Number(c.kg_delivered_uk) || 0),
+    0,
+  );
 
   return (
     <div className="mx-auto max-w-editorial">
@@ -126,7 +132,7 @@ export default async function LogisticsPage({ searchParams }: PageProps) {
         <KpiTile label="Consignments" value={String(totalConsignments)} />
         <KpiTile label="Total shipped" value={fmtKg(String(totalKgShipped))} />
         <KpiTile label="UTB stock" value={fmtKg(String(utbResidual))} />
-        <KpiTile label="Delivered UK" value={String(delivered.length)} />
+        <KpiTile label="Delivered UK" value={fmtKg(String(deliveredKg))} />
       </section>
 
       {/* Filters */}

@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, CheckConstraint, Date, ForeignKey, Numeric, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.off_taker import OffTaker
 
 
 class Consignment(Base):
@@ -42,3 +46,5 @@ class Consignment(Base):
         server_default=func.now(), onupdate=func.now(), nullable=False
     )
     deleted_at: Mapped[datetime | None] = mapped_column()
+
+    off_taker: Mapped[OffTaker] = relationship("OffTaker", lazy="raise")

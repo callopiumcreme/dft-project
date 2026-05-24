@@ -297,6 +297,22 @@ class ConsignmentOut(BaseModel):
     deleted_at: datetime | None
 
 
+class ConsignmentSummary(ConsignmentOut):
+    """List shape: ConsignmentOut + nested off_taker + chain-derived KPI fields.
+
+    KPI fields are computed from leg rows at query time:
+      * kg_residual_utb — sum of `kg_stock_residual` across leg_type='utb_transload'
+      * kg_delivered_uk — sum of `kg_out` across leg_type='delivery_uk'
+
+    Used by #3 logistics-ui list/index — KPI tiles (UTB stock, Delivered UK) +
+    table's off-taker column.
+    """
+
+    off_taker: OffTakerOut | None = None
+    kg_residual_utb: Decimal | None = None
+    kg_delivered_uk: Decimal | None = None
+
+
 class ConsignmentDetail(ConsignmentOut):
     """Composite view: consignment + nested off_taker + legs (with units) + pos + production links.
 

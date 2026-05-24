@@ -9,12 +9,14 @@ No audit on consignment_pos / consignment_production_link (association rows —
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.deps import AdminUser, OperatorUser, ViewerUser
 from app.db.session import get_db
@@ -32,6 +34,7 @@ from app.schemas.logistics import (
     ConsignmentPosOut,
     ConsignmentProductionLinkCreate,
     ConsignmentProductionLinkOut,
+    ConsignmentSummary,
     ConsignmentUpdate,
     OffTakerOut,
     ShipmentLegDetail,
@@ -63,7 +66,7 @@ async def _get_or_404(
     return obj
 
 
-@router.get("", response_model=list[ConsignmentOut])
+@router.get("", response_model=list[ConsignmentSummary])
 async def list_consignments(
     _: ViewerUser,
     db: DbDep,
@@ -74,9 +77,14 @@ async def list_consignments(
     include_deleted: bool = Query(False),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
-) -> list[Consignment]:
-    """List consignments with optional filters on off_taker, status, and production date range."""
-    stmt = select(Consignment)
+) -> list[ConsignmentSummary]:
+    """List consignments with optional filters on off_taker, status, and production date range.
+
+    Response shape: ConsignmentSummary — nested off_taker + chain-derived KPI fields
+    (kg_residual_utb from UTB transload leg.kg_stock_residual, kg_delivered_uk from
+    delivery_uk leg.kg_out). Eager-loads off_taker to avoid N+1 / async lazy-load None.
+    """
+    stmt = select(Consignment).options(selectinload(Consignment.off_taker))
     if not include_deleted:
         stmt = stmt.where(Consignment.deleted_at.is_(None))
     if off_taker_id is not None:
@@ -93,7 +101,47 @@ async def list_consignments(
         )
     stmt = stmt.order_by(Consignment.code).offset(skip).limit(limit)
     result = await db.execute(stmt)
-    return list(result.scalars().all())
+    rows = list(result.scalars().all())
+
+    # KPI aggregates per consignment_id — single query, grouped
+    if rows:
+        ids = [r.id for r in rows]
+        kpi_stmt = (
+            select(
+                ShipmentLeg.consignment_id,
+                func.sum(
+                    func.coalesce(
+                        ShipmentLeg.kg_stock_residual,
+                        0,
+                    )
+                ).filter(ShipmentLeg.leg_type == "utb_transload").label("kg_residual_utb"),
+                func.sum(
+                    func.coalesce(ShipmentLeg.kg_out, 0)
+                ).filter(ShipmentLeg.leg_type == "delivery_uk").label("kg_delivered_uk"),
+            )
+            .where(ShipmentLeg.consignment_id.in_(ids))
+            .group_by(ShipmentLeg.consignment_id)
+        )
+        kpi_result = await db.execute(kpi_stmt)
+        kpi_by_id: dict[int, tuple[Decimal | None, Decimal | None]] = {
+            cid: (residual, delivered) for cid, residual, delivered in kpi_result.all()
+        }
+    else:
+        kpi_by_id = {}
+
+    return [
+        ConsignmentSummary.model_validate(
+            {
+                **{c.name: getattr(r, c.name) for c in r.__table__.columns},
+                "off_taker": (
+                    OffTakerOut.model_validate(r.off_taker) if r.off_taker else None
+                ),
+                "kg_residual_utb": kpi_by_id.get(r.id, (None, None))[0],
+                "kg_delivered_uk": kpi_by_id.get(r.id, (None, None))[1],
+            }
+        )
+        for r in rows
+    ]
 
 
 @router.post("", response_model=ConsignmentOut, status_code=status.HTTP_201_CREATED)

@@ -81,7 +81,7 @@ export interface ConsignmentSummary {
   id: number;
   code: string;
   off_taker_id: number;
-  off_taker: OffTaker;
+  off_taker: OffTaker | null;
   product_grade: string;
   prod_date_from: string;
   prod_date_to: string;
@@ -93,6 +93,9 @@ export interface ConsignmentSummary {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  /** Chain-derived KPIs (computed backend from leg rows). */
+  kg_residual_utb: string | null;
+  kg_delivered_uk: string | null;
 }
 
 export interface ConsignmentDetail extends ConsignmentSummary {
