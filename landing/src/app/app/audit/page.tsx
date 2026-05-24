@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { apiGet, ApiError } from '@/lib/api';
+import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 import type { components } from '@/lib/backend-types';
 
 type Page = components['schemas']['AuditLogPage'];
@@ -168,6 +169,18 @@ export default async function AuditLogPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-editorial">
+      <UmamiViewEvent
+        name="view_audit_log"
+        data={{
+          ...(table ? { table } : {}),
+          ...(record !== undefined ? { record } : {}),
+          ...(action ? { action } : {}),
+          ...(userId !== undefined ? { user: userId } : {}),
+          ...(dateFrom ? { from: dateFrom } : {}),
+          ...(dateTo ? { to: dateTo } : {}),
+          ...(pageNum > 1 ? { page: pageNum } : {}),
+        }}
+      />
       <header className="border-b border-rule pb-6">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">Admin</p>
         <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">Audit log</h1>

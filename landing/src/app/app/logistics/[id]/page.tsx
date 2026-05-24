@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { apiGet, ApiError } from '@/lib/api';
 import { ChainTimeline } from '@/components/logistics/ChainTimeline';
+import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 import type { ConsignmentDetail, ConsignmentStatus } from '@/types/logistics';
 
 export const dynamic = 'force-dynamic';
@@ -90,6 +91,14 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-editorial">
+      <UmamiViewEvent
+        name="view_consignment"
+        data={{
+          id: consignment.id,
+          code: consignment.code,
+          status: consignment.status,
+        }}
+      />
       {/* Breadcrumb nav */}
       <div className="mb-4">
         <Link

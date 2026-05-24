@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { apiGet, ApiError, SESSION_COOKIE } from '@/lib/api';
+import { auditUserId } from '@/lib/audit-id';
 import type { components } from '@/lib/backend-types';
 import { AppShell } from './_components/app-shell';
 
@@ -22,8 +23,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     throw e;
   }
 
+  const userIdHash = auditUserId(user.email);
+
   return (
-    <AppShell user={{ email: user.email, role: user.role, full_name: user.full_name }}>
+    <AppShell
+      user={{ email: user.email, role: user.role, full_name: user.full_name }}
+      userIdHash={userIdHash}
+    >
       {children}
     </AppShell>
   );

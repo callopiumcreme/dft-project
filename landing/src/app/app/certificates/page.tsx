@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
+import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 import type { components } from '@/lib/backend-types';
 
 type Row = components['schemas']['CertificateRead'];
@@ -149,6 +150,14 @@ export default async function CertificatesPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-editorial">
+      <UmamiViewEvent
+        name="view_certificates_list"
+        data={{
+          ...(status ? { status } : {}),
+          ...(showAll ? { include_deleted: true } : {}),
+          ...(q ? { q } : {}),
+        }}
+      />
       <header className="border-b border-rule pb-6">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">
           Master data

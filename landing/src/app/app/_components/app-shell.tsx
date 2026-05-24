@@ -6,6 +6,7 @@ import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { ErsvModalProvider } from '@/components/ersv';
 import { TicketModalProvider } from '@/components/ticket';
+import { UmamiIdentify } from '@/components/analytics/umami-identify';
 import { SidebarNav } from './sidebar-nav';
 import { Breadcrumb } from './breadcrumb';
 import { UserMenu } from './user-menu';
@@ -13,14 +14,16 @@ import { UserMenu } from './user-menu';
 type Props = {
   children: ReactNode;
   user: { email: string; role: string; full_name?: string | null };
+  userIdHash: string;
 };
 
-export function AppShell({ children, user }: Props) {
+export function AppShell({ children, user, userIdHash }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
     <ErsvModalProvider>
     <TicketModalProvider>
+    <UmamiIdentify userId={userIdHash} role={user.role} />
     <div className="min-h-dvh bg-bg">
       <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:w-60 md:flex-col md:border-r md:border-rule md:bg-bg">
         <Link

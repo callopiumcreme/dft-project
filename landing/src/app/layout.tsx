@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Fraunces, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
+import { UmamiTracker } from '@/components/analytics/umami-tracker';
+import { UmamiPendingEvent } from '@/components/analytics/umami-pending-event';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -25,6 +27,7 @@ const jetbrainsMono = JetBrains_Mono({
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://dft-project.com';
 const UMAMI_SRC = process.env.NEXT_PUBLIC_UMAMI_SRC;
 const UMAMI_ID = process.env.NEXT_PUBLIC_UMAMI_ID;
+const UMAMI_DOMAINS = process.env.NEXT_PUBLIC_UMAMI_DOMAINS;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -91,12 +94,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         {UMAMI_SRC && UMAMI_ID && (
-          <Script
-            src={UMAMI_SRC}
-            data-website-id={UMAMI_ID}
-            strategy="afterInteractive"
-            defer
-          />
+          <>
+            <Script
+              src={UMAMI_SRC}
+              data-website-id={UMAMI_ID}
+              {...(UMAMI_DOMAINS ? { 'data-domains': UMAMI_DOMAINS } : {})}
+              strategy="afterInteractive"
+              defer
+            />
+            <UmamiTracker />
+            <UmamiPendingEvent />
+          </>
         )}
       </body>
     </html>

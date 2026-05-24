@@ -6,6 +6,7 @@ import { buildMonthOptions } from './month-utils';
 import { KpiTileTooltip } from './kpi-tile-tooltip';
 import { ErsvLink } from '@/components/ersv';
 import { TicketLink } from '@/components/ticket';
+import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 
 type DailyRow = components['schemas']['MassBalanceDailyRow'];
 type MonthlyRow = components['schemas']['MassBalanceMonthlyRow'];
@@ -192,6 +193,15 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-editorial">
+      <UmamiViewEvent
+        name="view_report_mass_balance"
+        data={{
+          view,
+          ...(from ? { from } : {}),
+          ...(to ? { to } : {}),
+          ...(supplierId ? { supplier_id: supplierId } : {}),
+        }}
+      />
       <header className="border-b border-rule pb-6">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">Report</p>
         <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">Mass balance</h1>

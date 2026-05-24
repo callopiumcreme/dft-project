@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { loginAction, type LoginState } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,19 @@ function SubmitButton() {
 
 export function LoginForm({ next }: { next: string }) {
   const [state, action] = useFormState(loginAction, initialState);
+
+  useEffect(() => {
+    if (!state.error) return;
+    // Map error string → reason. Server already set a cookie too;
+    // fire client-side here so failure on same-page rerender is captured.
+    const reason =
+      state.error === 'Invalid credentials'
+        ? 'invalid_credentials'
+        : state.error === 'Email and password required'
+          ? 'missing_fields'
+          : 'server_error';
+    window.umami?.track('auth_login_fail', { reason });
+  }, [state.error]);
 
   return (
     <form action={action} className="space-y-8" noValidate>

@@ -3,6 +3,7 @@ import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { ContractLink } from '@/components/contracts/contract-link';
 import { ContractModalProvider } from '@/components/contracts/contract-modal-provider';
+import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 
 type Contract = components['schemas']['ContractRead'];
 type Supplier = components['schemas']['SupplierRead'];
@@ -85,6 +86,13 @@ export default async function ContractsPage({ searchParams }: PageProps) {
   return (
     <ContractModalProvider>
     <div className="mx-auto max-w-editorial">
+      <UmamiViewEvent
+        name="view_contracts_list"
+        data={{
+          ...(supplierId ? { supplier_id: supplierId } : {}),
+          ...(showAll ? { include_deleted: true } : {}),
+        }}
+      />
       <header className="border-b border-rule pb-6">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">
           Master data

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
+import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 import type { ConsignmentSummary, ConsignmentStatus, OffTaker } from '@/types/logistics';
 
 export const dynamic = 'force-dynamic';
@@ -116,6 +117,15 @@ export default async function LogisticsPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-editorial">
+      <UmamiViewEvent
+        name="view_logistics_list"
+        data={{
+          ...(status ? { status } : {}),
+          ...(offTakerId ? { off_taker_id: offTakerId } : {}),
+          ...(prodFrom ? { prod_date_from: prodFrom } : {}),
+          ...(prodTo ? { prod_date_to: prodTo } : {}),
+        }}
+      />
       <header className="border-b border-rule pb-6">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink-mute">
           Downstream
