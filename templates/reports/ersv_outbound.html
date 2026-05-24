@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Outbound eRSV {{ ersv_outbound_no }}</title>
+    <style>
+        /* --------------------------------------------------------------
+           PAGE — A4 portrait, 14mm margins, running header/footer.
+           -------------------------------------------------------------- */
+        @page {
+            size: A4 portrait;
+            margin: 11mm 12mm 16mm 12mm;
+            @bottom-left {
+                content: "{{ issuer_name }} · {{ issuer_address }}";
+                font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+                font-size: 7pt;
+                color: #777;
+            }
+            @bottom-right {
+                content: "{{ version_label }} — Page " counter(page) " of " counter(pages);
+                font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+                font-size: 7pt;
+                color: #777;
+            }
+        }
+
+        html, body {
+            font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+            font-size: 8.5pt;
+            line-height: 1.25;
+            color: #111;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2, h3 { margin: 0; color: {{ primary_color }}; }
+
+        /* --------------------------------------------------------------
+           HEADER — issuer logo row + document title band
+           -------------------------------------------------------------- */
+        .header-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 5pt;
+        }
+        .header-left {
+            display: table-cell;
+            vertical-align: bottom;
+        }
+        .header-right {
+            display: table-cell;
+            vertical-align: bottom;
+            text-align: right;
+        }
+        .issuer-name {
+            font-size: 13pt;
+            font-weight: bold;
+            color: {{ primary_color }};
+            letter-spacing: 0.4pt;
+        }
+        .issuer-sub {
+            font-size: 7.5pt;
+            color: #555;
+            margin-top: 1pt;
+        }
+        .date-block {
+            font-size: 8pt;
+            color: #444;
+            text-align: right;
+        }
+
+        .title-band {
+            background: {{ primary_color }};
+            color: #fff;
+            text-align: center;
+            padding: 5pt 8pt;
+            font-size: 11pt;
+            font-weight: bold;
+            letter-spacing: 0.8pt;
+            text-transform: uppercase;
+        }
+        .doc-num-line {
+            text-align: center;
+            font-family: "Courier New", "Liberation Mono", monospace;
+            font-size: 10.5pt;
+            margin: 2pt 0 0 0;
+            color: {{ primary_color }};
+            font-weight: bold;
+        }
+
+        /* --------------------------------------------------------------
+           Section band
+           -------------------------------------------------------------- */
+        .section-band {
+            background: #f1f5f9;
+            border-left: 2.5pt solid {{ primary_color }};
+            padding: 3pt 6pt;
+            font-weight: bold;
+            font-size: 9pt;
+            color: {{ primary_color }};
+            text-transform: uppercase;
+            letter-spacing: 0.4pt;
+            margin: 7pt 0 2pt 0;
+        }
+
+        /* --------------------------------------------------------------
+           Two-column key-value table
+           -------------------------------------------------------------- */
+        table.kv {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+        }
+        table.kv td {
+            padding: 1.5pt 4pt;
+            vertical-align: top;
+            border-bottom: 0.3pt dotted #d1d5db;
+        }
+        table.kv td.k {
+            width: 32%;
+            color: #555;
+            font-size: 8pt;
+        }
+        table.kv td.v {
+            font-size: 9pt;
+        }
+        table.kv td.v strong {
+            color: #111;
+        }
+
+        /* Two-column layout for Issuer / Buyer side by side */
+        .two-col {
+            display: table;
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 6pt 0;
+            margin-bottom: 2pt;
+        }
+        .col-half {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+        .party-box {
+            border: 0.5pt solid #cbd5e1;
+            border-top: 2pt solid {{ primary_color }};
+            padding: 4pt 6pt;
+        }
+        .party-label {
+            font-size: 7pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5pt;
+            color: {{ primary_color }};
+            font-weight: bold;
+            margin-bottom: 2pt;
+        }
+        .party-name {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #111;
+        }
+        .party-detail {
+            font-size: 8pt;
+            color: #444;
+            margin-top: 1pt;
+        }
+
+        /* --------------------------------------------------------------
+           Product highlight box
+           -------------------------------------------------------------- */
+        .product-box {
+            border: 0.7pt solid {{ primary_color }};
+            background: #f8fafc;
+            padding: 5pt 8pt;
+            margin: 6pt 0 2pt 0;
+            display: table;
+            width: 100%;
+        }
+        .product-grade-lbl {
+            display: table-cell;
+            width: 30%;
+            vertical-align: middle;
+        }
+        .product-grade-val {
+            font-size: 13pt;
+            font-weight: bold;
+            color: {{ primary_color }};
+        }
+        .product-qty-block {
+            display: table-cell;
+            width: 70%;
+            vertical-align: middle;
+            text-align: right;
+        }
+        .qty-big {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #111;
+        }
+        .qty-sub {
+            font-size: 8pt;
+            color: #555;
+        }
+
+        /* --------------------------------------------------------------
+           Sustainability fields
+           -------------------------------------------------------------- */
+        .sus-grid {
+            display: table;
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 4pt 0;
+        }
+        .sus-cell {
+            display: table-cell;
+            vertical-align: top;
+            width: 33%;
+        }
+        .sus-item {
+            border-left: 1.5pt solid {{ primary_color }};
+            padding-left: 4pt;
+            margin-bottom: 4pt;
+        }
+        .sus-lbl {
+            font-size: 7pt;
+            text-transform: uppercase;
+            color: #666;
+            letter-spacing: 0.3pt;
+        }
+        .sus-val {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #111;
+        }
+
+        /* GHG mini table */
+        table.ghg {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 3pt;
+            font-size: 8pt;
+        }
+        table.ghg th {
+            background: {{ primary_color }};
+            color: #fff;
+            padding: 2pt 4pt;
+            text-align: center;
+            font-size: 7.5pt;
+        }
+        table.ghg td {
+            border: 0.5pt solid #cbd5e1;
+            padding: 2pt 4pt;
+            text-align: center;
+        }
+        table.ghg td.total-cell {
+            font-weight: bold;
+            background: #eef2f6;
+        }
+
+        /* --------------------------------------------------------------
+           Chain of custody legs table
+           -------------------------------------------------------------- */
+        table.legs {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4pt;
+            font-size: 7.5pt;
+        }
+        table.legs th {
+            background: {{ primary_color }};
+            color: #fff;
+            padding: 3pt 4pt;
+            text-align: left;
+            font-size: 7pt;
+            text-transform: uppercase;
+            letter-spacing: 0.2pt;
+        }
+        table.legs td {
+            border: 0.4pt solid #94a3b8;
+            padding: 2.5pt 4pt;
+            vertical-align: top;
+        }
+        table.legs tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+        table.legs td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        table.legs td.seq-cell {
+            text-align: center;
+            font-weight: bold;
+            color: {{ primary_color }};
+        }
+
+        /* --------------------------------------------------------------
+           PoS table
+           -------------------------------------------------------------- */
+        table.pos {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4pt;
+            font-size: 8pt;
+        }
+        table.pos th {
+            background: {{ primary_color }};
+            color: #fff;
+            padding: 2.5pt 5pt;
+            text-align: left;
+            font-size: 7.5pt;
+            text-transform: uppercase;
+        }
+        table.pos td {
+            border: 0.4pt solid #94a3b8;
+            padding: 2.5pt 5pt;
+            vertical-align: middle;
+        }
+        table.pos tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+        table.pos td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        table.pos .pos-num {
+            font-family: "Courier New", "Liberation Mono", monospace;
+            font-size: 8.5pt;
+        }
+
+        /* --------------------------------------------------------------
+           Signature block
+           -------------------------------------------------------------- */
+        .sig-block {
+            margin-top: 16pt;
+            display: table;
+            width: 100%;
+        }
+        .sig-left {
+            display: table-cell;
+            width: 55%;
+            vertical-align: bottom;
+        }
+        .sig-right {
+            display: table-cell;
+            width: 45%;
+            vertical-align: bottom;
+            text-align: right;
+        }
+        .sig-line {
+            border-top: 0.7pt solid #111;
+            padding-top: 3pt;
+            font-size: 9pt;
+        }
+        .sig-name {
+            font-weight: bold;
+        }
+        .sig-role {
+            font-size: 7.5pt;
+            color: #555;
+        }
+        .sig-place {
+            font-size: 8pt;
+            color: #444;
+            margin-bottom: 3pt;
+        }
+
+        /* --------------------------------------------------------------
+           Validity / legal notice
+           -------------------------------------------------------------- */
+        .legal-notice {
+            margin-top: 10pt;
+            padding: 4pt 8pt;
+            border: 0.5pt solid #94a3b8;
+            border-left: 2.5pt solid {{ primary_color }};
+            background: #f8fafc;
+            font-size: 7pt;
+            line-height: 1.4;
+            color: #444;
+            text-align: justify;
+        }
+
+        /* --------------------------------------------------------------
+           Footer brand line
+           -------------------------------------------------------------- */
+        .brand-bottom {
+            margin-top: 6pt;
+            padding-top: 3pt;
+            border-top: 0.5pt solid {{ primary_color }};
+            text-align: center;
+            font-size: 7pt;
+            color: {{ primary_color }};
+            letter-spacing: 0.3pt;
+        }
+        .doc-meta {
+            margin-top: 2pt;
+            text-align: center;
+            font-family: "Courier New", "Liberation Mono", monospace;
+            font-size: 6pt;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+{# ===== HEADER — Issuer identity + date ===== #}
+<div class="header-row">
+    <div class="header-left">
+        <div class="issuer-name">{{ issuer_name }}</div>
+        <div class="issuer-sub">{{ issuer_address }}</div>
+        <div class="issuer-sub">{{ issuer_vat }} &middot; {{ issuer_email }}</div>
+    </div>
+    <div class="header-right">
+        <div class="date-block">
+            Issue date: <strong>{{ issue_date_eu }}</strong>
+        </div>
+        <div class="date-block" style="font-size:7pt; color:#888;">
+            Generated: {{ generated_at_human }}
+        </div>
+    </div>
+</div>
+
+{# ===== Title band ===== #}
+<div class="title-band">Outbound Material Declaration — eRSV</div>
+<div class="doc-num-line">{{ ersv_outbound_no }}</div>
+
+{# ===== Issuer / Buyer party blocks ===== #}
+<div style="margin-top: 8pt;">
+    <div class="two-col">
+        <div class="col-half">
+            <div class="party-box">
+                <div class="party-label">Supplier / Issuing Operator</div>
+                <div class="party-name">{{ issuer_name }}</div>
+                <div class="party-detail">{{ issuer_address }}</div>
+                <div class="party-detail">Operations plant: {{ issuer_plant }}</div>
+                <div class="party-detail">VAT: {{ issuer_vat }}</div>
+                <div class="party-detail">{{ issuer_email }}</div>
+            </div>
+        </div>
+        <div class="col-half">
+            <div class="party-box">
+                <div class="party-label">Recipient / Buyer</div>
+                <div class="party-name">{{ buyer_name }}</div>
+                <div class="party-detail">{{ buyer_address }}</div>
+                <div class="party-detail">Country: {{ buyer_country }}</div>
+                {% if contract_ref and contract_ref != '—' %}
+                <div class="party-detail">Contract ref: {{ contract_ref }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ===== Product & Quantity ===== #}
+<div class="section-band">Product &amp; Quantity</div>
+<div class="product-box">
+    <div class="product-grade-lbl">
+        <div style="font-size:7.5pt; color:#666; text-transform:uppercase; letter-spacing:0.3pt;">Product grade</div>
+        <div class="product-grade-val">{{ product_grade }}</div>
+        <div style="font-size:7.5pt; color:#555;">Refined pyrolysis oil</div>
+    </div>
+    <div class="product-qty-block">
+        <div class="qty-big">{{ total_kg_str }}</div>
+        <div class="qty-sub">≈ {{ total_litres_str }} at {{ "0.78 kg/L" }} (DEV-P100 density)</div>
+        {% if prod_date_from and prod_date_from != '—' %}
+        <div class="qty-sub" style="margin-top:3pt;">
+            Production window: {{ prod_date_from }} — {{ prod_date_to }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ===== Consignment reference ===== #}
+<div class="section-band">Consignment Details</div>
+<table class="kv">
+    <tr>
+        <td class="k">Consignment code</td>
+        <td class="v"><strong>{{ consignment_code }}</strong></td>
+    </tr>
+    {% if port_rsv_no and port_rsv_no != '—' %}
+    <tr>
+        <td class="k">Port RSV No.</td>
+        <td class="v">{{ port_rsv_no }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td class="k">Status</td>
+        <td class="v">{{ status }}</td>
+    </tr>
+</table>
+
+{# ===== Sustainability Information ===== #}
+<div class="section-band">Sustainability Information</div>
+<table class="kv">
+    <tr>
+        <td class="k">Raw material category</td>
+        <td class="v"><strong>{{ feedstock_category }}</strong></td>
+    </tr>
+    <tr>
+        <td class="k">Country of origin (raw material)</td>
+        <td class="v">{{ feedstock_country }}</td>
+    </tr>
+    <tr>
+        <td class="k">Certification system</td>
+        <td class="v">ISCC EU</td>
+    </tr>
+    <tr>
+        <td class="k">Chain of custody</td>
+        <td class="v">Mass balance</td>
+    </tr>
+    <tr>
+        <td class="k">RED III compliance</td>
+        <td class="v">Yes — Art. 29(2)-(7) RED III</td>
+    </tr>
+    <tr>
+        <td class="k">Waste / residue designation</td>
+        <td class="v">No (ELT = end-of-life tyres, non-agricultural waste)</td>
+    </tr>
+</table>
+
+{# GHG table #}
+<div style="margin-top: 5pt;">
+    <table class="ghg">
+        <thead>
+            <tr>
+                <th>GHG component</th>
+                <th>Ep (processing)</th>
+                <th>Etd (transport &amp; distribution)</th>
+                <th>Total E (gCO₂eq/MJ)</th>
+                <th>GHG saving vs fossil</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>DEV-P100</td>
+                <td>{{ ghg_ep }}</td>
+                <td>{{ ghg_etd }}</td>
+                <td class="total-cell">{{ ghg_total }}</td>
+                <td class="total-cell">{{ ghg_saving_pct }} (ref: 94 gCO₂eq/MJ)</td>
+            </tr>
+        </tbody>
+    </table>
+    <div style="font-size:6.5pt; color:#888; margin-top:2pt;">
+        GHG values sourced from ISCC PoS (OISCRO series); default RED III values not applied.
+    </div>
+</div>
+
+{# ===== Chain of Custody ===== #}
+<div class="section-band">Chain of Custody — Shipment Legs</div>
+{% if legs %}
+<table class="legs">
+    <thead>
+        <tr>
+            <th style="width:4%">#</th>
+            <th style="width:14%">Leg type</th>
+            <th style="width:18%">Document ref</th>
+            <th style="width:10%">Date</th>
+            <th style="width:20%">Origin</th>
+            <th style="width:20%">Destination</th>
+            <th style="width:7%">kg in</th>
+            <th style="width:7%">kg out</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for leg in legs %}
+        <tr>
+            <td class="seq-cell">{{ leg.seq }}</td>
+            <td>{{ leg.leg_type }}</td>
+            <td>
+                {{ leg.document_ref or '—' }}
+                {% if leg.carrier %}
+                <div style="font-size:7pt; color:#666;">{{ leg.carrier }}</div>
+                {% endif %}
+            </td>
+            <td>{{ leg.document_date_eu }}</td>
+            <td>{{ leg.origin_node }}</td>
+            <td>{{ leg.destination_node }}</td>
+            <td class="num">{{ leg.kg_in_str }}</td>
+            <td class="num">{{ leg.kg_out_str }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="font-size:8pt; color:#888; font-style:italic; margin-top:4pt;">
+    No shipment legs recorded for this consignment.
+</div>
+{% endif %}
+
+{# ===== Proof of Sustainability (PoS) — single row referenced by this eRSV ===== #}
+<div class="section-band">Proof of Sustainability (PoS) — this declaration</div>
+<table class="pos">
+    <thead>
+        <tr>
+            <th style="width:55%">PoS Number</th>
+            <th style="width:35%">Net Weight</th>
+            <th style="width:10%">PDF</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="pos-num">{{ pos_number }}</td>
+            <td class="num">{{ total_kg_str }}</td>
+            <td style="text-align:center; font-size:7pt;">
+                {% if pos_pdf_ref and pos_pdf_ref != placeholder %}
+                <span style="color:#1a3a5c;">&#10003;</span>
+                {% else %}
+                <span style="color:#aaa;">—</span>
+                {% endif %}
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+{# ===== Legal notice ===== #}
+<div class="legal-notice">
+    By issuing this Outbound eRSV, {{ issuer_name }} (Geschäftsführer: {{ signatory_name }})
+    confirms that the material described herein originates exclusively from
+    end-of-life tyres (ELT) processed at the Girardot, Colombia facility under
+    ISCC EU chain-of-custody (mass balance). All GHG and sustainability data
+    are consistent with the linked ISCC Proof(s) of Sustainability. This document
+    constitutes a valid electronic declaration for purposes of RTFO chain-of-custody
+    audit. It does not replace the ISCC PoS documents individually issued per
+    delivery lot.
+</div>
+
+{# ===== Signature block ===== #}
+<div class="sig-block">
+    <div class="sig-left">
+        <div class="sig-place">{{ signing_place }}, {{ issue_date_eu }}</div>
+        <div class="sig-line">
+            <div class="sig-name">{{ signatory_name }}</div>
+            <div class="sig-role">Geschäftsführer, {{ issuer_name }}</div>
+        </div>
+    </div>
+    <div class="sig-right">
+        <div style="font-size:7.5pt; color:#666; margin-bottom:24pt;">
+            Document issued electronically<br>by the DFT traceability platform
+        </div>
+    </div>
+</div>
+
+{# ===== Brand bottom ===== #}
+<div class="brand-bottom">
+    {{ issuer_name }} &middot; {{ issuer_address }} &middot; {{ issuer_vat }}
+</div>
+<div class="doc-meta">
+    {{ version_label }} &middot; Generated {{ generated_at_human }}
+</div>
+
+</body>
+</html>

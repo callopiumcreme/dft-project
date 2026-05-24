@@ -11,10 +11,13 @@ from app.routers import (
     admin,
     anagrafica,
     auth,
+    consignments,
     daily_inputs,
     daily_production,
     ersv,
+    off_takers,
     reports,
+    shipments,
     tickets,
 )
 from app.services.mv_refresh import refresh_all_mvs
@@ -60,6 +63,9 @@ app.include_router(ersv.router)
 app.include_router(tickets.router)
 app.include_router(daily_production.router)
 app.include_router(reports.router)
+app.include_router(off_takers.router)
+app.include_router(consignments.router)
+app.include_router(shipments.router)
 
 
 @app.get("/health")
