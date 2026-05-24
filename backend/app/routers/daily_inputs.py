@@ -34,7 +34,7 @@ async def list_daily_inputs(
     date_to: date | None = Query(None),
     supplier_id: int | None = Query(None),
     include_deleted: bool = Query(False),
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(100, ge=1, le=10000),
     offset: int = Query(0, ge=0),
 ) -> list[DailyInput]:
     stmt = select(DailyInput)

@@ -138,13 +138,15 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
           daily[0].day,
         );
       }
+      const noUserFilter = from === undefined && to === undefined;
+      const entriesLimit = noUserFilter ? 10000 : 1000;
       const [entries, suppliers, certs, contracts, all] = await Promise.all([
         apiGet<DailyInput[]>('/daily-inputs', {
           query: {
             date_from: entriesDateFrom,
             date_to: entriesDateTo,
             supplier_id: supplierId,
-            limit: 1000,
+            limit: entriesLimit,
           },
         }),
         suppliersPromise,
