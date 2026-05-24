@@ -828,16 +828,19 @@ async def test_27_consignment_pos_softdelete_reinsert(
     """After soft-deleting a consignment_pos, re-insert with same
     (consignment_id, pos_number) succeeds.
 
-    NB: consignment_pos's PRIMARY KEY is composite on (consignment_id,
-    pos_number). The 0022 migration added ``deleted_at`` but kept the PK
-    intact. Re-insert under the SAME PK is therefore expected to FAIL on
-    a hard PK violation, NOT a partial-UNIQUE violation. We document
-    that expectation here and return RED so the QA report surfaces this
-    as either a schema gap (no partial unique index replacing the PK)
-    or as confirmation of intended behaviour.
+    Migration ``0028_consignment_pos_softdel`` replaced the composite
+    PRIMARY KEY ``(consignment_id, pos_number)`` with a surrogate
+    ``id BIGSERIAL`` PK plus the partial UNIQUE index
+    ``ux_consignment_pos_active`` on ``(consignment_id, pos_number)
+    WHERE deleted_at IS NULL``. Re-inserting the same natural key after
+    soft-deletion is therefore expected to SUCCEED.
+
+    Tombstone-rename of the soft-deleted POS is NOT required because the
+    UNIQUE index already excludes tombstoned rows; however, the synthetic
+    rows created by this test are hard-deleted at the end to keep the
+    table clean across repeated runs.
     """
     async with ctx.session_factory() as db:
-        # Find a consignment to use; create a synthetic POS we can soft-delete.
         cons_id = await _scalar(
             db,
             "SELECT id FROM consignment WHERE deleted_at IS NULL LIMIT 1",
@@ -855,7 +858,8 @@ async def test_27_consignment_pos_softdelete_reinsert(
         await db.execute(
             text(
                 "UPDATE consignment_pos SET deleted_at = NOW() "
-                "WHERE consignment_id = :c AND pos_number = :p"
+                "WHERE consignment_id = :c AND pos_number = :p "
+                "AND deleted_at IS NULL"
             ),
             {"c": cons_id, "p": pos_no},
         )
@@ -868,22 +872,24 @@ async def test_27_consignment_pos_softdelete_reinsert(
                 ),
                 {"c": cons_id, "p": pos_no},
             )
-            await db.execute(
-                text(
-                    "DELETE FROM consignment_pos "
-                    "WHERE consignment_id = :c AND pos_number = :p"
-                ),
-                {"c": cons_id, "p": pos_no},
-            )
-            await db.commit()
-            return True, "re-insert succeeded (partial-UNIQUE on PK in place)"
         except IntegrityError as exc:
             await db.rollback()
-            # Hard PK conflict — documented expectation, surfaces as RED.
             return False, (
-                f"re-insert rejected by hard PK on (consignment_id, pos_number) — "
-                f"no partial unique index exists. Detail: {exc!s}"
+                f"re-insert under partial-UNIQUE rejected unexpectedly — "
+                f"0028 may not be applied. Detail: {exc!s}"
             )
+        # Cleanup: hard-delete BOTH the tombstoned + the freshly-inserted
+        # synthetic rows. They never existed in production, so a hard
+        # delete is appropriate (no audit trail at stake).
+        await db.execute(
+            text(
+                "DELETE FROM consignment_pos "
+                "WHERE consignment_id = :c AND pos_number = :p"
+            ),
+            {"c": cons_id, "p": pos_no},
+        )
+        await db.commit()
+        return True, "re-insert succeeded under ux_consignment_pos_active"
 
 
 # ===========================================================================
