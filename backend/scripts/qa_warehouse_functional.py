@@ -409,26 +409,29 @@ async def test_11_product_kind_check(ctx: QaContext) -> tuple[bool, str]:
 
 
 async def test_12_audit_log_backfill_marker(ctx: QaContext) -> tuple[bool, str]:
-    """At least one audit_log row evidencing the Q1 consignment backfill.
+    """At least one audit_log row tagging the Q1 consignment backfill.
 
-    NOTE: audit_log schema (migration 0001) has columns
-    ``action`` + ``table_name``, not ``event_type``. We probe for any
-    audit_log row whose table_name is ``consignment`` or
-    ``consignment_pos`` AND changed_at falls inside or after the Q1
-    backfill window (>= 2025-03-31).
+    The audit_log schema (migration 0001) has ``action`` + ``table_name``
+    columns but no ``event_type`` column; the Q1 backfill script
+    (``backfill_consignment_2025q1.py``) packs the semantic
+    ``event_type='backfill_q1_consignment'`` marker into the
+    ``new_values`` JSONB payload alongside ``action='insert'``. We probe
+    that JSONB key directly.
     """
     async with ctx.session_factory() as db:
         n = await _scalar(
             db,
             "SELECT COUNT(*) FROM audit_log "
-            "WHERE table_name IN ('consignment', 'consignment_pos') "
-            "  AND changed_at >= '2025-03-31'",
+            "WHERE table_name = 'consignment' "
+            "  AND action = 'insert' "
+            "  AND new_values->>'event_type' = 'backfill_q1_consignment' "
+            "  AND changed_at >= '2026-05-01'",
         )
-    ok = (n or 0) > 0
+    ok = (n or 0) >= 1
     return ok, (
-        f"audit_log rows for consignment/_pos since 2025-03-31 = {n} "
-        f"(expected >0; original spec wanted event_type='backfill_q1_consignment' "
-        f"but the schema only has action/table_name)"
+        f"audit_log rows with new_values->>'event_type'="
+        f"'backfill_q1_consignment' on table_name='consignment' "
+        f"(action='insert', changed_at>='2026-05-01') = {n} (expected >=1)"
     )
 
 
