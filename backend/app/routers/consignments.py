@@ -20,6 +20,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.deps import AdminUser, OperatorUser, ViewerUser
 from app.db.session import get_db
+from sqlalchemy import text as sa_text
 from app.models.consignment import Consignment
 from app.models.consignment_pos import ConsignmentPos
 from app.models.consignment_production_link import ConsignmentProductionLink
@@ -254,6 +255,42 @@ async def get_consignment_detail(
         pos=pos_list,
         production_links=links,
     )
+
+
+@router.get("/{consignment_id}/chain-summary")
+async def get_chain_summary(
+    consignment_id: int,
+    _: ViewerUser,
+    db: DbDep,
+) -> dict:
+    """Read-only chain-of-custody aggregate from ``v_chain_summary``.
+
+    Returned shape is a flat dict (the view's columns) with Decimals
+    serialised as strings via FastAPI's default JSON encoder. Powers the
+    ``/app/logistics/[id]`` widget rendered above Chain of custody.
+
+    See docs/mass-balance-allocation-policy.md for the allocation rule
+    that drives the upstream / downstream counts in this payload.
+    """
+    # Verify consignment exists (404 surface — view returns 0 rows for
+    # soft-deleted or missing consignment).
+    await _get_or_404(db, consignment_id)
+
+    result = await db.execute(
+        sa_text("SELECT * FROM v_chain_summary WHERE consignment_id = :cid"),
+        {"cid": consignment_id},
+    )
+    row = result.mappings().one_or_none()
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Chain summary unavailable",
+        )
+    # Decimal → str so the response is stable across client parsers.
+    return {
+        k: (str(v) if isinstance(v, Decimal) else v)
+        for k, v in dict(row).items()
+    }
 
 
 @router.patch("/{consignment_id}", response_model=ConsignmentOut)

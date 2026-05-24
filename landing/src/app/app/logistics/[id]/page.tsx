@@ -2,6 +2,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { apiGet, ApiError } from '@/lib/api';
 import { ChainTimeline } from '@/components/logistics/ChainTimeline';
+import { CollapsibleSection } from '@/components/logistics/CollapsibleSection';
+import {
+  ChainOfCustodySummary,
+  type ChainSummaryData,
+  type ChainDetails,
+} from '@/components/chain-of-custody';
 import { OutboundErsvLink } from '@/components/ersv-outbound';
 import { InlandErsvLink } from '@/components/ersv-inland';
 import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
@@ -107,6 +113,16 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
     inlandShipments = [];
   }
 
+  // Chain-of-custody summary view — non-fatal: widget hidden on error.
+  let chainSummary: ChainSummaryData | null = null;
+  try {
+    chainSummary = await apiGet<ChainSummaryData>(
+      `/consignments/${consignment.id}/chain-summary`,
+    );
+  } catch {
+    chainSummary = null;
+  }
+
   const status = isStatus(consignment.status) ? consignment.status : 'draft';
 
   // Aggregate unit count across all legs
@@ -114,6 +130,209 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
 
   // Per-PoS eRSV is per-row now (since 0022). Count allocated for header chip.
   const ersvAllocated = consignment.pos.filter((p) => p.ersv_outbound_no).length;
+
+  // Pre-render inline detail tables — injected into the chain-of-custody
+  // widget so each summary row drills down into its own underlying table.
+  const inlandTotalKg = inlandShipments.reduce(
+    (acc, s) => acc + (Number(s.net_kg) || 0),
+    0,
+  );
+  const inlandDetail =
+    inlandShipments.length > 0 ? (
+      <>
+        <div className="border border-rule bg-bg-soft overflow-x-auto">
+          <table className="w-full border-collapse font-mono text-[0.72rem]">
+            <thead className="border-b border-rule bg-bg">
+              <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
+                <Th>BL / Seq</Th>
+                <Th>Container</Th>
+                <Th>Seal</Th>
+                <Th>Load date</Th>
+                <ThNum>kg net</ThNum>
+                <Th>eRSV inland</Th>
+                <Th className="text-right">
+                  <span className="sr-only">Render</span>
+                </Th>
+              </tr>
+            </thead>
+            <tbody>
+              {inlandShipments.map((s) => (
+                <tr
+                  key={s.shipment_id}
+                  className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
+                >
+                  <Td className="text-ink-soft">
+                    {s.bl_ref}/{s.seq_in_bl}
+                  </Td>
+                  <Td className="text-ink">{s.container_id}</Td>
+                  <Td className="text-ink-soft">
+                    {s.seal_ref ?? <span className="text-ink-mute">—</span>}
+                  </Td>
+                  <Td className="text-ink-soft">{fmtDate(s.load_date)}</Td>
+                  <TdNum>{fmtKg(String(s.net_kg))}</TdNum>
+                  <Td className="text-ink-soft">
+                    {s.ersv_inland_no ?? <span className="text-ink-mute">—</span>}
+                  </Td>
+                  <Td className="text-right">
+                    <InlandErsvLink
+                      shipmentId={s.shipment_id}
+                      header={{
+                        containerId: s.container_id,
+                        sealRef: s.seal_ref,
+                        loadDate: s.load_date,
+                        netKg: String(s.net_kg),
+                        ersvInlandNo: s.ersv_inland_no,
+                      }}
+                      className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                    >
+                      Render
+                    </InlandErsvLink>
+                  </Td>
+                </tr>
+              ))}
+              <tr className="border-t border-rule bg-bg font-semibold text-ink">
+                <Td>TOT</Td>
+                <Td>{null}</Td>
+                <Td>{null}</Td>
+                <Td>{null}</Td>
+                <TdNum>{fmtKg(String(inlandTotalKg))}</TdNum>
+                <Td>{null}</Td>
+                <Td>{null}</Td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 font-mono text-[0.68rem] text-ink-mute">
+          eRSV inland (GIR/{'{yy}'}/{'{DD-MM}'}/{'{seq}'}) emitido por OisteBio
+          GmbH — tránsito intra-entidad Girardot planta → Cartagena Contecar
+          terminal portuaria.
+        </p>
+      </>
+    ) : null;
+
+  const oceanDetail =
+    consignment.legs.length > 0 ? <ChainTimeline legs={consignment.legs} /> : null;
+
+  const posTotalKg = consignment.pos.reduce(
+    (s, p) => s + (Number(p.kg_net) || 0),
+    0,
+  );
+  const outboundDetail =
+    consignment.pos.length > 0 ? (
+      <>
+        <div className="border border-rule bg-bg-soft overflow-x-auto">
+          <table className="w-full border-collapse font-mono text-[0.72rem]">
+            <thead className="border-b border-rule bg-bg">
+              <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
+                <Th>PoS number</Th>
+                <ThNum>kg net</ThNum>
+                <Th>PDF</Th>
+                <Th>eRSV outbound</Th>
+                <Th className="text-right">
+                  <span className="sr-only">Render</span>
+                </Th>
+              </tr>
+            </thead>
+            <tbody>
+              {consignment.pos.map((p) => (
+                <tr
+                  key={`${p.consignment_id}-${p.pos_number}`}
+                  className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
+                >
+                  <Td className="text-ink">{p.pos_number}</Td>
+                  <TdNum>{fmtKg(p.kg_net)}</TdNum>
+                  <Td>
+                    {p.pdf_ref ? (
+                      <span
+                        className="cursor-help font-mono text-[0.65rem] uppercase tracking-[0.1em] text-ink-mute underline decoration-dotted underline-offset-2"
+                        title={`Stored on Google Drive: ${p.pdf_ref}`}
+                      >
+                        gdrive
+                      </span>
+                    ) : (
+                      <span className="text-ink-mute">—</span>
+                    )}
+                  </Td>
+                  <Td className="text-ink-soft">
+                    {p.ersv_outbound_no ?? <span className="text-ink-mute">—</span>}
+                  </Td>
+                  <Td className="text-right">
+                    <OutboundErsvLink
+                      consignmentId={consignment.id}
+                      posNumber={p.pos_number}
+                      header={{
+                        offTakerCode: consignment.off_taker?.code ?? null,
+                        posNumber: p.pos_number,
+                        kgNet: p.kg_net,
+                        ersvOutboundNo: p.ersv_outbound_no,
+                        prodDateFrom: consignment.prod_date_from,
+                        prodDateTo: consignment.prod_date_to,
+                      }}
+                      className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                    >
+                      Render
+                    </OutboundErsvLink>
+                  </Td>
+                </tr>
+              ))}
+              <tr className="border-t border-rule bg-bg font-semibold text-ink">
+                <Td>TOT</Td>
+                <TdNum>{fmtKg(String(posTotalKg))}</TdNum>
+                <Td>{null}</Td>
+                <Td>{null}</Td>
+                <Td>{null}</Td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 font-mono text-[0.68rem] text-ink-mute">
+          PoS = Outgoing Material Declaration ISCC (OISCRO-XXXX-25 series).
+          Each PoS carries its own outbound eRSV (CO/{'{yy}'}/{'{seq}'}) + GHG
+          values per cliente direction 2026-05-23. PDFs stored on Google Drive
+          — download via direct gdrive path.
+        </p>
+      </>
+    ) : null;
+
+  const productionTotalKg = consignment.production_links.reduce(
+    (s, pl) => s + (Number(pl.kg_allocated) || 0),
+    0,
+  );
+  const productionDetail =
+    consignment.production_links.length > 0 ? (
+      <div className="border border-rule bg-bg-soft overflow-x-auto">
+        <table className="w-full border-collapse font-mono text-[0.72rem]">
+          <thead className="border-b border-rule bg-bg">
+            <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
+              <Th>Production date</Th>
+              <ThNum>kg allocated</ThNum>
+            </tr>
+          </thead>
+          <tbody>
+            {consignment.production_links.map((pl) => (
+              <tr
+                key={pl.prod_date}
+                className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
+              >
+                <Td className="text-ink">{fmtDate(pl.prod_date)}</Td>
+                <TdNum>{fmtKg(pl.kg_allocated)}</TdNum>
+              </tr>
+            ))}
+            <tr className="border-t border-rule bg-bg font-semibold text-ink">
+              <Td>TOT</Td>
+              <TdNum>{fmtKg(String(productionTotalKg))}</TdNum>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    ) : null;
+
+  const chainDetails: ChainDetails = {
+    production: productionDetail,
+    inland: inlandDetail,
+    ocean: oceanDetail,
+    outbound: outboundDetail,
+  };
 
   return (
     <div className="mx-auto max-w-editorial">
@@ -203,246 +422,32 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
           Chain of custody
         </h2>
 
-        {/* Block 1: Inland CO trucks (Girardot → Cartagena) */}
-        {inlandShipments.length > 0 && (
-          <div className="mb-10">
-            <h3 className="mb-3 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-ink-soft">
-              1 · Inland CO (Girardot → Cartagena) — {inlandShipments.length} contenedores
-            </h3>
-            <div className="border border-rule bg-bg-soft overflow-x-auto">
-              <table className="w-full border-collapse font-mono text-[0.72rem]">
-                <thead className="border-b border-rule bg-bg">
-                  <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
-                    <Th>BL / Seq</Th>
-                    <Th>Container</Th>
-                    <Th>Seal</Th>
-                    <Th>Load date</Th>
-                    <ThNum>kg net</ThNum>
-                    <Th>eRSV inland</Th>
-                    <Th className="text-right">
-                      <span className="sr-only">Render</span>
-                    </Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inlandShipments.map((s) => (
-                    <tr
-                      key={s.shipment_id}
-                      className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
-                    >
-                      <Td className="text-ink-soft">
-                        {s.bl_ref}/{s.seq_in_bl}
-                      </Td>
-                      <Td className="text-ink">{s.container_id}</Td>
-                      <Td className="text-ink-soft">
-                        {s.seal_ref ?? <span className="text-ink-mute">—</span>}
-                      </Td>
-                      <Td className="text-ink-soft">{fmtDate(s.load_date)}</Td>
-                      <TdNum>{fmtKg(String(s.net_kg))}</TdNum>
-                      <Td className="text-ink-soft">
-                        {s.ersv_inland_no ?? (
-                          <span className="text-ink-mute">—</span>
-                        )}
-                      </Td>
-                      <Td className="text-right">
-                        <InlandErsvLink
-                          shipmentId={s.shipment_id}
-                          header={{
-                            containerId: s.container_id,
-                            sealRef: s.seal_ref,
-                            loadDate: s.load_date,
-                            netKg: String(s.net_kg),
-                            ersvInlandNo: s.ersv_inland_no,
-                          }}
-                          className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
-                        >
-                          Render
-                        </InlandErsvLink>
-                      </Td>
-                    </tr>
-                  ))}
-                  <tr className="border-t border-rule bg-bg font-semibold text-ink">
-                    <Td>TOT</Td>
-                    <Td>{null}</Td>
-                    <Td>{null}</Td>
-                    <Td>{null}</Td>
-                    <TdNum>
-                      {fmtKg(
-                        String(
-                          inlandShipments.reduce(
-                            (acc, s) => acc + (Number(s.net_kg) || 0),
-                            0,
-                          ),
-                        ),
-                      )}
-                    </TdNum>
-                    <Td>{null}</Td>
-                    <Td>{null}</Td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p className="mt-2 font-mono text-[0.68rem] text-ink-mute">
-              eRSV inland (GIR/{'{yy}'}/{'{DD-MM}'}/{'{seq}'}) emitido por OisteBio GmbH —
-              tránsito intra-entidad Girardot planta → Cartagena Contecar terminal portuaria.
-            </p>
-          </div>
+        {/* Mass-balance recap — single source of truth backed by view
+            v_chain_summary (docs/mass-balance-allocation-policy.md). Each
+            row drills down into its own detail table inline. */}
+        {chainSummary ? (
+          <ChainOfCustodySummary data={chainSummary} details={chainDetails} />
+        ) : (
+          <p className="font-mono text-[0.75rem] text-ink-mute">
+            Chain summary unavailable.
+          </p>
         )}
 
-        {/* Block 2+: Ocean BL → UTB transload → Delivery UK (seq order) */}
-        {consignment.legs.length === 0 ? (
-          <p className="font-mono text-[0.75rem] text-ink-mute">
+        {consignment.legs.length === 0 && (
+          <p className="mt-4 font-mono text-[0.7rem] text-ink-mute">
             No ocean / transload / delivery legs recorded.
           </p>
-        ) : (
-          <div>
-            <h3 className="mb-3 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-ink-soft">
-              {inlandShipments.length > 0 ? '2+ · ' : ''}Ocean BL → UTB transload → Delivery UK
-            </h3>
-            <ChainTimeline legs={consignment.legs} />
-          </div>
         )}
       </section>
 
-      {/* Linked PoS */}
-      {consignment.pos.length > 0 && (
-        <section className="mt-10 border-t border-rule pt-8">
-          <h2 className="mb-4 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-ink-mute">
-            Linked PoS ({consignment.pos.length})
-          </h2>
-          <div className="border border-rule bg-bg-soft overflow-x-auto">
-            <table className="w-full border-collapse font-mono text-[0.72rem]">
-              <thead className="border-b border-rule bg-bg">
-                <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
-                  <Th>PoS number</Th>
-                  <ThNum>kg net</ThNum>
-                  <Th>PDF</Th>
-                  <Th>eRSV outbound</Th>
-                  <Th className="text-right">
-                    <span className="sr-only">Render</span>
-                  </Th>
-                </tr>
-              </thead>
-              <tbody>
-                {consignment.pos.map((p) => (
-                  <tr
-                    key={`${p.consignment_id}-${p.pos_number}`}
-                    className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
-                  >
-                    <Td className="text-ink">{p.pos_number}</Td>
-                    <TdNum>{fmtKg(p.kg_net)}</TdNum>
-                    <Td>
-                      {p.pdf_ref ? (
-                        <span
-                          className="cursor-help font-mono text-[0.65rem] uppercase tracking-[0.1em] text-ink-mute underline decoration-dotted underline-offset-2"
-                          title={`Stored on Google Drive: ${p.pdf_ref}`}
-                        >
-                          gdrive
-                        </span>
-                      ) : (
-                        <span className="text-ink-mute">—</span>
-                      )}
-                    </Td>
-                    <Td className="text-ink-soft">
-                      {p.ersv_outbound_no ?? (
-                        <span className="text-ink-mute">—</span>
-                      )}
-                    </Td>
-                    <Td className="text-right">
-                      <OutboundErsvLink
-                        consignmentId={consignment.id}
-                        posNumber={p.pos_number}
-                        header={{
-                          offTakerCode: consignment.off_taker?.code ?? null,
-                          posNumber: p.pos_number,
-                          kgNet: p.kg_net,
-                          ersvOutboundNo: p.ersv_outbound_no,
-                          prodDateFrom: consignment.prod_date_from,
-                          prodDateTo: consignment.prod_date_to,
-                        }}
-                        className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
-                      >
-                        Render
-                      </OutboundErsvLink>
-                    </Td>
-                  </tr>
-                ))}
-                <tr className="border-t border-rule bg-bg font-semibold text-ink">
-                  <Td>TOT</Td>
-                  <TdNum>
-                    {fmtKg(
-                      String(
-                        consignment.pos.reduce((s, p) => s + (Number(p.kg_net) || 0), 0),
-                      ),
-                    )}
-                  </TdNum>
-                  <Td>{null}</Td>
-                  <Td>{null}</Td>
-                  <Td>{null}</Td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-2 font-mono text-[0.68rem] text-ink-mute">
-            PoS = Outgoing Material Declaration ISCC (OISCRO-XXXX-25 series).
-            Each PoS carries its own outbound eRSV (CO/{'{yy}'}/{'{seq}'}) + GHG values per cliente direction 2026-05-23.
-            PDFs stored on Google Drive — download via direct gdrive path.
-          </p>
-        </section>
-      )}
-
-      {/* Production allocation */}
-      {consignment.production_links.length > 0 && (
-        <section className="mt-10 border-t border-rule pt-8">
-          <h2 className="mb-4 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-ink-mute">
-            Production allocation ({consignment.production_links.length} days)
-          </h2>
-          <div className="border border-rule bg-bg-soft overflow-x-auto">
-            <table className="w-full border-collapse font-mono text-[0.72rem]">
-              <thead className="border-b border-rule bg-bg">
-                <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
-                  <Th>Production date</Th>
-                  <ThNum>kg allocated</ThNum>
-                </tr>
-              </thead>
-              <tbody>
-                {consignment.production_links.map((pl) => (
-                  <tr
-                    key={pl.prod_date}
-                    className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
-                  >
-                    <Td className="text-ink">{fmtDate(pl.prod_date)}</Td>
-                    <TdNum>{fmtKg(pl.kg_allocated)}</TdNum>
-                  </tr>
-                ))}
-                <tr className="border-t border-rule bg-bg font-semibold text-ink">
-                  <Td>TOT</Td>
-                  <TdNum>
-                    {fmtKg(
-                      String(
-                        consignment.production_links.reduce(
-                          (s, pl) => s + (Number(pl.kg_allocated) || 0),
-                          0,
-                        ),
-                      ),
-                    )}
-                  </TdNum>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
       {/* Notes */}
       {consignment.notes && (
-        <section className="mt-10 border-t border-rule pt-8">
-          <h2 className="mb-2 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-ink-mute">
-            Notes
-          </h2>
-          <p className="font-mono text-[0.78rem] leading-relaxed text-ink-soft">
-            {consignment.notes}
-          </p>
+        <section className="mt-10">
+          <CollapsibleSection title="Notes" level="h2" defaultOpen={true}>
+            <p className="font-mono text-[0.78rem] leading-relaxed text-ink-soft">
+              {consignment.notes}
+            </p>
+          </CollapsibleSection>
         </section>
       )}
     </div>
