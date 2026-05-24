@@ -718,3 +718,62 @@ async def test_byproduct_sale_create_requires_operator_or_admin(
         f"Expected 403 for viewer POST /byproduct/sales; "
         f"got {resp.status_code}: {resp.text}"
     )
+
+
+# ---------------------------------------------------------------------------
+# 11. /warehouse/stock — product_kind filter narrows to a single product
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_warehouse_stock_filter_by_product_kind(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    db_session: AsyncSession,
+) -> None:
+    """?product_kind=eu_oil returns only the eu_oil row (0 or 1 element)."""
+    # Seed an eu_oil opening so the view definitely has a row to filter to.
+    await _seed_ledger_row(
+        db_session,
+        event_type="opening",
+        product_kind="eu_oil",
+        kg_in=Decimal("1.000"),
+    )
+
+    resp = await client.get(
+        "/warehouse/stock",
+        params={"product_kind": "eu_oil"},
+        headers=admin_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    rows = resp.json()
+    assert len(rows) == 1, (
+        f"Expected exactly 1 row for product_kind=eu_oil; got {len(rows)}"
+    )
+    assert rows[0]["product_kind"] == "eu_oil"
+
+
+# ---------------------------------------------------------------------------
+# 12. /warehouse/stock — invalid product_kind → 400
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_warehouse_stock_invalid_product_kind_rejected(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+) -> None:
+    """A product_kind outside the 6-value enum returns 400 with the allowed list."""
+    resp = await client.get(
+        "/warehouse/stock",
+        params={"product_kind": "bogus"},
+        headers=admin_headers,
+    )
+    assert resp.status_code == 400, (
+        f"Expected 400 for bogus product_kind; "
+        f"got {resp.status_code}: {resp.text}"
+    )
+    detail = resp.json().get("detail", "")
+    assert "eu_oil" in detail and "h2o" in detail, (
+        f"Expected 400 detail to enumerate allowed values; got {detail!r}"
+    )

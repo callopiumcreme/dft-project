@@ -15,7 +15,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Annotated, get_args
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text as sa_text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,27 +27,46 @@ router = APIRouter(prefix="/warehouse", tags=["warehouse"])
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 
 _PRODUCT_KINDS = frozenset(get_args(ProductKind))
+_PRODUCT_KIND_ERROR = (
+    "product_kind must be one of: "
+    "eu_oil, plus_oil, carbon_black, metal_scrap, syngas, h2o"
+)
 
 
 @router.get("/stock", response_model=list[WarehouseStockRow])
 async def list_warehouse_stock(
     _: ViewerUser,
     db: DbDep,
+    product_kind: str | None = Query(None),
 ) -> list[WarehouseStockRow]:
     """Per-product on-hand + cumulative totals, plus reserved_kg for eu_oil.
 
     reserved_kg = SUM(consignment.total_kg) for active consignments whose
     status is not in ('delivered_uk', 'closed'). Only meaningful for eu_oil;
     every other product_kind reports 0.
+
+    When ``product_kind`` is supplied it must be one of the six allowed
+    values (see ``ProductKind``); the result is filtered to that single
+    product (possibly an empty list if the view has no row yet).
     """
-    stock_rows = (
-        await db.execute(
-            sa_text(
-                "SELECT product_kind, stock_kg, produced_total_kg, "
-                "dispatched_total_kg, last_movement_at "
-                "FROM v_warehouse_stock"
-            )
+    if product_kind is not None and product_kind not in _PRODUCT_KINDS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_PRODUCT_KIND_ERROR,
         )
+
+    sql = (
+        "SELECT product_kind, stock_kg, produced_total_kg, "
+        "dispatched_total_kg, last_movement_at "
+        "FROM v_warehouse_stock"
+    )
+    params: dict[str, object] = {}
+    if product_kind is not None:
+        sql += " WHERE product_kind = :product_kind"
+        params["product_kind"] = product_kind
+
+    stock_rows = (
+        await db.execute(sa_text(sql), params)
     ).mappings().all()
 
     reserved_result = await db.execute(
