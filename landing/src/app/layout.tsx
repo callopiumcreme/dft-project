@@ -28,6 +28,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://dft-project.com';
 const UMAMI_SRC = process.env.NEXT_PUBLIC_UMAMI_SRC;
 const UMAMI_ID = process.env.NEXT_PUBLIC_UMAMI_ID;
 const UMAMI_DOMAINS = process.env.NEXT_PUBLIC_UMAMI_DOMAINS;
+const UMAMI_HOST = process.env.NEXT_PUBLIC_UMAMI_HOST;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -99,6 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               src={UMAMI_SRC}
               data-website-id={UMAMI_ID}
               {...(UMAMI_DOMAINS ? { 'data-domains': UMAMI_DOMAINS } : {})}
+              {...(UMAMI_HOST ? { 'data-host-url': UMAMI_HOST } : {})}
               strategy="afterInteractive"
               defer
             />
