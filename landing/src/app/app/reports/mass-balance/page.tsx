@@ -117,12 +117,35 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
       allMonths = all;
       supplierMap = new Map(suppliers.map((s) => [s.id, s]));
     } else {
-      const [daily, entries, suppliers, certs, contracts, all] = await Promise.all([
-        apiGet<DailyRow[]>('/reports/mass-balance/daily', {
-          query: { date_from: from, date_to: to, supplier_id: supplierId, limit: 3660 },
-        }),
+      // Fetch daily mass-balance first so we can scope the /daily-inputs query
+      // to the visible day-range when user has not provided an explicit filter.
+      // Without this, /daily-inputs hard-caps at 1000 rows (DESC by date) and
+      // truncates older days, leaving stale "· 0" badges on the accordion.
+      const daily = await apiGet<DailyRow[]>('/reports/mass-balance/daily', {
+        query: { date_from: from, date_to: to, supplier_id: supplierId, limit: 3660 },
+      });
+      let entriesDateFrom: string | undefined = from;
+      let entriesDateTo: string | undefined = to;
+      if (entriesDateFrom === undefined && daily.length > 0) {
+        entriesDateFrom = daily.reduce(
+          (min, r) => (r.day < min ? r.day : min),
+          daily[0].day,
+        );
+      }
+      if (entriesDateTo === undefined && daily.length > 0) {
+        entriesDateTo = daily.reduce(
+          (max, r) => (r.day > max ? r.day : max),
+          daily[0].day,
+        );
+      }
+      const [entries, suppliers, certs, contracts, all] = await Promise.all([
         apiGet<DailyInput[]>('/daily-inputs', {
-          query: { date_from: from, date_to: to, supplier_id: supplierId, limit: 1000 },
+          query: {
+            date_from: entriesDateFrom,
+            date_to: entriesDateTo,
+            supplier_id: supplierId,
+            limit: 1000,
+          },
         }),
         suppliersPromise,
         apiGet<Certificate[]>('/certificates'),
