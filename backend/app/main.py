@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import AsyncIterator  # noqa: TC003 — used in runtime annotation
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -11,6 +12,7 @@ from app.routers import (
     admin,
     anagrafica,
     auth,
+    byproduct_sales,
     consignments,
     daily_inputs,
     daily_production,
@@ -19,6 +21,7 @@ from app.routers import (
     reports,
     shipments,
     tickets,
+    warehouse,
 )
 from app.services.mv_refresh import refresh_all_mvs
 
@@ -28,7 +31,7 @@ MV_REFRESH_INTERVAL_MIN = int(os.environ.get("MV_REFRESH_INTERVAL_MIN", "30"))
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         refresh_all_mvs,
@@ -66,6 +69,8 @@ app.include_router(reports.router)
 app.include_router(off_takers.router)
 app.include_router(consignments.router)
 app.include_router(shipments.router)
+app.include_router(warehouse.router)
+app.include_router(byproduct_sales.router)
 
 
 @app.get("/health")
