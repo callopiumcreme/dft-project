@@ -148,7 +148,7 @@ Caso d'uso reale già pronto: i dati estratti il 2026-05-23 dai 2 BL (29 contain
 
 ## 4. Esempio reale — applicato ai dati 2026-05-23
 
-**Consignment:** `CONS-2025-Q3-CROWN`
+**Consignment:** `DEL-CRW-2025-2`
 - off_taker = Crown Oil UK
 - prod_date_from = 2025-06-XX, prod_date_to = 2025-08-XX
 - total_kg = 576.270 (somma 2 BL arrivo NL)

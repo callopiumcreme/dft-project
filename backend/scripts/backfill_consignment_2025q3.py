@@ -14,7 +14,7 @@ NOT written — follow-up required:
   consignment_production_link — requires per-day production allocation mapping
   from the raw daily_production table across Jun-Aug 2025, which spans 2-3
   months of production and was not reconciled in this backfill window.
-  Open task: cross-join daily_production with consignment CONS-2025-Q3-CROWN
+  Open task: cross-join daily_production with consignment DEL-CRW-2025-2
   by date range and split kg proportionally once per-batch product ledger is
   confirmed.
 
@@ -85,7 +85,7 @@ OFF_TAKER_NOTES = (
 # Consignment constants
 # ---------------------------------------------------------------------------
 
-CONSIGNMENT_CODE = "CONS-2025-Q3-CROWN"
+CONSIGNMENT_CODE = "DEL-CRW-2025-2"
 CONSIGNMENT_PRODUCT_GRADE = "DEV-P100"
 CONSIGNMENT_PROD_DATE_FROM = date(2025, 6, 1)
 CONSIGNMENT_PROD_DATE_TO = date(2025, 8, 31)

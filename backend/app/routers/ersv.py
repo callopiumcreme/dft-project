@@ -418,7 +418,7 @@ async def list_inland_shipments(
     """Return inland shipments (Girardot → Cartagena), optionally filtered.
 
     One row per ISO container. Pass ``consignment_id`` to scope to a single
-    parent consignment (e.g. all 29 containers of CONS-2025-Q3-CROWN).
+    parent consignment (e.g. all 29 containers of DEL-CRW-2025-2).
     """
     offset = (page - 1) * page_size
     result = await db.execute(

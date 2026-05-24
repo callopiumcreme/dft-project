@@ -11,7 +11,7 @@ Source CSV (NOT committed to repo, lives in /tmp/bl_dl/):
 Tables written (migration 0023_inland_shipment):
   inland_shipment — 29 rows, one per ISO container
 
-Parent consignment row must already exist (code = 'CONS-2025-Q3-CROWN' from
+Parent consignment row must already exist (code = 'DEL-CRW-2025-2' from
 0021/0022 backfills).
 
 Usage:
@@ -38,7 +38,7 @@ DATABASE_URL = os.environ.get(
 )
 
 CSV_PATH = Path("/tmp/bl_dl/arrivals_containers.csv")  # noqa: S108
-CONSIGNMENT_CODE = "CONS-2025-Q3-CROWN"
+CONSIGNMENT_CODE = "DEL-CRW-2025-2"
 ORIGIN_NODE_DEFAULT = "Girardot plant (CO)"
 DESTINATION_NODE_DEFAULT = "Cartagena Contecar (CO)"
 
