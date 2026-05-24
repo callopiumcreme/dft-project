@@ -170,3 +170,29 @@ Già presenti: `@radix-ui/react-accordion`, `@radix-ui/react-label`, `@radix-ui/
 | TanStack Query SSR hydration mismatch | Usare server prefetch + `HydrationBoundary` per pagine con dati iniziali |
 | Bundle size esplode con shadcn + recharts + tanstack | Monitor `next build` output, lazy-load chart components con `dynamic()` |
 | Deploy prod richiede env vars nuovi | Update memory `reference_oistebio_landing.md` con BACKEND_URL prod + JWT_SECRET sync procedure |
+
+---
+
+## 2026-05-24 — Warehouse milestone delivered
+
+Warehouse + byproduct + PLUS sales block completato. Checklist:
+
+- [x] Warehouse stock dashboard (per product_kind)
+- [x] Warehouse recent movements
+- [x] Byproduct sales CRUD (buyer + sale)
+- [x] PLUS oil sales sub-page
+- [x] Sidebar nav: Warehouse, Byproduct sales, PLUS sales
+- [x] Toaster wiring
+- [x] API proxy routes `/api/byproduct/*`
+- [x] Typed clients `warehouse-client`, `byproduct-client`
+- [x] Backend routers `/warehouse/stock`, `/warehouse/movements`, `/byproduct/*`
+- [x] Migration 0026 `warehouse_inventory`
+- [x] Migration 0027 `pos_issuance_date`
+- [x] `backfill_pos_issuance` + `backfill_warehouse` scripts
+- [x] QA functional test runner (30 checks)
+- [x] Playwright UI test spec (8 checks)
+- [x] Q1 2025 backfill: 12 POS, 304820 kg, eu_oil stock 8994705.522 ✓
+
+**Total commits:** 11 (Block A 7 + Q1 script + QA suite + 3 pre-emptive fixes).
+**DB state:** 32 active `consignment_pos`, 32 `pos_issue` ledger rows, `eu_oil` 8994705.522 kg.
+**Next:** Q2 + Q4 2025 backfill (POS recon in progress).
