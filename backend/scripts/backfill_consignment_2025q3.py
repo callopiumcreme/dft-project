@@ -498,7 +498,7 @@ async def run_backfill(session: AsyncSession) -> None:
                     (:consignment_id, :pos_number, :pdf_ref, :kg_net,
                      :ghg_ep, :ghg_etd, :ghg_total, :ghg_saving_pct,
                      NOW())
-                ON CONFLICT (consignment_id, pos_number) DO UPDATE
+                ON CONFLICT (consignment_id, pos_number) WHERE deleted_at IS NULL DO UPDATE
                     SET pdf_ref        = EXCLUDED.pdf_ref,
                         kg_net         = EXCLUDED.kg_net,
                         ghg_ep         = COALESCE(consignment_pos.ghg_ep,

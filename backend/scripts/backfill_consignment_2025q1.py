@@ -330,7 +330,7 @@ async def run_backfill(
         VALUES
             (:consignment_id, :pos_number, :pdf_ref, :kg_net, :issuance_date,
              NOW())
-        ON CONFLICT (consignment_id, pos_number) DO UPDATE
+        ON CONFLICT (consignment_id, pos_number) WHERE deleted_at IS NULL DO UPDATE
             SET pdf_ref       = EXCLUDED.pdf_ref,
                 kg_net        = EXCLUDED.kg_net,
                 issuance_date = EXCLUDED.issuance_date
