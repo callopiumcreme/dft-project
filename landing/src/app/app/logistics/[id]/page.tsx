@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { apiGet, ApiError } from '@/lib/api';
 import { ChainTimeline } from '@/components/logistics/ChainTimeline';
+import { OutboundErsvLink } from '@/components/ersv-outbound';
 import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 import type { ConsignmentDetail, ConsignmentStatus } from '@/types/logistics';
 
@@ -201,56 +202,49 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
                 </tr>
               </thead>
               <tbody>
-                {consignment.pos.map((p) => {
-                  const ersvBase = `/ersv/outbound/${consignment.id}/${encodeURIComponent(p.pos_number)}`;
-                  return (
-                    <tr
-                      key={`${p.consignment_id}-${p.pos_number}`}
-                      className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
-                    >
-                      <Td className="text-ink">{p.pos_number}</Td>
-                      <TdNum>{fmtKg(p.kg_net)}</TdNum>
-                      <Td>
-                        {p.pdf_ref ? (
-                          <span
-                            className="cursor-help font-mono text-[0.65rem] uppercase tracking-[0.1em] text-ink-mute underline decoration-dotted underline-offset-2"
-                            title={`Stored on Google Drive: ${p.pdf_ref}`}
-                          >
-                            gdrive
-                          </span>
-                        ) : (
-                          <span className="text-ink-mute">—</span>
-                        )}
-                      </Td>
-                      <Td className="text-ink-soft">
-                        {p.ersv_outbound_no ?? (
-                          <span className="text-ink-mute">—</span>
-                        )}
-                      </Td>
-                      <Td className="text-right">
-                        <span className="inline-flex gap-1">
-                          <a
-                            href={`${ersvBase}?format=html`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="border border-ink bg-ink px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em] text-bg hover:bg-ink-soft"
-                            aria-label={`Render eRSV for ${p.pos_number}`}
-                          >
-                            HTML
-                          </a>
-                          <a
-                            href={`${ersvBase}?format=pdf`}
-                            download
-                            className="border border-olive-deep bg-olive-deep px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em] text-bg hover:bg-olive"
-                            aria-label={`Download eRSV PDF for ${p.pos_number}`}
-                          >
-                            PDF
-                          </a>
+                {consignment.pos.map((p) => (
+                  <tr
+                    key={`${p.consignment_id}-${p.pos_number}`}
+                    className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
+                  >
+                    <Td className="text-ink">{p.pos_number}</Td>
+                    <TdNum>{fmtKg(p.kg_net)}</TdNum>
+                    <Td>
+                      {p.pdf_ref ? (
+                        <span
+                          className="cursor-help font-mono text-[0.65rem] uppercase tracking-[0.1em] text-ink-mute underline decoration-dotted underline-offset-2"
+                          title={`Stored on Google Drive: ${p.pdf_ref}`}
+                        >
+                          gdrive
                         </span>
-                      </Td>
-                    </tr>
-                  );
-                })}
+                      ) : (
+                        <span className="text-ink-mute">—</span>
+                      )}
+                    </Td>
+                    <Td className="text-ink-soft">
+                      {p.ersv_outbound_no ?? (
+                        <span className="text-ink-mute">—</span>
+                      )}
+                    </Td>
+                    <Td className="text-right">
+                      <OutboundErsvLink
+                        consignmentId={consignment.id}
+                        posNumber={p.pos_number}
+                        header={{
+                          offTakerCode: consignment.off_taker?.code ?? null,
+                          posNumber: p.pos_number,
+                          kgNet: p.kg_net,
+                          ersvOutboundNo: p.ersv_outbound_no,
+                          prodDateFrom: consignment.prod_date_from,
+                          prodDateTo: consignment.prod_date_to,
+                        }}
+                        className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                      >
+                        Render
+                      </OutboundErsvLink>
+                    </Td>
+                  </tr>
+                ))}
                 <tr className="border-t border-rule bg-bg font-semibold text-ink">
                   <Td>TOT</Td>
                   <TdNum>
