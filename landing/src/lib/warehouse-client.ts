@@ -15,6 +15,8 @@ export interface WarehouseStockRow {
   produced_total_kg: string;
   dispatched_total_kg: string;
   reserved_kg: string;
+  pos_issued_kg: string;
+  at_utb_awaiting_pos_kg: string;
   last_movement_at: string | null;
 }
 

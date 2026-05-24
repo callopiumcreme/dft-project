@@ -29,6 +29,13 @@ class WarehouseStockRow(BaseModel):
     reserved_kg is computed in the router (not in the view): sum of
     consignment.total_kg for active consignments whose status is not
     delivered_uk / closed. Only meaningful for eu_oil — other kinds are 0.
+
+    pos_issued_kg = SUM(consignment_pos.kg_net) for the same set of active
+    consignments (POS already issued, awaiting delivery). Only meaningful
+    for eu_oil.
+
+    at_utb_awaiting_pos_kg = reserved_kg - pos_issued_kg (residual reserved
+    stock at UTB that has no POS yet). Only meaningful for eu_oil.
     """
 
     product_kind: ProductKind
@@ -36,6 +43,8 @@ class WarehouseStockRow(BaseModel):
     produced_total_kg: Decimal
     dispatched_total_kg: Decimal
     reserved_kg: Decimal
+    pos_issued_kg: Decimal
+    at_utb_awaiting_pos_kg: Decimal
     last_movement_at: date | None
 
     model_config = ConfigDict(from_attributes=True)

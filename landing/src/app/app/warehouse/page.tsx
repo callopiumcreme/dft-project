@@ -11,7 +11,7 @@ import {
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Warehouse — DFT' };
 
-const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 3 });
+const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
 const dateFmt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
 
 const STOCKABLE = ['eu_oil', 'plus_oil', 'carbon_black', 'metal_scrap'] as const;
@@ -72,6 +72,8 @@ function emptyStock(kind: ProductKind): WarehouseStockRow {
     produced_total_kg: '0',
     dispatched_total_kg: '0',
     reserved_kg: '0',
+    pos_issued_kg: '0',
+    at_utb_awaiting_pos_kg: '0',
     last_movement_at: null,
   };
 }
@@ -158,8 +160,14 @@ export default async function WarehousePage({ searchParams }: PageProps) {
                         <dd className="tabular-nums text-ink">{fmtKgNum(available)}</dd>
                       </div>
                       <div className="flex justify-between gap-2">
-                        <dt className="text-ink-mute">Reserved (consignment)</dt>
-                        <dd className="tabular-nums text-ink-soft">{fmtKg(row.reserved_kg)}</dd>
+                        <dt className="text-ink-mute">POS issued (delivered)</dt>
+                        <dd className="tabular-nums text-ink-soft">{fmtKg(row.pos_issued_kg)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-ink-mute">At UTB awaiting POS</dt>
+                        <dd className="tabular-nums text-ink-soft">
+                          {fmtKg(row.at_utb_awaiting_pos_kg)}
+                        </dd>
                       </div>
                     </>
                   ) : (
@@ -172,10 +180,12 @@ export default async function WarehousePage({ searchParams }: PageProps) {
                     <dt className="text-ink-mute">Produced YTD</dt>
                     <dd className="tabular-nums text-ink-soft">{fmtKg(row.produced_total_kg)}</dd>
                   </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-ink-mute">Dispatched YTD</dt>
-                    <dd className="tabular-nums text-ink-soft">{fmtKg(row.dispatched_total_kg)}</dd>
-                  </div>
+                  {!isEuOil && (
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-ink-mute">Dispatched YTD</dt>
+                      <dd className="tabular-nums text-ink-soft">{fmtKg(row.dispatched_total_kg)}</dd>
+                    </div>
+                  )}
                   <div className="flex justify-between gap-2">
                     <dt className="text-ink-mute">Last movement</dt>
                     <dd className="tabular-nums text-ink-soft">{fmtDate(row.last_movement_at)}</dd>

@@ -79,6 +79,31 @@ async def list_warehouse_stock(
     )
     reserved_eu_oil = Decimal(reserved_result.scalar_one() or 0)
 
+    pos_issued_result = await db.execute(
+        sa_text(
+            "SELECT COALESCE(SUM(kg_net), 0) AS pos_issued_kg "
+            "FROM consignment_pos "
+            "WHERE deleted_at IS NULL"
+        )
+    )
+    pos_issued_eu_oil = Decimal(pos_issued_result.scalar_one() or 0)
+
+    at_utb_result = await db.execute(
+        sa_text(
+            "SELECT COALESCE(SUM(c.total_kg), 0) "
+            "- COALESCE(SUM(p_open.kg_net_sum), 0) AS at_utb_kg "
+            "FROM consignment c "
+            "LEFT JOIN ("
+            "  SELECT consignment_id, SUM(kg_net) AS kg_net_sum "
+            "  FROM consignment_pos WHERE deleted_at IS NULL "
+            "  GROUP BY consignment_id"
+            ") p_open ON p_open.consignment_id = c.id "
+            "WHERE c.status NOT IN ('delivered_uk', 'closed') "
+            "AND c.deleted_at IS NULL"
+        )
+    )
+    at_utb_awaiting_pos_eu_oil = Decimal(at_utb_result.scalar_one() or 0)
+
     return [
         WarehouseStockRow(
             product_kind=row["product_kind"],
@@ -87,6 +112,14 @@ async def list_warehouse_stock(
             dispatched_total_kg=row["dispatched_total_kg"] or Decimal(0),
             reserved_kg=(
                 reserved_eu_oil if row["product_kind"] == "eu_oil" else Decimal(0)
+            ),
+            pos_issued_kg=(
+                pos_issued_eu_oil if row["product_kind"] == "eu_oil" else Decimal(0)
+            ),
+            at_utb_awaiting_pos_kg=(
+                at_utb_awaiting_pos_eu_oil
+                if row["product_kind"] == "eu_oil"
+                else Decimal(0)
             ),
             last_movement_at=row["last_movement_at"],
         )
