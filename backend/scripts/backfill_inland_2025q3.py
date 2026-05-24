@@ -2,14 +2,21 @@
 
 Idempotent: re-runs hit the natural-key UNIQUE
 (consignment_id, container_id, load_date) WHERE deleted_at IS NULL and update
-rather than duplicate. ``ersv_inland_no`` is intentionally NOT set here — it
-is allocated lazily by the renderer on first GET.
+rather than duplicate.
+
+After the upsert pass the script also pre-allocates ``ersv_inland_no`` for
+every pending row by invoking the renderer in ``format='html'`` mode (the
+same lazy-mint path the GET endpoint uses). This makes the post-deploy state
+match what an operator would see after manually opening each modal, so the
+logistics table column is fully populated without a 29-click warm-up. The
+renderer is idempotent on ``ersv_inland_no`` (lookup-or-mint), so re-runs of
+the backfill do not re-number existing rows.
 
 Source CSV (NOT committed to repo, lives in /tmp/bl_dl/):
   /tmp/bl_dl/arrivals_containers.csv
 
 Tables written (migration 0023_inland_shipment):
-  inland_shipment — 29 rows, one per ISO container
+  inland_shipment — 29 rows, one per ISO container (+ ersv_inland_no)
 
 Parent consignment row must already exist (code = 'DEL-CRW-2025-2' from
 0021/0022 backfills).
@@ -28,9 +35,21 @@ from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import NullPool
+# Make ``app.*`` importable when this script is run as a bare file
+# (e.g. ``docker exec backend python scripts/backfill_inland_2025q3.py``).
+# Default ``sys.path[0]`` is the script's own dir; that is not enough to
+# resolve the ``app`` package which sits one level up at ``/app/app``.
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
+if str(_BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_ROOT))
+
+from sqlalchemy import text  # noqa: E402
+from sqlalchemy.ext.asyncio import (  # noqa: E402
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.pool import NullPool  # noqa: E402
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
@@ -132,6 +151,38 @@ async def _backfill(db: AsyncSession) -> tuple[int, int]:
     return inserted, updated
 
 
+async def _alloc_ersv_numbers(db: AsyncSession) -> int:
+    """Pre-allocate ``ersv_inland_no`` for any pending row of this consignment.
+
+    Idempotent: rows already carrying a number are skipped by the SQL filter,
+    and the renderer itself is lookup-or-mint on first call.
+    """
+    # Local import: renderer pulls Jinja env + DB helpers; keep it out of
+    # the script's import-time graph so a renderer regression cannot break
+    # the upsert pass.
+    from app.services.ersv_renderer import render_ersv_inland  # noqa: PLC0415
+
+    pending = (
+        await db.execute(
+            text(
+                "SELECT i.id FROM inland_shipment i "
+                "JOIN consignment c ON c.id = i.consignment_id "
+                "WHERE i.deleted_at IS NULL "
+                "  AND i.ersv_inland_no IS NULL "
+                "  AND c.code = :code "
+                "ORDER BY i.load_date, i.container_id"
+            ),
+            {"code": CONSIGNMENT_CODE},
+        )
+    ).fetchall()
+
+    for (sid,) in pending:
+        await render_ersv_inland(sid, db, format="html")
+
+    await db.commit()
+    return len(pending)
+
+
 async def main() -> None:
     engine = create_async_engine(DATABASE_URL, poolclass=NullPool)
     session_maker = async_sessionmaker(
@@ -140,11 +191,15 @@ async def main() -> None:
     async with session_maker() as db:
         inserted, updated = await _backfill(db)
 
+    async with session_maker() as db:
+        minted = await _alloc_ersv_numbers(db)
+
     await engine.dispose()
     total = inserted + updated
     print(
         f"[{datetime.utcnow().isoformat(timespec='seconds')}Z] inland backfill done: "
-        f"{total} rows ({inserted} inserted, {updated} updated)."
+        f"{total} rows ({inserted} inserted, {updated} updated); "
+        f"ersv_inland_no minted: {minted}."
     )
 
 
