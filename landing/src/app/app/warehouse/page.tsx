@@ -40,20 +40,9 @@ const PRODUCT_LABEL: Record<ProductKind, string> = {
   h2o: 'H₂O',
 };
 
-function toNum(v: string | null | undefined): number {
-  if (v === null || v === undefined || v === '') return 0;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
 function fmtKg(v: string | null | undefined): string {
   if (v === null || v === undefined || v === '') return '—';
   const n = Number(v);
-  if (!Number.isFinite(n)) return '—';
-  return `${numFmt.format(n)} kg`;
-}
-
-function fmtKgNum(n: number): string {
   if (!Number.isFinite(n)) return '—';
   return `${numFmt.format(n)} kg`;
 }
@@ -140,9 +129,6 @@ export default async function WarehousePage({ searchParams }: PageProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {STOCKABLE.map((kind) => {
             const row = stockByKind.get(kind) ?? emptyStock(kind);
-            const stock = toNum(row.stock_kg);
-            const reserved = toNum(row.reserved_kg);
-            const available = stock - reserved;
             const isEuOil = kind === 'eu_oil';
             return (
               <div key={kind} className="border border-rule bg-bg-soft p-4">
@@ -153,27 +139,14 @@ export default async function WarehousePage({ searchParams }: PageProps) {
                   {fmtKg(row.stock_kg)}
                 </p>
                 <dl className="mt-3 space-y-1 font-mono text-[0.7rem]">
-                  {isEuOil ? (
-                    <>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-ink-mute">Available</dt>
-                        <dd className="tabular-nums text-ink">{fmtKgNum(available)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-ink-mute">POS issued (delivered)</dt>
-                        <dd className="tabular-nums text-ink-soft">{fmtKg(row.pos_issued_kg)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-ink-mute">At UTB awaiting POS</dt>
-                        <dd className="tabular-nums text-ink-soft">
-                          {fmtKg(row.at_utb_awaiting_pos_kg)}
-                        </dd>
-                      </div>
-                    </>
-                  ) : (
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-ink-mute">Available</dt>
+                    <dd className="tabular-nums text-ink">{fmtKg(row.stock_kg)}</dd>
+                  </div>
+                  {isEuOil && (
                     <div className="flex justify-between gap-2">
-                      <dt className="text-ink-mute">Available</dt>
-                      <dd className="tabular-nums text-ink">{fmtKg(row.stock_kg)}</dd>
+                      <dt className="text-ink-mute">POS issued (delivered)</dt>
+                      <dd className="tabular-nums text-ink-soft">{fmtKg(row.pos_issued_kg)}</dd>
                     </div>
                   )}
                   <div className="flex justify-between gap-2">
