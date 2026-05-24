@@ -6,6 +6,7 @@ import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { ErsvModalProvider } from '@/components/ersv';
 import { OutboundErsvModalProvider } from '@/components/ersv-outbound';
+import { InlandErsvModalProvider } from '@/components/ersv-inland';
 import { TicketModalProvider } from '@/components/ticket';
 import { UmamiIdentify } from '@/components/analytics/umami-identify';
 import { SidebarNav } from './sidebar-nav';
@@ -24,6 +25,7 @@ export function AppShell({ children, user, userIdHash }: Props) {
   return (
     <ErsvModalProvider>
     <OutboundErsvModalProvider>
+    <InlandErsvModalProvider>
     <TicketModalProvider>
     <UmamiIdentify userId={userIdHash} role={user.role} />
     <div className="min-h-dvh bg-bg">
@@ -72,6 +74,7 @@ export function AppShell({ children, user, userIdHash }: Props) {
       </div>
     </div>
     </TicketModalProvider>
+    </InlandErsvModalProvider>
     </OutboundErsvModalProvider>
     </ErsvModalProvider>
   );

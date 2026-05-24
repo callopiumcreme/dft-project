@@ -51,9 +51,11 @@ from app.schemas.ersv import ErsvDetail
 from app.services.ersv_renderer import (
     ConsignmentNotFoundError,
     ErsvNotFoundError,
+    InlandShipmentNotFoundError,
     PosNotFoundError,
     fetch_ersv_row,
     is_regenerated,
+    render_ersv_inland,
     render_ersv_outbound,
     render_ersv_to_html,
     render_ersv_to_pdf,
@@ -63,6 +65,8 @@ from app.services.pdf_renderer import PDFRenderError
 if TYPE_CHECKING:
     from app.services.ersv_renderer import (
         ErsvHtmlArtifact,
+        ErsvInlandHtmlArtifact,
+        ErsvInlandPdfArtifact,
         ErsvOutboundHtmlArtifact,
         ErsvOutboundPdfArtifact,
         ErsvRenderArtifact,
@@ -349,6 +353,158 @@ async def regenerate_outbound_number(
         pos_number=pos_number,
         ersv_outbound_no=new_no,
         previous_no=previous_no,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Inland eRSV — Girardot plant → Cartagena Contecar port
+# ---------------------------------------------------------------------------
+
+
+class InlandListItem(BaseModel):
+    """Single row in the inland shipment list — one per ISO container."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    shipment_id: int
+    consignment_id: int
+    consignment_code: str
+    bl_ref: str
+    seq_in_bl: int
+    container_id: str
+    seal_ref: str | None
+    load_date: date
+    gross_kg: float
+    tare_kg: float
+    net_kg: float
+    ersv_inland_no: str | None
+
+
+_LIST_INLAND_SQL = text(
+    """
+    SELECT
+        i.id              AS shipment_id,
+        i.consignment_id,
+        c.code            AS consignment_code,
+        i.bl_ref,
+        i.seq_in_bl,
+        i.container_id,
+        i.seal_ref,
+        i.load_date,
+        CAST(i.gross_kg AS double precision) AS gross_kg,
+        CAST(i.tare_kg  AS double precision) AS tare_kg,
+        CAST(i.net_kg   AS double precision) AS net_kg,
+        i.ersv_inland_no
+    FROM inland_shipment i
+    JOIN consignment c ON c.id = i.consignment_id
+    WHERE i.deleted_at IS NULL
+      AND c.deleted_at IS NULL
+      AND (CAST(:consignment_id AS bigint) IS NULL
+           OR i.consignment_id = CAST(:consignment_id AS bigint))
+    ORDER BY i.load_date ASC, i.seq_in_bl ASC, i.id ASC
+    LIMIT :limit OFFSET :offset
+    """
+)
+
+
+@router.get("/inland", response_model=list[InlandListItem])
+async def list_inland_shipments(
+    _: ViewerUser,
+    db: DbDep,
+    consignment_id: Annotated[int | None, Query(ge=1)] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> list[dict[str, Any]]:
+    """Return inland shipments (Girardot → Cartagena), optionally filtered.
+
+    One row per ISO container. Pass ``consignment_id`` to scope to a single
+    parent consignment (e.g. all 29 containers of CONS-2025-Q3-CROWN).
+    """
+    offset = (page - 1) * page_size
+    result = await db.execute(
+        _LIST_INLAND_SQL,
+        {
+            "consignment_id": consignment_id,
+            "limit": page_size,
+            "offset": offset,
+        },
+    )
+    return [dict(r) for r in result.mappings().all()]
+
+
+@router.get("/inland/{shipment_id}")
+async def get_inland_ersv(
+    shipment_id: int,
+    user: ViewerUser,
+    db: DbDep,
+    format: Annotated[str, Query(pattern="^(html|pdf)$")] = "html",
+) -> Response:
+    """Render the inland eRSV for one ISO container shipment.
+
+    Numbering ``GIR/{yy}/{DD-MM}/{seq:02d}`` is minted on first call and
+    persisted on ``inland_shipment.ersv_inland_no``. Idempotent thereafter.
+
+    - ``?format=html`` (default): inline HTML.
+    - ``?format=pdf``: application/pdf (audited).
+    """
+    try:
+        artefact = await render_ersv_inland(
+            shipment_id, db, format=format  # type: ignore[arg-type]
+        )
+    except InlandShipmentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Inland shipment not found: {shipment_id}",
+        ) from exc
+    except PDFRenderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"PDF render failed: {exc}",
+        ) from exc
+
+    if format == "pdf":
+        pdf_artefact: ErsvInlandPdfArtifact = artefact  # type: ignore[assignment]
+        audit = AuditLog(
+            table_name="inland_shipment",
+            record_id=shipment_id,
+            action="insert",
+            old_values=None,
+            new_values={
+                "kind": "ERSV_INLAND_PDF_EXPORT",
+                "ersv_inland_no": pdf_artefact.ersv_inland_no,
+                "sha256": pdf_artefact.pdf_sha256,
+                "page_count": pdf_artefact.page_count,
+                "size_bytes": len(pdf_artefact.pdf_bytes),
+            },
+            changed_by=user.id,
+        )
+        db.add(audit)
+        await db.commit()
+
+        filename = (
+            f"ersv_inland_{pdf_artefact.ersv_inland_no.replace('/', '_')}.pdf"
+        )
+        return Response(
+            content=pdf_artefact.pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Cache-Control": "no-store",
+                "X-Content-SHA256": pdf_artefact.pdf_sha256,
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "X-Ersv-Inland-No": pdf_artefact.ersv_inland_no,
+                "X-Shipment-Id": str(shipment_id),
+            },
+        )
+
+    html_artefact: ErsvInlandHtmlArtifact = artefact  # type: ignore[assignment]
+    return Response(
+        content=html_artefact.html,
+        media_type="text/html; charset=utf-8",
+        headers={
+            "Cache-Control": "private, max-age=0, must-revalidate",
+            "X-Ersv-Inland-No": html_artefact.ersv_inland_no,
+            "X-Shipment-Id": str(shipment_id),
+        },
     )
 
 

@@ -1037,16 +1037,299 @@ async def render_ersv_outbound(
     )
 
 
+# ---------------------------------------------------------------------------
+# Inland eRSV — Girardot plant → Cartagena Contecar port (intra-OisteBio)
+# ---------------------------------------------------------------------------
+#
+# Cliente direction (2026-05-24): every outbound consignment starts with a
+# truck leg from the Girardot pyrolysis plant to the Cartagena Contecar port
+# terminal. This leg is intra-OisteBio (same Swiss GmbH on both ends, the
+# Cartagena leg is the customs export side, Mamonal terminal). One eRSV per
+# ISO container (29 docs for Q3 2025).
+#
+# Numbering: ``GIR/{yy}/{DD-MM}/{seq:02d}`` — dash separator inside the day
+# segment, 2-digit per-day counter (multiple shipments same day allowed).
+#
+# Pattern allocation is lazy + idempotent: first ``GET`` mints the number on
+# the ``inland_shipment.ersv_inland_no`` column and persists it; subsequent
+# requests return the same number. The natural key (consignment_id,
+# container_id, load_date) protects against duplicate rows.
+
+_INLAND_NO_RE = re.compile(r"^GIR/(\d{2})/(\d{2})-(\d{2})/(\d{2})$")
+_INLAND_TEMPLATE = "ersv_inland.html"
+
+# Issuer constants reused from outbound block above.
+_INLAND_RECEIVER_NAME = "OisteBio GmbH"
+_INLAND_RECEIVER_ADDRESS = (
+    "Cartagena Contecar Terminal Portuaria, Mamonal Sn — Cartagena, Colombia"
+)
+_INLAND_ORIGIN_LABEL = "Planta Girardot — Cra. 9 #32, Girardot, Cundinamarca, Colombia"
+_INLAND_DESTINATION_LABEL = (
+    "Cartagena Contecar Terminal Portuaria, Mamonal Sn, Cartagena, Colombia"
+)
+_INLAND_PRODUCT_GRADE = "DEV-P100 Refined pyrolysis oil"
+
+# Transporter placeholder set — used until real data arrives. NULL DB values
+# render as the dash placeholder, non-NULL values flow through unchanged.
+_INLAND_TRANSPORTER_PLACEHOLDER = "Por confirmar"
+
+
+@dataclass(frozen=True, slots=True)
+class ErsvInlandHtmlArtifact:
+    """Outcome of a successful inland eRSV HTML render."""
+
+    html: str
+    shipment_id: int
+    ersv_inland_no: str
+
+
+@dataclass(frozen=True, slots=True)
+class ErsvInlandPdfArtifact:
+    """Outcome of a successful inland eRSV PDF render."""
+
+    pdf_bytes: bytes
+    pdf_sha256: str
+    page_count: int
+    shipment_id: int
+    ersv_inland_no: str
+    rendered_at: datetime
+
+
+class InlandShipmentNotFoundError(LookupError):
+    """Raised when inland_shipment.id is not present or soft-deleted."""
+
+    def __init__(self, shipment_id: int) -> None:
+        super().__init__(f"Inland shipment not found: {shipment_id}")
+        self.shipment_id = shipment_id
+
+
+_FETCH_INLAND_SQL = text(
+    """
+    SELECT
+        i.id, i.consignment_id, i.bl_ref, i.seq_in_bl, i.container_id,
+        i.seal_ref, i.load_date, i.gross_kg, i.tare_kg, i.net_kg,
+        i.ersv_inland_no, i.transporter, i.driver_name, i.vehicle_plate,
+        i.origin_node, i.destination_node, i.notes,
+        i.created_at, i.updated_at
+    FROM inland_shipment i
+    JOIN consignment c ON c.id = i.consignment_id
+    WHERE i.id = :sid
+      AND i.deleted_at IS NULL
+      AND c.deleted_at IS NULL
+    """
+)
+
+# Per-day counter — count active rows for the same load_date whose
+# ersv_inland_no already encodes that day, then return MAX(seq)+1.
+_NEXT_INLAND_SEQ_SQL = text(
+    """
+    SELECT COALESCE(
+        MAX(CAST(split_part(ersv_inland_no, '/', 4) AS integer)),
+        0
+    ) + 1
+    FROM inland_shipment
+    WHERE ersv_inland_no LIKE :pattern
+      AND deleted_at IS NULL
+    """
+)
+
+
+async def _allocate_inland_no(load_date: date, db: AsyncSession) -> str:
+    """Return next available ``GIR/{yy}/{DD-MM}/{seq:02d}`` for ``load_date``.
+
+    Counter is independent per day; ``GIR/25/08-06/01`` and ``GIR/25/09-06/01``
+    each start fresh. Thread-safe only within a single transaction.
+    """
+    yy = f"{load_date.year % 100:02d}"
+    dd_mm = load_date.strftime("%d-%m")
+    pattern = f"GIR/{yy}/{dd_mm}/%"
+    result = await db.execute(_NEXT_INLAND_SEQ_SQL, {"pattern": pattern})
+    seq: int = int(result.scalar_one())
+    return f"GIR/{yy}/{dd_mm}/{seq:02d}"
+
+
+def _build_inland_context(
+    row: dict[str, Any], issue_date: date
+) -> dict[str, Any]:
+    """Assemble the Jinja2 context for the inland eRSV template."""
+    load_date_val: date = row["load_date"]
+    generated_at = datetime.now(UTC)
+
+    # Doc-id hash — stable across re-renders, excludes generated_at.
+    canonical = {
+        "shipment_id": row["id"],
+        "consignment_id": row["consignment_id"],
+        "ersv_inland_no": row["ersv_inland_no"],
+        "container_id": row["container_id"],
+        "seal_ref": row["seal_ref"],
+        "load_date": _stringify(load_date_val),
+        "gross_kg": _stringify(row["gross_kg"]),
+        "tare_kg": _stringify(row["tare_kg"]),
+        "net_kg": _stringify(row["net_kg"]),
+        "bl_ref": row["bl_ref"],
+        "seq_in_bl": row["seq_in_bl"],
+    }
+    doc_id_hash = hashlib.sha256(
+        json.dumps(canonical, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
+
+    return {
+        # Identity — NO buyer/consignment_code: inland is intra-OisteBio
+        # (Girardot plant → Cartagena port). Buyer (Crown Oil) appears
+        # only on outbound eRSV downstream.
+        "ersv_inland_no": row["ersv_inland_no"],
+        "shipment_id": row["id"],
+        "issue_date_eu": issue_date.strftime("%d/%m/%Y"),
+        "issue_date_iso": issue_date.isoformat(),
+        # Emisor — OisteBio (Swiss GmbH, plant Girardot)
+        "issuer_name": _OISTEBIO_NAME,
+        "issuer_address": _OISTEBIO_ADDRESS,
+        "issuer_email": _OISTEBIO_EMAIL,
+        "issuer_vat": _OISTEBIO_VAT,
+        "issuer_plant": _OISTEBIO_PLANT,
+        # Destinatario — same legal entity, Cartagena port side
+        "receiver_name": _INLAND_RECEIVER_NAME,
+        "receiver_address": _INLAND_RECEIVER_ADDRESS,
+        # Producto
+        "product_grade": _INLAND_PRODUCT_GRADE,
+        # Unidad de transporte
+        "container_id": row["container_id"],
+        "seal_ref": row["seal_ref"] or _PLACEHOLDER,
+        "load_date_eu": load_date_val.strftime("%d/%m/%Y"),
+        # Pesos
+        "gross_kg_str": _fmt_kg(row["gross_kg"]),
+        "tare_kg_str": _fmt_kg(row["tare_kg"]),
+        "net_kg_str": _fmt_kg(row["net_kg"]),
+        # Transportista
+        "transporter": row["transporter"] or _INLAND_TRANSPORTER_PLACEHOLDER,
+        "driver_name": row["driver_name"] or _INLAND_TRANSPORTER_PLACEHOLDER,
+        "vehicle_plate": row["vehicle_plate"] or _INLAND_TRANSPORTER_PLACEHOLDER,
+        # Ruta
+        "origin_node": row["origin_node"] or _INLAND_ORIGIN_LABEL,
+        "destination_node": row["destination_node"] or _INLAND_DESTINATION_LABEL,
+        "bl_ref": row["bl_ref"],
+        "seq_in_bl": row["seq_in_bl"],
+        # Notas
+        "notes": row.get("notes"),
+        # Render metadata
+        "generated_at_human": generated_at.strftime("%d/%m/%Y %H:%M UTC"),
+        "doc_id_hash": doc_id_hash,
+        # Style — mirror inbound palette
+        "primary_color": "#1a3a5c",
+        "version_label": "eRSV-INL v.2025.1.0",
+    }
+
+
+def _render_inland_pdf_sync(
+    context: dict[str, Any], output_path: Path
+) -> tuple[bytes, str, int]:
+    """Blocking PDF render for inland eRSV — invoked from worker thread."""
+    result = render_to_pdf(
+        f"reports/{_INLAND_TEMPLATE}",
+        context,
+        output_path,
+        filters={"fmt_kg": _fmt_kg, "fmt_kg_short": _fmt_kg_short},
+        full_fonts=False,
+    )
+    pdf_bytes = result.pdf_path.read_bytes()
+    return pdf_bytes, result.pdf_sha256, result.page_count
+
+
+async def render_ersv_inland(
+    shipment_id: int,
+    db: AsyncSession,
+    format: Literal["html", "pdf"] = "html",
+    *,
+    issue_date: date | None = None,
+    force_new_no: bool = False,
+) -> ErsvInlandHtmlArtifact | ErsvInlandPdfArtifact:
+    """Render an inland eRSV for one ISO container leg (Girardot → Cartagena).
+
+    Numbering is lazy + idempotent: ``ersv_inland_no`` is allocated on the
+    first call and persisted on the ``inland_shipment`` row; subsequent calls
+    return the same number. Pass ``force_new_no=True`` to re-allocate (admin
+    only) — that path is not currently exposed via HTTP.
+
+    Args:
+        shipment_id:  PK of the ``inland_shipment`` row.
+        db:           Active async DB session.
+        format:       ``"html"`` (default) or ``"pdf"``.
+        issue_date:   Override printed issue date; defaults to today (UTC).
+        force_new_no: When ``True``, allocate a new number even if already set.
+
+    Raises:
+        InlandShipmentNotFoundError: shipment_id missing or soft-deleted.
+    """
+    if issue_date is None:
+        issue_date = datetime.now(UTC).date()
+
+    result = await db.execute(_FETCH_INLAND_SQL, {"sid": shipment_id})
+    row_mapping = result.mappings().one_or_none()
+    if row_mapping is None:
+        raise InlandShipmentNotFoundError(shipment_id)
+    row: dict[str, Any] = dict(row_mapping)
+
+    existing_no: str | None = row.get("ersv_inland_no")
+    if existing_no is None or force_new_no:
+        new_no = await _allocate_inland_no(row["load_date"], db)
+        await db.execute(
+            text(
+                "UPDATE inland_shipment SET ersv_inland_no = :no "
+                "WHERE id = :sid"
+            ),
+            {"no": new_no, "sid": shipment_id},
+        )
+        await db.commit()
+        row["ersv_inland_no"] = new_no
+
+    context = _build_inland_context(row, issue_date)
+
+    env = Environment(
+        loader=FileSystemLoader(str(TEMPLATES_DIR)),
+        autoescape=select_autoescape(("html", "htm", "xml")),
+        keep_trailing_newline=True,
+    )
+    env.filters["fmt_kg"] = _fmt_kg
+    template = env.get_template(f"reports/{_INLAND_TEMPLATE}")
+    html = template.render(**context)
+
+    if format == "html":
+        return ErsvInlandHtmlArtifact(
+            html=html,
+            shipment_id=shipment_id,
+            ersv_inland_no=row["ersv_inland_no"],
+        )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_pdf = Path(tmpdir) / f"ersv_inland_{shipment_id}.pdf"
+        pdf_bytes, sha256_hex, page_count = await anyio.to_thread.run_sync(
+            _render_inland_pdf_sync, context, tmp_pdf
+        )
+
+    return ErsvInlandPdfArtifact(
+        pdf_bytes=pdf_bytes,
+        pdf_sha256=sha256_hex,
+        page_count=page_count,
+        shipment_id=shipment_id,
+        ersv_inland_no=row["ersv_inland_no"],
+        rendered_at=datetime.now(UTC),
+    )
+
+
 __all__ = [
     "ConsignmentNotFoundError",
     "ErsvHtmlArtifact",
+    "ErsvInlandHtmlArtifact",
+    "ErsvInlandPdfArtifact",
     "ErsvNotFoundError",
     "ErsvOutboundHtmlArtifact",
     "ErsvOutboundPdfArtifact",
     "ErsvRenderArtifact",
+    "InlandShipmentNotFoundError",
     "PosNotFoundError",
     "fetch_ersv_row",
     "is_regenerated",
+    "render_ersv_inland",
     "render_ersv_outbound",
     "render_ersv_to_html",
     "render_ersv_to_pdf",

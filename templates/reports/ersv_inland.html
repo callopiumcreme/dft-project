@@ -2,10 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>eRSV outbound {{ ersv_outbound_no }}</title>
+    <title>eRSV inland {{ ersv_inland_no }}</title>
     <style>
         /* --------------------------------------------------------------
-           PAGE — A4 portrait, alineado al template estándar eRSV.
+           PAGE — A4 portrait, mirrors inbound eRSV.
            -------------------------------------------------------------- */
         @page {
             size: A4 portrait;
@@ -96,7 +96,7 @@
         }
 
         /* --------------------------------------------------------------
-           Tabla genérica (pesos, GHG, legs, PoS) — mismo look distribución.
+           Pesos table — 3 cols (Bruto / Tara / Neto), no litres.
            -------------------------------------------------------------- */
         table.dist {
             width: 100%;
@@ -192,14 +192,14 @@
 </head>
 <body>
 
-{# ===== Fecha emisión ===== #}
+{# ===== Fecha de emisión (top-right) ===== #}
 <div class="fecha-row">Fecha de emisión: {{ issue_date_eu }}</div>
 
 {# ===== Title band ===== #}
-<div class="title-band">eRSV outbound — Declaración de despacho</div>
-<div class="ersv-num-line">N° {{ ersv_outbound_no }}</div>
+<div class="title-band">eRSV transporte interno — Girardot → Cartagena</div>
+<div class="ersv-num-line">N° {{ ersv_inland_no }}</div>
 
-{# ===== Emisor ===== #}
+{# ===== Emisor (OisteBio Girardot) ===== #}
 <div class="section-band">Emisor</div>
 <table class="kv">
     <tr>
@@ -215,7 +215,7 @@
         <td class="v">{{ issuer_vat }}</td>
     </tr>
     <tr>
-        <td class="k">Planta de producción</td>
+        <td class="k">Planta de despacho</td>
         <td class="v">{{ issuer_plant }}</td>
     </tr>
     <tr>
@@ -224,27 +224,17 @@
     </tr>
 </table>
 
-{# ===== Destinatario ===== #}
+{# ===== Destinatario (OisteBio Cartagena Contecar) ===== #}
 <div class="section-band">Destinatario</div>
 <table class="kv">
     <tr>
         <td class="k">Razón social</td>
-        <td class="v">{{ buyer_name }}</td>
+        <td class="v">{{ receiver_name }}</td>
     </tr>
     <tr>
-        <td class="k">Dirección</td>
-        <td class="v">{{ buyer_address }}</td>
+        <td class="k">Dirección entrega</td>
+        <td class="v">{{ receiver_address }}</td>
     </tr>
-    <tr>
-        <td class="k">País</td>
-        <td class="v">{{ buyer_country }}</td>
-    </tr>
-    {% if contract_ref and contract_ref != '—' %}
-    <tr>
-        <td class="k">Contrato</td>
-        <td class="v">{{ contract_ref }}</td>
-    </tr>
-    {% endif %}
 </table>
 
 {# ===== Producto ===== #}
@@ -252,168 +242,82 @@
 <table class="kv">
     <tr>
         <td class="k">Denominación</td>
-        <td class="v">{{ product_grade }} — Refined pyrolysis oil</td>
+        <td class="v">{{ product_grade }}</td>
     </tr>
     <tr>
-        <td class="k">Lote / Consignación</td>
-        <td class="v">{{ consignment_code }}</td>
+        <td class="k">Referencia BL Colombia</td>
+        <td class="v">{{ bl_ref }}</td>
     </tr>
-    {% if port_rsv_no and port_rsv_no != '—' %}
-    <tr>
-        <td class="k">Port RSV</td>
-        <td class="v">{{ port_rsv_no }}</td>
-    </tr>
-    {% endif %}
-    <tr>
-        <td class="k">Estado</td>
-        <td class="v">{{ status }}</td>
-    </tr>
-    {% if prod_date_from and prod_date_from != '—' %}
-    <tr>
-        <td class="k">Ventana de producción</td>
-        <td class="v">{{ prod_date_from }} — {{ prod_date_to }}</td>
-    </tr>
-    {% endif %}
 </table>
 
-{# ===== Cantidad ===== #}
-<div class="section-band">Cantidad</div>
-<table class="dist">
-    <thead>
-        <tr>
-            <th>Peso neto</th>
-            <th>Volumen aproximado</th>
-            <th>Densidad referencia</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td class="num">{{ total_kg_str }}</td>
-            <td class="num">{{ total_litres_str }}</td>
-            <td class="num">0,78 kg/L</td>
-        </tr>
-    </tbody>
-</table>
-
-{# ===== Sostenibilidad ===== #}
-<div class="section-band">Sostenibilidad</div>
+{# ===== Unidad de transporte ===== #}
+<div class="section-band">Unidad de transporte</div>
 <table class="kv">
     <tr>
-        <td class="k">Categoría materia prima</td>
-        <td class="v">{{ feedstock_category }}</td>
+        <td class="k">Contenedor (ISO 6346)</td>
+        <td class="v">{{ container_id }}</td>
     </tr>
     <tr>
-        <td class="k">País de origen materia prima</td>
-        <td class="v">{{ feedstock_country }}</td>
+        <td class="k">Precinto (seal)</td>
+        <td class="v">{{ seal_ref }}</td>
     </tr>
     <tr>
-        <td class="k">Sistema de certificación</td>
-        <td class="v">ISCC EU</td>
-    </tr>
-    <tr>
-        <td class="k">Cadena de custodia</td>
-        <td class="v">Balance de masa</td>
-    </tr>
-    <tr>
-        <td class="k">Conformidad RED III</td>
-        <td class="v">Sí — Art. 29(2)-(7) RED III</td>
-    </tr>
-    <tr>
-        <td class="k">Designación de residuo</td>
-        <td class="v">No (ELT = neumáticos al final de su vida útil, residuo no agrícola)</td>
+        <td class="k">Fecha de carga</td>
+        <td class="v">{{ load_date_eu }}</td>
     </tr>
 </table>
 
-{# ===== GHG ===== #}
-<table class="dist" style="margin-top:4pt;">
-    <thead>
-        <tr>
-            <th>Producto</th>
-            <th>Ep (proceso)</th>
-            <th>Etd (transporte)</th>
-            <th>Total E (gCO₂eq/MJ)</th>
-            <th>Ahorro GHG vs. fósil</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td class="label">{{ product_grade }}</td>
-            <td class="num">{{ ghg_ep }}</td>
-            <td class="num">{{ ghg_etd }}</td>
-            <td class="num">{{ ghg_total }}</td>
-            <td class="num">{{ ghg_saving_pct }} (ref. 94 gCO₂eq/MJ)</td>
-        </tr>
-    </tbody>
-</table>
-<div style="font-size:6.5pt; color:#888; margin-top:2pt;">
-    Valores GHG procedentes del ISCC PoS (serie OISCRO); valores por defecto RED III no aplicados.
-</div>
-
-{# ===== Cadena de custodia ===== #}
-<div class="section-band">Cadena de custodia — Tramos de envío</div>
-{% if legs %}
+{# ===== Pesos (sólo kg) ===== #}
+<div class="section-band">Pesos</div>
 <table class="dist">
     <thead>
         <tr>
-            <th style="width:4%">#</th>
-            <th style="width:14%">Tipo</th>
-            <th style="width:18%">Documento</th>
-            <th style="width:10%">Fecha</th>
-            <th style="width:20%">Origen</th>
-            <th style="width:20%">Destino</th>
-            <th style="width:7%">kg in</th>
-            <th style="width:7%">kg out</th>
+            <th>Bruto</th>
+            <th>Tara</th>
+            <th>Neto</th>
         </tr>
     </thead>
     <tbody>
-        {% for leg in legs %}
         <tr>
-            <td class="num">{{ leg.seq }}</td>
-            <td>{{ leg.leg_type }}</td>
-            <td>
-                {{ leg.document_ref or '—' }}
-                {% if leg.carrier %}
-                <div style="font-size:7pt; color:#666;">{{ leg.carrier }}</div>
-                {% endif %}
-            </td>
-            <td>{{ leg.document_date_eu }}</td>
-            <td>{{ leg.origin_node }}</td>
-            <td>{{ leg.destination_node }}</td>
-            <td class="num">{{ leg.kg_in_str }}</td>
-            <td class="num">{{ leg.kg_out_str }}</td>
+            <td class="num">{{ gross_kg_str }}</td>
+            <td class="num">{{ tare_kg_str }}</td>
+            <td class="num">{{ net_kg_str }}</td>
         </tr>
-        {% endfor %}
     </tbody>
 </table>
-{% else %}
-<div style="font-size:8pt; color:#888; font-style:italic; margin-top:4pt;">
-    No hay tramos de envío registrados para esta consignación.
-</div>
-{% endif %}
 
-{# ===== Proof of Sustainability ===== #}
-<div class="section-band">Proof of Sustainability (PoS) — referencia</div>
-<table class="dist">
-    <thead>
-        <tr>
-            <th style="width:55%">Número PoS</th>
-            <th style="width:35%">Peso neto</th>
-            <th style="width:10%">PDF</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>{{ pos_number }}</td>
-            <td class="num">{{ total_kg_str }}</td>
-            <td style="text-align:center; font-size:7pt;">
-                {% if pos_pdf_ref and pos_pdf_ref != placeholder %}
-                <span style="color:{{ primary_color }};">&#10003;</span>
-                {% else %}
-                <span style="color:#aaa;">—</span>
-                {% endif %}
-            </td>
-        </tr>
-    </tbody>
+{# ===== Transportista (camión) ===== #}
+<div class="section-band">Transportista (camión)</div>
+<table class="kv">
+    <tr>
+        <td class="k">Empresa</td>
+        <td class="v">{{ transporter }}</td>
+    </tr>
+    <tr>
+        <td class="k">Conductor</td>
+        <td class="v">{{ driver_name }}</td>
+    </tr>
+    <tr>
+        <td class="k">Matrícula</td>
+        <td class="v">{{ vehicle_plate }}</td>
+    </tr>
+</table>
+
+{# ===== Ruta ===== #}
+<div class="section-band">Origen → Destino</div>
+<table class="kv">
+    <tr>
+        <td class="k">Origen</td>
+        <td class="v">{{ origin_node }}</td>
+    </tr>
+    <tr>
+        <td class="k">Destino</td>
+        <td class="v">{{ destination_node }}</td>
+    </tr>
+    <tr>
+        <td class="k">BL onward (referencia)</td>
+        <td class="v">{{ bl_ref }} · pos {{ seq_in_bl }}</td>
+    </tr>
 </table>
 
 {# ===== Validez documento electrónico (Ley 527/1999) ===== #}
@@ -428,12 +332,15 @@
 <div class="observaciones">
     <div class="obs-title">Observaciones</div>
     <ol>
-        <li>El emisor declara que el material despachado corresponde exclusivamente a {{ product_grade }} — aceite de pirólisis refinado obtenido a partir de neumáticos al final de su vida útil (ELT) procesados en la planta de Girardot (Colombia).</li>
-        <li>Todos los datos GHG y de sostenibilidad son coherentes con los Proof(s) of Sustainability ISCC vinculados (serie OISCRO).</li>
-        <li>El presente documento constituye una declaración electrónica válida a efectos de auditoría de la cadena de custodia RTFO y no sustituye los documentos ISCC PoS emitidos individualmente por lote de entrega.</li>
-        <li>La trazabilidad ISCC-EU del lote queda asegurada mediante el número de consignación, el PoS de referencia y el presente documento eRSV.</li>
+        <li>El emisor declara que el producto despachado corresponde exclusivamente a {{ product_grade }}, obtenido por pirólisis controlada de neumáticos al final de su vida útil (ELT) en la planta de Girardot.</li>
+        <li>El transporte se realiza en contenedor ISO 6346 sellado con precinto numerado; cualquier alteración del precinto debe registrarse en la sección de notas y comunicarse al destinatario.</li>
+        <li>El destinatario verifica el peso de llegada en báscula calibrada del Terminal Portuaria Mamonal; toda discrepancia &gt; 2 % respecto al peso de salida queda registrada en la cadena de custodia.</li>
+        <li>La trazabilidad ISCC-EU del lote queda asegurada mediante el número de consignación y el presente documento eRSV, complementario a los documentos BL oceánicos posteriores.</li>
         <li>El presente documento se emite en formato electrónico y constituye soporte válido para la cadena de custodia del sistema de balance de masa de {{ issuer_name }}.</li>
     </ol>
+    {% if notes %}
+    <div style="margin-top: 4pt;"><strong>Notas:</strong> {{ notes }}</div>
+    {% endif %}
 </div>
 
 {# ===== Brand bottom ===== #}
@@ -441,7 +348,7 @@
     {{ issuer_name }} · {{ version_label }}
 </div>
 <div class="doc-meta">
-    {{ version_label }} · Generado {{ generated_at_human }}
+    Doc ID {{ doc_id_hash[:16] }} · emitido {{ issue_date_eu }}
 </div>
 
 </body>
