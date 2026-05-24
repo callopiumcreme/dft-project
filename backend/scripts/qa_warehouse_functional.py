@@ -650,7 +650,19 @@ async def _run_subprocess(cmd: list[str]) -> tuple[int, str]:
 
 
 async def test_22_pos_issuance_idempotent(ctx: QaContext) -> tuple[bool, str]:
-    """Second run of backfill_pos_issuance.py: skipped=32, updated=0."""
+    """Second run of backfill_pos_issuance.py is a no-op: updated=0 AND
+    every active POS already has issuance_date populated in the DB.
+
+    The script's ``skipped`` count is bounded by the number of PDFs in
+    ``--pdf-dir`` that the parser can read — so it varies per directory
+    (Q3-only dir = 20 PDFs, 2 of which use an alternate filename prefix
+    the parser cannot match). Asserting an absolute ``skipped == 32`` is
+    therefore brittle. Instead we prove idempotency via two assertions:
+
+      1. The script reports ``updated=0`` (no rewrites on a second run).
+      2. The DB has ``0`` active POS rows with ``issuance_date IS NULL``
+         (i.e. coverage is already complete before this run).
+    """
     if not POS_PDF_DIR.is_dir():
         return False, f"POS_PDF_DIR not found: {POS_PDF_DIR}"
     rc, out = await _run_subprocess([
@@ -666,10 +678,31 @@ async def test_22_pos_issuance_idempotent(ctx: QaContext) -> tuple[bool, str]:
     if match_line is None:
         return False, f"no 'summary:' line found; tail={out[-300:]!r}"
     parts = dict(p.split("=") for p in match_line.split()[1:])
-    skipped = int(parts.get("skipped", 0))
     updated = int(parts.get("updated", 0))
-    ok = skipped == EXPECTED_ACTIVE_POS_COUNT and updated == 0
-    return ok, f"summary={match_line.strip()} (expected skipped=32 updated=0)"
+    skipped = int(parts.get("skipped", 0))
+
+    async with ctx.session_factory() as db:
+        null_count = await _scalar(
+            db,
+            "SELECT COUNT(*) FROM consignment_pos "
+            "WHERE deleted_at IS NULL AND issuance_date IS NULL",
+        )
+        active_count = await _scalar(
+            db,
+            "SELECT COUNT(*) FROM consignment_pos WHERE deleted_at IS NULL",
+        )
+
+    ok = (
+        updated == 0
+        and null_count == 0
+        and active_count == EXPECTED_ACTIVE_POS_COUNT
+    )
+    return ok, (
+        f"updated={updated} skipped={skipped} "
+        f"active_pos={active_count} issuance_null={null_count} "
+        f"(expected updated=0, issuance_null=0, "
+        f"active_pos={EXPECTED_ACTIVE_POS_COUNT})"
+    )
 
 
 async def test_23_backfill_warehouse_double_run(
