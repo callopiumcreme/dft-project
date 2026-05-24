@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir fastapi 'uvicorn[standard]' 'sqlalchemy[asyncio]' asyncpg \
         alembic 'pydantic[email]' 'python-jose[cryptography]' 'passlib[bcrypt]' \
-        python-multipart weasyprint jinja2 pypdf openpyxl pandas apscheduler
+        python-multipart weasyprint jinja2 pypdf pymupdf openpyxl pandas apscheduler
 
 COPY . .
 
