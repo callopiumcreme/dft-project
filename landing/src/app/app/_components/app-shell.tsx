@@ -9,6 +9,7 @@ import { OutboundErsvModalProvider } from '@/components/ersv-outbound';
 import { InlandErsvModalProvider } from '@/components/ersv-inland';
 import { TicketModalProvider } from '@/components/ticket';
 import { UmamiIdentify } from '@/components/analytics/umami-identify';
+import { Toaster } from '@/components/ui/toaster';
 import { SidebarNav } from './sidebar-nav';
 import { Breadcrumb } from './breadcrumb';
 import { UserMenu } from './user-menu';
@@ -73,6 +74,7 @@ export function AppShell({ children, user, userIdHash }: Props) {
         <main className="px-4 sm:px-6 lg:px-10 py-8">{children}</main>
       </div>
     </div>
+    <Toaster />
     </TicketModalProvider>
     </InlandErsvModalProvider>
     </OutboundErsvModalProvider>

@@ -15,6 +15,7 @@ import {
   UserCog,
   History,
   Route,
+  Package,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -31,6 +32,9 @@ const NAV: NavItem[] = [
   { href: '/app', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/app/inputs', label: 'Daily inputs', icon: Truck, group: 'Operations' },
   { href: '/app/production', label: 'Daily production', icon: Factory, group: 'Operations' },
+  { href: '/app/warehouse', label: 'Warehouse', icon: Package, group: 'Operations' },
+  { href: '/app/warehouse/byproduct-sales', label: 'Byproduct sales', icon: Package, group: 'Operations', tooltip: 'Carbon black / metal scrap / PLUS oil sales' },
+  { href: '/app/warehouse/plus-sales', label: 'PLUS sales', icon: Package, group: 'Operations', tooltip: 'Pyrolysis oil PLUS — Colombia buyer' },
   { href: '/app/reports/mass-balance', label: 'Mass balance', icon: Scale, group: 'Reports' },
   { href: '/app/reports/by-supplier', label: 'By supplier', icon: Users, group: 'Reports' },
   { href: '/app/reports/closure-status', label: 'Daily closure', icon: Scale, group: 'Reports' },
