@@ -1,6 +1,6 @@
 # Audit Gap Analysis & Action Plan — 2026-05-25
 
-**Scope:** chain-of-custody OisteBio → Crown Oil UK (RTFO + ISCC EU), consignment c-1 (DEL-CRW-2025-1 delivered) e c-2 (DEL-CRW-2025-2 at_utb).
+**Scope:** chain-of-custody OisteBio → Crown Oil UK (RTFO + ISCC EU). Due consignment in prod: `c-1` = DEL-CRW-2025-2 `at_utb` (Q3 2025, Jun-Aug, 4 shipment_leg popolati) e `c-386` = DEL-CRW-2025-1 `delivered_uk` (Q1 2025, Jan-Mar, **0 shipment_leg in DB** — vedi G11).
 
 **Method:** 4 sweep paralleli read-only (docs + backend ORM/routers + frontend components + prod DB inventory). Tutto file:line citato. Doc-claim vs code-truth riconciliato — molti "MISSING" nei doc storici sono **DONE** in migrations 0021-0032.
 
@@ -37,14 +37,15 @@ Devono chiudere prima del Crown Oil handover.
 |---|---|---|---|---|
 | **G1** | Step 3 transload report UTB-2025-Q3-CONSOLIDATED — no PDF | `shipment_leg id=3 pdf_ref NULL` | ISCC §5 continuità massa UTB | DFTEN-166 |
 | **G2** | Step 4 delivery_uk JLY001-JLY020 — no PDF aggregato | `shipment_leg id=4 pdf_ref NULL` (20 invoice singoli esistono su disk) | RTFO closing-leg evidence | DFTEN-167 |
-| **G3** | UTB BV ISCC cert — su Drive non in DB | Drive `CERTIFICATE UTB BV.pdf` esistente; `operator_certificate_id` su shipment_leg NULL | `shipment_leg.operator_certificate_id` FK richiesto | DFTEN-168 |
+| **G3** | UTB BV ISCC cert — su disk locale non in DB | `deliverables/RTFO-310825/03_supplier_evidence/certificates/CERTIFICATE UTB BV.pdf` esistente; `shipment_leg.operator_certificate_id` (FK→`certificates(id)`) NULL su leg #3 c-1 | Step 3 transload non legato a cert UTB BV operatore | DFTEN-168 |
 | **G4** | GHG CI per-batch non tracciato | No `ghg_calculations` table; `consignment_pos.ghg_*` columns esistono ma NULL su prod | rtfo-gap §3.2 — Annex D counterfactual mandatory per RCF | DFTEN-128, 129 (E3) |
 | **G5** | Feedstock classification (`rtfo_class`) | No `feedstocks` table | rtfo-gap §3.1 — RTFO List of Feedstocks obbligatorio | DFTEN-124, 125, 126, 127 (E3) |
-| **G6** | PoS file archiving | `consignment_pos.pdf_ref` schema c'è ma da popolare | rtfo-coc:32 PoS storage | DFTEN-169 |
+| **G6** | PoS file archiving (gdrive→local migration) | `consignment_pos.pdf_ref` schema c'è ma valori sono `gdrive:DFT_2025/CROWN POS VECCHI/…` (20/20 righe c-1) — **violazione regola NO Drive runtime**; serve copia locale + rewrite path a `data/pos_documents/c-<id>/…` | rtfo-coc:32 PoS storage + audit safety | DFTEN-169 |
 | **G7** | PDF signing + SHA-256 hash | Nessun signer implementato | mass-balance §6 CEO signature + hash | DFTEN-170 |
 | **G8** | Audit log CSV export | endpoint solo JSON | blueprint-activities:62 RFC4180+BOM | DFTEN-103 (reopened) |
 | **G9** | RTFO-310825 bundle automation | Manual artifacts esistono (memoria), no generator | blueprint-activities:392 multi-page ZIP | DFTEN-151 (urgent) |
 | **G10** | ROS export schema | Phase 3 backlog | rtfo-gap:111-118 | DFTEN-146, 147, 152 (E5) |
+| **G11** | c-386 (DEL-CRW-2025-1, Q1 2025, delivered_uk) ha **0 shipment_leg in DB** | `SELECT COUNT(*) FROM shipment_leg WHERE consignment_id=386 → 0`; consignment già `delivered_uk` ma catena custody DB-only mancante. RTFO-31012025 bundle storico esiste come artefatti separati. | Chain-of-custody UI vuota per Q1; audit retroattivo Q1 senza DB-trace | DFTEN-183 (to create) |
 
 ---
 
@@ -86,15 +87,17 @@ Non bloccano audit, bloccano DX e generano bug latenti.
 ## 5. Prod data state (oistebio, snapshot 2026-05-25)
 
 ```
-consignment           : 2 (DEL-CRW-2025-1 delivered_uk, DEL-CRW-2025-2 at_utb)
-shipment_leg          : 4 (2 con pdf_ref → BL ocean, 2 senza)
+consignment           : 2
+  - c-1   = DEL-CRW-2025-2 at_utb       Q3 2025 (Jun-Aug)  — 4 legs
+  - c-386 = DEL-CRW-2025-1 delivered_uk Q1 2025 (Jan-Mar)  — 0 legs  ← G11
+shipment_leg          : 4 (tutte su c-1; 2 con pdf_ref → BL ocean leg 1+2, 2 senza → leg 3 transload + leg 4 delivery_uk)
 consignment_pos       : 32
-consignment_pos_customs: 20
+consignment_pos_customs: 20 (tutte c-1, invoice_no + invoice_pdf_ref popolati)
 inland_shipment       : 29
 shipment_unit         : 29
 mass_balance_ledger   : 3112 entries
 audit_log             : 249 rows, 10 tables
-certificates          : 18
+certificates          : 18 (UTB BV row mancante — G3)
 suppliers             : 13
 off_taker             : 1 (Crown Oil)
 ```
@@ -102,8 +105,10 @@ off_taker             : 1 (Crown Oil)
 **Anomalie data state:**
 
 - `consignment.ersv_outbound_no` + `port_rsv_no` ENTRAMBI NULL → coerente: per-PoS `consignment_pos.ersv_outbound_no` è canale corretto post-refactor (commit `14868f5`). Colonne consignment-level vanno deprecate o backfilled dalla view `v_chain_summary`.
-- 20 file in `/data/customs/c-1/` + 20 in `/data/invoices/c-1/` coerenti con `consignment_pos_customs` (20 righe).
+- 20 file in `/data/customs/c-1/` + 20 in `/data/invoices/c-1/` coerenti con `consignment_pos_customs` (20 righe). Ogni `INV_OIS-INV*.pdf` ha `P.O.# PO#OIST-JLY00N` embedded → JLY001-020 e OIS-INV sono lo stesso set (G2 = server-side concat 20 PDF, non doc separato).
 - ORM PK drift `consignment_pos` post-0028: surrogate `id BIGSERIAL` su prod ma ORM ha PK composito → C1 da fixare prima di nuovi feature consignment_pos.
+- **G11 c-386 (Q1) zero leg** — consignment già `delivered_uk` ma chain-of-custody DB vuota. Implicazione: drill-down logistics UI mostra "no legs" per Q1; bundle RTFO-31012025 esiste come artefatti separati (non DB-tracciato). Backfill separato in sprint dedicato (DFTEN-183) — fuori E8.
+- **184 expired test consignment** (id 2-385) sono soft-delete `__expired_<id>` (tombstone-rename pattern UNIQUE-safe).
 
 ---
 
@@ -445,3 +450,9 @@ Al termine sprint:
 - **2026-05-25** — initial drop (commit `0afebdd`): §1-§9 doc-claim/code-truth, gap tables G/C/F, piano azione FASE 1-6, sequence, references.
 - **2026-05-25** — Plane sync integration: added Plane column to §2/§3/§4 tables (DFTEN-xxx refs), inserted §10 Plane tracking (10 modules + mutazioni: 3 PATCH, 18 CREATE, 7 priority bump) e §11 Sprint workflow methodology (pre-flight ingredients + shopping list), §8 sequenza riscritta in chiave module-ordered. Coherence check 1:1 gap-doc ↔ Plane = zero contraddizioni.
 - **2026-05-25** — Pre-sprint regression guard aggiunto a §11 (input utente: punto cruciale e delicato). 9-step discipline: Read-before-Edit, grep overlap, migration check, file inventory `[NEW]/[EXTEND]/[REPLACE]`, soft-deprecate never delete, existing-flow smoke test, Plane close-out comment, ASK on ambiguous overlap. Source-of-truth = code, NOT doc storici.
+- **2026-05-25** — E8 pre-flight ingredients fix:
+  - Scope header (line 3) — corretto swap `c-1`/`c-386`: c-1 = DEL-CRW-2025-2 at_utb Q3 (4 legs); c-386 = DEL-CRW-2025-1 delivered_uk Q1 (0 legs, vedi G11).
+  - G3 (line 40) — corretto "su Drive" → "su disk locale `deliverables/RTFO-310825/03_supplier_evidence/certificates/CERTIFICATE UTB BV.pdf`"; FK target è `certificates(id)`, non tabella `operator_certificate` separata. Strategia schema = Opt A (additive `ALTER TABLE certificates ADD COLUMN pdf_ref TEXT`, naming coerente con `consignment_pos.pdf_ref` + `shipment_leg.pdf_ref` + `consignment_pos_customs.pdf_ref`).
+  - G6 (line 43) — chiarito scope reale: `consignment_pos.pdf_ref` già popolato con `gdrive:DFT_2025/CROWN POS VECCHI/…` (violazione regola NO Drive runtime). Sprint task = copia locale + rewrite path → `data/pos_documents/c-<id>/…`.
+  - G2 server-side concat — confermato `JLY001-020` = lo stesso set 20 OIS-INV (P.O.# embedded), output `data/delivery_uk/c-1/JLY001-020-bundle.pdf` via `pypdf.PdfWriter`.
+  - **G11 nuovo** — c-386 (Q1) zero shipment_leg → DFTEN-183 da creare (backlog separate sprint).
