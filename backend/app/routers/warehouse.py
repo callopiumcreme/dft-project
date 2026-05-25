@@ -89,6 +89,19 @@ async def list_warehouse_stock(
     )
     pos_issued_eu_oil = Decimal(pos_issued_result.scalar_one() or 0)
 
+    pos_issued_by_year_rows = (await db.execute(
+        sa_text(
+            "SELECT EXTRACT(YEAR FROM issuance_date)::int AS yr, "
+            "COALESCE(SUM(kg_net), 0) AS kg "
+            "FROM consignment_pos "
+            "WHERE deleted_at IS NULL AND issuance_date IS NOT NULL "
+            "GROUP BY yr ORDER BY yr"
+        )
+    )).mappings().all()
+    pos_issued_by_year_eu_oil: dict[str, Decimal] = {
+        str(r["yr"]): Decimal(r["kg"] or 0) for r in pos_issued_by_year_rows
+    }
+
     at_utb_result = await db.execute(
         sa_text(
             "SELECT COALESCE(SUM(c.total_kg), 0) "
@@ -118,6 +131,11 @@ async def list_warehouse_stock(
             ),
             pos_issued_kg=(
                 pos_issued_eu_oil if row["product_kind"] == "eu_oil" else Decimal(0)
+            ),
+            pos_issued_by_year=(
+                pos_issued_by_year_eu_oil
+                if row["product_kind"] == "eu_oil"
+                else {}
             ),
             at_utb_awaiting_pos_kg=(
                 at_utb_awaiting_pos_eu_oil

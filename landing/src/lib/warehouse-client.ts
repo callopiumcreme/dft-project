@@ -18,6 +18,7 @@ export interface WarehouseStockRow {
   opening_balance_kg: string;
   reserved_kg: string;
   pos_issued_kg: string;
+  pos_issued_by_year: Record<string, string>;
   at_utb_awaiting_pos_kg: string;
   last_movement_at: string | null;
 }

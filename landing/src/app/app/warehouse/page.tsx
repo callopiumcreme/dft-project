@@ -21,7 +21,7 @@ type FlowThroughKind = (typeof FLOW_THROUGH)[number];
 
 const STOCKABLE_LABEL: Record<(typeof STOCKABLE)[number], string> = {
   eu_oil: 'Pyrolysis oil EU (DEV-P100)',
-  plus_oil: 'Pyrolysis oil PLUS',
+  plus_oil: 'Pyrolysis oil PLUS (DEV-P200)',
   carbon_black: 'Carbon black',
   metal_scrap: 'Metal scrap',
 };
@@ -64,6 +64,7 @@ function emptyStock(kind: ProductKind): WarehouseStockRow {
     opening_balance_kg: '0',
     reserved_kg: '0',
     pos_issued_kg: '0',
+    pos_issued_by_year: {},
     at_utb_awaiting_pos_kg: '0',
     last_movement_at: null,
   };
@@ -147,8 +148,10 @@ export default async function WarehousePage({ searchParams }: PageProps) {
                   </div>
                   {isEuOil && (
                     <div className="flex justify-between gap-2">
-                      <dt className="text-ink-mute">POS issued (delivered)</dt>
-                      <dd className="tabular-nums text-ink-soft">{fmtKg(row.pos_issued_kg)}</dd>
+                      <dt className="text-ink-mute">POS issued 2025</dt>
+                      <dd className="tabular-nums text-ink-soft">
+                        {fmtKg(row.pos_issued_by_year?.['2025'] ?? '0')}
+                      </dd>
                     </div>
                   )}
                   <div className="flex justify-between gap-2">
@@ -159,6 +162,14 @@ export default async function WarehousePage({ searchParams }: PageProps) {
                     <dt className="text-ink-mute">Opening balance</dt>
                     <dd className="tabular-nums text-ink-soft">{fmtKg(row.opening_balance_kg)}</dd>
                   </div>
+                  {isEuOil && (
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-ink-mute">POS issued 2024</dt>
+                      <dd className="tabular-nums text-ink-soft">
+                        {fmtKg(row.pos_issued_by_year?.['2024'] ?? '0')}
+                      </dd>
+                    </div>
+                  )}
                   {!isEuOil && (
                     <div className="flex justify-between gap-2">
                       <dt className="text-ink-mute">Dispatched YTD</dt>

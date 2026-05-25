@@ -52,6 +52,7 @@ class WarehouseStockRow(BaseModel):
     opening_balance_kg: Decimal
     reserved_kg: Decimal
     pos_issued_kg: Decimal
+    pos_issued_by_year: dict[str, Decimal] = Field(default_factory=dict)
     at_utb_awaiting_pos_kg: Decimal
     last_movement_at: date | None
 
@@ -88,6 +89,22 @@ class ByproductBuyerOut(ByproductBuyerIn):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ByproductBuyerUpdate(BaseModel):
+    """PATCH body for /byproduct/buyers/{id}.
+
+    All fields optional; only those explicitly supplied are written via the
+    Pydantic ``model_dump(exclude_unset=True)`` pattern. ``name`` keeps the
+    same length bounds as the create-shape so renames go through the same
+    UNIQUE-on-active-rows check.
+    """
+
+    name: str | None = Field(default=None, min_length=2, max_length=200)
+    country: str | None = None
+    vat: str | None = None
+    contact: str | None = None
+    notes: str | None = None
 
 
 class ByproductSaleIn(BaseModel):
