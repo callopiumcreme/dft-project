@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Event timeline — {{ consignment.code }}</title>
+    <link rel="stylesheet" href="../verifier_bundle/bundle.css">
+</head>
+<body data-generated-at="{{ generated_at }}">
+
+<h1>Event timeline</h1>
+<div class="section-meta">
+    audit_log entries for consignment {{ consignment.code }} and its
+    related shipment_leg / consignment_pos rows.
+    {{ events|length }} events &middot;
+    window {{ window_from or '—' }} → {{ window_to or '—' }}
+</div>
+
+{% if events %}
+<table class="compact">
+    <thead>
+        <tr>
+            <th>changed_at (UTC)</th>
+            <th>table</th>
+            <th>record_id</th>
+            <th>action</th>
+            <th>changed_by</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ev in events %}
+        <tr>
+            <td>{{ ev.changed_at }}</td>
+            <td>{{ ev.table_name }}</td>
+            <td>{{ ev.record_id }}</td>
+            <td>{{ ev.action }}</td>
+            <td>{{ ev.changed_by or '—' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="note">No audit_log entries for this consignment in the selected window.</div>
+{% endif %}
+
+<div class="note">
+    Filter: <code>table_name IN ('consignment','shipment_leg','consignment_pos')</code>
+    AND record_id within the consignment's resource graph. See
+    section 05 (audit_excerpt) for full row diffs (old_values / new_values).
+</div>
+
+</body>
+</html>

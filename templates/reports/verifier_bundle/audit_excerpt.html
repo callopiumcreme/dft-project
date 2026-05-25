@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audit excerpt — {{ consignment.code }}</title>
+    <link rel="stylesheet" href="../verifier_bundle/bundle.css">
+    <style>
+        pre.diff {
+            font-family: "Courier New", monospace;
+            font-size: 7pt;
+            background: #f6f6f6;
+            border: 0.3pt solid #ccc;
+            padding: 3pt 4pt;
+            margin: 1pt 0 4pt 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .ev-block {
+            margin-bottom: 6pt;
+            border-bottom: 0.3pt dashed #aaa;
+            padding-bottom: 3pt;
+        }
+        .ev-head {
+            font-size: 8.5pt;
+            font-weight: bold;
+            margin-bottom: 1pt;
+        }
+    </style>
+</head>
+<body data-generated-at="{{ generated_at }}">
+
+<h1>Audit log excerpt</h1>
+<div class="section-meta">
+    Full row diffs (old_values / new_values) from audit_log for the chain-of-custody
+    graph rooted at consignment {{ consignment.code }}. {{ events|length }} events.
+</div>
+
+{% if events %}
+{% for ev in events %}
+<div class="ev-block">
+    <div class="ev-head">
+        [{{ ev.changed_at }}] {{ ev.table_name }}#{{ ev.record_id }}
+        — {{ ev.action }} by user {{ ev.changed_by or '—' }}
+    </div>
+    {% if ev.old_values is not none %}
+        <div class="muted" style="font-size:7.5pt">old:</div>
+        <pre class="diff">{{ ev.old_values|tojson(indent=2) }}</pre>
+    {% endif %}
+    {% if ev.new_values is not none %}
+        <div class="muted" style="font-size:7.5pt">new:</div>
+        <pre class="diff">{{ ev.new_values|tojson(indent=2) }}</pre>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class="note">No audit_log entries for this consignment.</div>
+{% endif %}
+
+</body>
+</html>

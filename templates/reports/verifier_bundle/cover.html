@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verifier Bundle — Cover — {{ consignment.code }}</title>
+    <link rel="stylesheet" href="../verifier_bundle/bundle.css">
+</head>
+<body data-generated-at="{{ generated_at }}">
+
+<h1>Verifier Bundle — Cover</h1>
+<div class="section-meta">
+    Consignment <strong>{{ consignment.code }}</strong> (id {{ consignment.id }})
+    &middot; product {{ consignment.product_grade }}
+    &middot; off-taker {{ off_taker.name }}
+</div>
+
+<h2>Submission identity</h2>
+<table>
+    <tr><th style="width:38%">Submitter</th><td>{{ submitter.company }}</td></tr>
+    <tr><th>Submitter address</th><td>{{ submitter.address }}</td></tr>
+    <tr><th>Submitter VAT</th><td>{{ submitter.vat }}</td></tr>
+    <tr><th>Off-taker</th><td>{{ off_taker.name }} ({{ off_taker.country }})</td></tr>
+    <tr><th>Product grade</th><td>{{ consignment.product_grade }}</td></tr>
+    <tr><th>Production window</th>
+        <td>{{ consignment.prod_date_from or '—' }} → {{ consignment.prod_date_to or '—' }}</td></tr>
+    <tr><th>Total mass (kg)</th><td class="num">{{ consignment.total_kg or '—' }}</td></tr>
+    <tr><th>Consignment status</th><td>{{ consignment.status }}</td></tr>
+    <tr><th>Outbound eRSV</th><td>{{ consignment.ersv_outbound_no or '—' }}</td></tr>
+    <tr><th>Port RSV</th><td>{{ consignment.port_rsv_no or '—' }}</td></tr>
+    <tr><th>Contract reference</th><td>{{ consignment.contract_ref or '—' }}</td></tr>
+    <tr><th>Generated at (UTC)</th><td>{{ generated_at }}</td></tr>
+</table>
+
+<h2>Bundle contents</h2>
+<ul class="dense">
+    <li>01_cover.pdf — this page</li>
+    <li>02_batch_summary.pdf — consignment + production-link aggregate</li>
+    <li>03_ghg_worksheet.pdf — Proof-of-Sustainability GHG breakdown</li>
+    <li>04_event_timeline.pdf — audit_log filtered by chain-of-custody resources</li>
+    <li>05_audit_excerpt.pdf — full audit_log row dump for the window</li>
+    <li>06_supply_chain.pdf — shipment_leg sequence + operator certificates</li>
+</ul>
+
+<div class="note">
+    This bundle is generated server-side from the DFT operational database.
+    Each section PDF is rendered deterministically (fixed PDF identifier, no
+    embedded creation date, full fonts) so that the SHA-256 manifest packaged
+    next to the bundle can be re-verified by the auditor without depending on
+    render-time state.
+</div>
+
+</body>
+</html>
