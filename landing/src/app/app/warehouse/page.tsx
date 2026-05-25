@@ -60,6 +60,8 @@ function emptyStock(kind: ProductKind): WarehouseStockRow {
     stock_kg: '0',
     produced_total_kg: '0',
     dispatched_total_kg: '0',
+    produced_ytd_kg: '0',
+    opening_balance_kg: '0',
     reserved_kg: '0',
     pos_issued_kg: '0',
     at_utb_awaiting_pos_kg: '0',
@@ -151,7 +153,11 @@ export default async function WarehousePage({ searchParams }: PageProps) {
                   )}
                   <div className="flex justify-between gap-2">
                     <dt className="text-ink-mute">Produced YTD</dt>
-                    <dd className="tabular-nums text-ink-soft">{fmtKg(row.produced_total_kg)}</dd>
+                    <dd className="tabular-nums text-ink-soft">{fmtKg(row.produced_ytd_kg)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-ink-mute">Opening balance</dt>
+                    <dd className="tabular-nums text-ink-soft">{fmtKg(row.opening_balance_kg)}</dd>
                   </div>
                   {!isEuOil && (
                     <div className="flex justify-between gap-2">

@@ -36,12 +36,20 @@ class WarehouseStockRow(BaseModel):
 
     at_utb_awaiting_pos_kg = reserved_kg - pos_issued_kg (residual reserved
     stock at UTB that has no POS yet). Only meaningful for eu_oil.
+
+    produced_ytd_kg = SUM(kg_in) where event_date falls in the most-recent
+    operational year (carried forward automatically by the view as data
+    accrues). opening_balance_kg = SUM(kg_in) for any prior year (i.e.
+    inception / carry-over rows). produced_total_kg stays equal to the sum
+    of the two so existing consumers do not break.
     """
 
     product_kind: ProductKind
     stock_kg: Decimal
     produced_total_kg: Decimal
     dispatched_total_kg: Decimal
+    produced_ytd_kg: Decimal
+    opening_balance_kg: Decimal
     reserved_kg: Decimal
     pos_issued_kg: Decimal
     at_utb_awaiting_pos_kg: Decimal

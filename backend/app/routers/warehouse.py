@@ -57,7 +57,8 @@ async def list_warehouse_stock(
 
     sql = (
         "SELECT product_kind, stock_kg, produced_total_kg, "
-        "dispatched_total_kg, last_movement_at "
+        "dispatched_total_kg, produced_ytd_kg, opening_balance_kg, "
+        "last_movement_at "
         "FROM v_warehouse_stock"
     )
     params: dict[str, object] = {}
@@ -110,6 +111,8 @@ async def list_warehouse_stock(
             stock_kg=row["stock_kg"] or Decimal(0),
             produced_total_kg=row["produced_total_kg"] or Decimal(0),
             dispatched_total_kg=row["dispatched_total_kg"] or Decimal(0),
+            produced_ytd_kg=row["produced_ytd_kg"] or Decimal(0),
+            opening_balance_kg=row["opening_balance_kg"] or Decimal(0),
             reserved_kg=(
                 reserved_eu_oil if row["product_kind"] == "eu_oil" else Decimal(0)
             ),
