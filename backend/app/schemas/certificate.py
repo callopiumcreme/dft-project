@@ -16,6 +16,7 @@ class CertificateBase(BaseModel):
     expires_at: date | None = None
     is_placeholder: bool = False
     document_url: str | None = None
+    pdf_ref: str | None = None
     notes: str | None = None
 
 
@@ -31,6 +32,7 @@ class CertificateUpdate(BaseModel):
     expires_at: date | None = None
     is_placeholder: bool | None = None
     document_url: str | None = None
+    pdf_ref: str | None = None
     notes: str | None = None
     supplier_ids: list[int] | None = None
 

@@ -200,6 +200,12 @@ async def restore_supplier(
 certificates_router = APIRouter(prefix="/certificates", tags=["certificates"])
 CERTIFICATES_TABLE = "certificates"
 
+# PDF storage root inside the backend container. Bind-mounted read-only at
+# ``./data/certificates:/data/certificates:ro`` (see docker-compose.yml).
+# Mirrors the pattern used by EAD (/data/customs), invoices (/data/invoices)
+# and BL ocean (/data/bl_ocean).
+_CERTS_ROOT = Path(os.environ.get("CERTIFICATES_ROOT", "/data/certificates"))
+
 
 async def _get_certificate_or_404(
     db: AsyncSession, cert_id: int, *, include_deleted: bool = False
@@ -382,6 +388,46 @@ async def restore_certificate(
     await db.commit()
     await db.refresh(obj)
     return obj
+
+
+@certificates_router.get("/{cert_id}/pdf")
+async def stream_certificate_pdf(
+    cert_id: int,
+    _: ViewerUser,
+    db: DbDep,
+    download: bool = Query(False),
+) -> FileResponse:
+    """Auth-gated stream of an ISCC certificate PDF.
+
+    Resolves ``Certificate.pdf_ref`` against ``CERTIFICATES_ROOT``
+    (default ``/data/certificates``). Refuses any resolved path that
+    escapes the certificates root — defence against tampered
+    ``pdf_ref`` values. Defaults to ``Content-Disposition: inline`` so
+    a popup iframe can render the PDF in place; pass ``?download=1``
+    to force ``attachment``.
+    """
+    obj = await _get_certificate_or_404(db, cert_id)
+    if not obj.pdf_ref:
+        raise HTTPException(status_code=404, detail="Certificate has no PDF on disk")
+
+    root = _CERTS_ROOT.resolve()
+    candidate = (root / obj.pdf_ref).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="pdf_ref escapes certificates root"
+        ) from exc
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="Certificate PDF missing on disk")
+
+    safe_no = re.sub(r"[^A-Za-z0-9_.-]+", "_", obj.cert_number)
+    return FileResponse(
+        path=candidate,
+        media_type="application/pdf",
+        filename=f"{safe_no}.pdf",
+        content_disposition_type="attachment" if download else "inline",
+    )
 
 
 # ---------- CONTRACTS ----------

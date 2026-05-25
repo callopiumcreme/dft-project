@@ -26,6 +26,9 @@ class Certificate(Base):
     expires_at: Mapped[date | None] = mapped_column(Date)
     is_placeholder: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     document_url: Mapped[str | None] = mapped_column(Text)
+    # On-disk PDF path relative to ``/data/certificates`` (migration 0033).
+    # Distinct from ``document_url`` (which carries the ISCC Hub URL).
+    pdf_ref: Mapped[str | None] = mapped_column(Text)
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
