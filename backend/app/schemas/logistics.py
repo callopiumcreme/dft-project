@@ -266,6 +266,9 @@ class ShipmentLegOut(BaseModel):
     kg_out: Decimal
     kg_stock_residual: Decimal | None
     operator_certificate_id: int | None
+    # Relative path to leg PDF on disk (root depends on leg_type, currently
+    # /data/bl_ocean for bl_ocean legs). Streamed via auth-gated route.
+    pdf_ref: str | None = None
     notes: str | None
     created_at: datetime
     updated_at: datetime

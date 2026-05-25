@@ -542,6 +542,75 @@ async def stream_invoice_pdf(
 
 
 # ---------------------------------------------------------------------------
+# Ocean BL sub-resource — PDF streaming
+# ---------------------------------------------------------------------------
+
+
+_BL_OCEAN_ROOT = Path(os.environ.get("BL_OCEAN_ROOT", "/data/bl_ocean"))
+# Ocean BL number prefix is the SCAC code (4 uppercase letters, e.g. CMDU
+# for CMA-CGM, MAEU for Maersk, MEDU for MSC, HLCU for Hapag-Lloyd)
+# followed by 6–12 digits. Strict anchor keeps URLs safe from path-traversal.
+_BL_OCEAN_RE = re.compile(r"^[A-Z]{4}\d{6,12}$")
+
+
+@router.get("/{consignment_id}/bl/{bl_no}.pdf")
+async def stream_bl_ocean_pdf(
+    consignment_id: int,
+    bl_no: str,
+    _: ViewerUser,
+    db: DbDep,
+    download: bool = False,
+) -> FileResponse:
+    """Auth-gated stream of the Ocean BL PDF.
+
+    Looks up the ``shipment_leg`` row by
+    ``(consignment_id, document_ref=bl_no, leg_type='bl_ocean')`` and
+    resolves ``pdf_ref`` against ``BL_OCEAN_ROOT`` (default
+    ``/data/bl_ocean``).  Refuses any resolved path that escapes the
+    BL-ocean root — defence against tampered ``pdf_ref`` values.
+
+    Defaults to ``Content-Disposition: inline`` so the popup iframe can
+    render the PDF in-place via the browser's built-in viewer. Pass
+    ``?download=1`` to force ``attachment`` (used by the modal's
+    Download button).
+    """
+    if not _BL_OCEAN_RE.match(bl_no):
+        raise HTTPException(status_code=400, detail="Invalid BL number format")
+    await _get_or_404(db, consignment_id)
+
+    row = (
+        await db.execute(
+            select(ShipmentLeg).where(
+                ShipmentLeg.consignment_id == consignment_id,
+                ShipmentLeg.document_ref == bl_no,
+                ShipmentLeg.leg_type == "bl_ocean",
+                ShipmentLeg.deleted_at.is_(None),
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None or not row.pdf_ref:
+        raise HTTPException(status_code=404, detail="Ocean BL not found for this number")
+
+    root = _BL_OCEAN_ROOT.resolve()
+    candidate = (root / row.pdf_ref).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="pdf_ref escapes bl_ocean root"
+        ) from exc
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="BL PDF missing on disk")
+
+    return FileResponse(
+        path=candidate,
+        media_type="application/pdf",
+        filename=f"BL_{bl_no}.pdf",
+        content_disposition_type="attachment" if download else "inline",
+    )
+
+
+# ---------------------------------------------------------------------------
 # PoS sub-resource
 # ---------------------------------------------------------------------------
 

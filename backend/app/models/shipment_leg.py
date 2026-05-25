@@ -52,6 +52,10 @@ class ShipmentLeg(Base):
     operator_certificate_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("certificates.id", ondelete="SET NULL")
     )
+    # Path **relative** to /data/bl_ocean (or future per-leg-type root) — see
+    # migration 0032. Streamed via /consignments/{cid}/bl/{bl_no}.pdf with
+    # path-traversal defence.
+    pdf_ref: Mapped[str | None] = mapped_column(Text)
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(

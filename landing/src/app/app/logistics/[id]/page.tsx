@@ -213,7 +213,9 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
     ) : null;
 
   const oceanDetail =
-    consignment.legs.length > 0 ? <ChainTimeline legs={consignment.legs} /> : null;
+    consignment.legs.length > 0 ? (
+      <ChainTimeline legs={consignment.legs} consignmentId={consignment.id} />
+    ) : null;
 
   // Customs (EAD) is the correct "Outbound" document: DMS Export Accompanying
   // Document filed by BiNova BV in NL on the OisteBio → Crown Oil UK shipment.

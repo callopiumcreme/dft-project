@@ -7,6 +7,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import type { ShipmentLeg, LegType } from '@/types/logistics';
+import { OceanBlLink } from '@/components/bl';
 
 const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
 const dateFmt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
@@ -49,9 +50,12 @@ function isKnownLegType(v: string): v is LegType {
 
 interface ChainTimelineProps {
   legs: ShipmentLeg[];
+  /** Parent consignment id — needed to mint auth-gated PDF popup URLs
+   *  for legs that carry a `pdf_ref` (currently bl_ocean only). */
+  consignmentId: number;
 }
 
-export function ChainTimeline({ legs }: ChainTimelineProps) {
+export function ChainTimeline({ legs, consignmentId }: ChainTimelineProps) {
   const sorted = [...legs].sort((a, b) => a.seq - b.seq);
 
   return (
@@ -97,7 +101,32 @@ export function ChainTimeline({ legs }: ChainTimelineProps) {
                     <span className="text-ink-mute uppercase tracking-[0.12em]">
                       {leg.document_type ?? 'Document'}
                     </span>
-                    <span className="text-ink">{leg.document_ref}</span>
+                    <span className="inline-flex items-center gap-2 text-ink">
+                      {leg.document_ref}
+                      {leg.leg_type === 'bl_ocean' && leg.pdf_ref && (
+                        <OceanBlLink
+                          consignmentId={consignmentId}
+                          header={{
+                            blNo: leg.document_ref,
+                            vessel: leg.carrier?.split(' voy ')[0] ?? null,
+                            voyage: leg.carrier?.includes(' voy ')
+                              ? (leg.carrier.split(' voy ')[1] ?? null)
+                              : null,
+                            carrier: leg.carrier,
+                            blDate: leg.document_date,
+                            originNode: leg.origin_node,
+                            destinationNode: leg.destination_node,
+                            kgIn: leg.kg_in,
+                            unitCount: leg.units?.length ?? null,
+                          }}
+                          // Match EAD/Invoice/eRSV "PDF" chip style for visual
+                          // consistency across all doc-popup buttons in the app.
+                          className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                        >
+                          PDF
+                        </OceanBlLink>
+                      )}
+                    </span>
                   </>
                 )}
                 {leg.document_date && (

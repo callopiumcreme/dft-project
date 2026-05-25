@@ -52,6 +52,10 @@ export interface ShipmentLeg {
   kg_in: string;
   kg_out: string;
   kg_stock_residual: string | null;
+  /** Relative path to leg PDF on disk; root depends on leg_type
+   *  (currently /data/bl_ocean for bl_ocean legs). Streamed via
+   *  auth-gated proxy /api/consignments/<cid>/bl/<bl_no>/pdf. */
+  pdf_ref: string | null;
   notes: string | null;
   units: ShipmentUnit[];
 }

@@ -9,6 +9,7 @@ import { OutboundErsvModalProvider } from '@/components/ersv-outbound';
 import { InlandErsvModalProvider } from '@/components/ersv-inland';
 import { CustomsEadModalProvider } from '@/components/customs';
 import { CustomsInvoiceModalProvider } from '@/components/invoices';
+import { OceanBlModalProvider } from '@/components/bl';
 import { TicketModalProvider } from '@/components/ticket';
 import { UmamiIdentify } from '@/components/analytics/umami-identify';
 import { Toaster } from '@/components/ui/toaster';
@@ -31,6 +32,7 @@ export function AppShell({ children, user, userIdHash }: Props) {
     <InlandErsvModalProvider>
     <CustomsEadModalProvider>
     <CustomsInvoiceModalProvider>
+    <OceanBlModalProvider>
     <TicketModalProvider>
     <UmamiIdentify userId={userIdHash} role={user.role} />
     <div className="min-h-dvh bg-bg">
@@ -80,6 +82,7 @@ export function AppShell({ children, user, userIdHash }: Props) {
     </div>
     <Toaster />
     </TicketModalProvider>
+    </OceanBlModalProvider>
     </CustomsInvoiceModalProvider>
     </CustomsEadModalProvider>
     </InlandErsvModalProvider>
