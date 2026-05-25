@@ -16,7 +16,7 @@ const MRN_RE = /^[0-9A-Z]{18}$/;
  * Files live on disk under data/customs/c-<id>/ — no Drive runtime.
  */
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { consignmentId: string; mrn: string } },
 ) {
   const token = cookies().get(SESSION_COOKIE)?.value;
@@ -32,8 +32,15 @@ export async function GET(
     return NextResponse.json({ detail: 'invalid MRN' }, { status: 400 });
   }
 
+  // Pass-through `?download=1` so the modal's Download button can flip
+  // backend `Content-Disposition` from `inline` to `attachment`.
+  const download = req.nextUrl.searchParams.get('download') === '1';
+  const upstreamPath = `/consignments/${cid}/customs/${mrn}.pdf${
+    download ? '?download=1' : ''
+  }`;
+
   try {
-    const upstream = await apiFetch(`/consignments/${cid}/customs/${mrn}.pdf`, {
+    const upstream = await apiFetch(upstreamPath, {
       headers: { Accept: 'application/pdf' },
     });
 

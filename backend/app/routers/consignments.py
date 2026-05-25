@@ -426,6 +426,7 @@ async def stream_customs_pdf(
     mrn: str,
     _: ViewerUser,
     db: DbDep,
+    download: bool = False,
 ) -> FileResponse:
     """Auth-gated stream of the EAD PDF.
 
@@ -433,6 +434,11 @@ async def stream_customs_pdf(
     ``pdf_ref`` against ``CUSTOMS_ROOT`` (default ``/data/customs``).
     Refuses any resolved path that escapes the customs root — defence
     against tampered ``pdf_ref`` values.
+
+    Defaults to ``Content-Disposition: inline`` so the popup iframe can
+    render the PDF in-place via the browser's built-in viewer. Pass
+    ``?download=1`` to force ``attachment`` (used by the modal's
+    Download button).
     """
     if not _MRN_RE.match(mrn):
         raise HTTPException(status_code=400, detail="Invalid MRN format")
@@ -464,6 +470,7 @@ async def stream_customs_pdf(
         path=candidate,
         media_type="application/pdf",
         filename=f"DMS_EXPORT_{mrn}.pdf",
+        content_disposition_type="attachment" if download else "inline",
     )
 
 

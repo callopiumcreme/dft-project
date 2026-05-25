@@ -63,8 +63,10 @@ export function CustomsEadModal({ consignmentId, header, onClose }: Props) {
 
   const handleDownload = React.useCallback(() => {
     if (!pdfUrl) return;
+    // `?download=1` flips backend Content-Disposition to attachment so
+    // the browser saves instead of opening the PDF inline.
     const a = document.createElement('a');
-    a.href = pdfUrl;
+    a.href = `${pdfUrl}?download=1`;
     a.download = `DMS_EXPORT_${mrn}.pdf`;
     document.body.appendChild(a);
     a.click();
