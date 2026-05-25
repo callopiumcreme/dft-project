@@ -149,6 +149,9 @@ class ConsignmentPosCustomsOut(BaseModel):
     declarant_vat: str | None = None
     issuing_date: date | None = None
     pdf_ref: str | None = None
+    # Path of commercial invoice PDF (OisteBio→Crown Oil), relative to
+    # ``/data/invoices``. Streamed via auth-gated route, mirrors ``pdf_ref``.
+    invoice_pdf_ref: str | None = None
     created_at: datetime
 
 

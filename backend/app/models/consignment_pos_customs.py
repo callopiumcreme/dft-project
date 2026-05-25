@@ -40,5 +40,9 @@ class ConsignmentPosCustoms(Base):
     declarant_vat: Mapped[str | None] = mapped_column(Text)
     issuing_date: Mapped[date | None] = mapped_column(Date)
     pdf_ref: Mapped[str | None] = mapped_column(Text)
+    # Path of the OisteBio→Crown Oil commercial invoice PDF, relative to
+    # ``/data/invoices`` (added in alembic 0031). Streamed via auth-gated
+    # endpoint, same pattern as ``pdf_ref`` for the EAD.
+    invoice_pdf_ref: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     deleted_at: Mapped[datetime | None] = mapped_column()

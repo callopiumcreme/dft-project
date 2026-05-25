@@ -475,6 +475,73 @@ async def stream_customs_pdf(
 
 
 # ---------------------------------------------------------------------------
+# Commercial invoice sub-resource — PDF streaming
+# ---------------------------------------------------------------------------
+
+
+_INVOICES_ROOT = Path(os.environ.get("INVOICES_ROOT", "/data/invoices"))
+# OisteBio commercial invoice number to Crown Oil Ltd.
+# Format: ``OIS-INV<digits>`` (e.g. ``OIS-INV250023``).
+_INVOICE_RE = re.compile(r"^OIS-INV\d{4,12}$")
+
+
+@router.get("/{consignment_id}/invoices/{invoice_no}.pdf")
+async def stream_invoice_pdf(
+    consignment_id: int,
+    invoice_no: str,
+    _: ViewerUser,
+    db: DbDep,
+    download: bool = False,
+) -> FileResponse:
+    """Auth-gated stream of the OisteBio→Crown Oil commercial invoice.
+
+    Looks up the customs row by (consignment_id, invoice_no) and
+    resolves ``invoice_pdf_ref`` against ``INVOICES_ROOT`` (default
+    ``/data/invoices``).  Refuses any resolved path that escapes the
+    invoices root.
+
+    Defaults to ``Content-Disposition: inline`` so the popup iframe can
+    render the PDF in-place. Pass ``?download=1`` to force
+    ``attachment`` (used by the modal's Download button).
+    """
+    if not _INVOICE_RE.match(invoice_no):
+        raise HTTPException(status_code=400, detail="Invalid invoice number")
+    await _get_or_404(db, consignment_id)
+
+    row = (
+        await db.execute(
+            select(ConsignmentPosCustoms).where(
+                ConsignmentPosCustoms.consignment_id == consignment_id,
+                ConsignmentPosCustoms.invoice_no == invoice_no,
+                ConsignmentPosCustoms.deleted_at.is_(None),
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None or not row.invoice_pdf_ref:
+        raise HTTPException(
+            status_code=404, detail="Invoice not found for this number"
+        )
+
+    root = _INVOICES_ROOT.resolve()
+    candidate = (root / row.invoice_pdf_ref).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="invoice_pdf_ref escapes invoices root"
+        ) from exc
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="Invoice PDF missing on disk")
+
+    return FileResponse(
+        path=candidate,
+        media_type="application/pdf",
+        filename=f"INV_{invoice_no}.pdf",
+        content_disposition_type="attachment" if download else "inline",
+    )
+
+
+# ---------------------------------------------------------------------------
 # PoS sub-resource
 # ---------------------------------------------------------------------------
 

@@ -97,6 +97,7 @@ export interface ConsignmentPosCustoms {
   declarant_vat: string | null;
   issuing_date: string | null;
   pdf_ref: string | null;
+  invoice_pdf_ref: string | null;
   created_at: string;
 }
 

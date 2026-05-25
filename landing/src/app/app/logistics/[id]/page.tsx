@@ -11,6 +11,7 @@ import {
 import { OutboundErsvLink } from '@/components/ersv-outbound';
 import { InlandErsvLink } from '@/components/ersv-inland';
 import { CustomsEadLink } from '@/components/customs';
+import { CustomsInvoiceLink } from '@/components/invoices';
 import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 import type { ConsignmentDetail, ConsignmentStatus } from '@/types/logistics';
 
@@ -238,7 +239,7 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
                 <Th>Container</Th>
                 <Th>Issuing date</Th>
                 <Th className="text-right">
-                  <span className="sr-only">EAD PDF</span>
+                  <span className="sr-only">EAD PDF / Invoice PDF</span>
                 </Th>
               </tr>
             </thead>
@@ -265,25 +266,42 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
                     </Td>
                     <Td className="text-right">
                       {c ? (
-                        <CustomsEadLink
-                          consignmentId={consignment.id}
-                          header={{
-                            posNumber: p.pos_number,
-                            mrn: c.mrn,
-                            lrn: c.lrn,
-                            customsOffice: c.customs_office,
-                            containerNo: c.container_no,
-                            netKg: c.net_kg,
-                            grossKg: c.gross_kg,
-                            invoiceNo: c.invoice_no,
-                            declarantName: c.declarant_name,
-                            declarantVat: c.declarant_vat,
-                            issuingDate: c.issuing_date,
-                          }}
-                          className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
-                        >
-                          EAD PDF
-                        </CustomsEadLink>
+                        <div className="inline-flex items-center gap-1.5">
+                          <CustomsEadLink
+                            consignmentId={consignment.id}
+                            header={{
+                              posNumber: p.pos_number,
+                              mrn: c.mrn,
+                              lrn: c.lrn,
+                              customsOffice: c.customs_office,
+                              containerNo: c.container_no,
+                              netKg: c.net_kg,
+                              grossKg: c.gross_kg,
+                              invoiceNo: c.invoice_no,
+                              declarantName: c.declarant_name,
+                              declarantVat: c.declarant_vat,
+                              issuingDate: c.issuing_date,
+                            }}
+                            className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                          >
+                            PDF
+                          </CustomsEadLink>
+                          {c.invoice_no && c.invoice_pdf_ref ? (
+                            <CustomsInvoiceLink
+                              consignmentId={consignment.id}
+                              header={{
+                                posNumber: p.pos_number,
+                                invoiceNo: c.invoice_no,
+                                mrn: c.mrn,
+                                netKg: c.net_kg,
+                                issuingDate: c.issuing_date,
+                              }}
+                              className="!border !border-rule !bg-bg !text-ink-soft !no-underline hover:!bg-bg-soft !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                            >
+                              Invoice
+                            </CustomsInvoiceLink>
+                          ) : null}
+                        </div>
                       ) : (
                         <OutboundErsvLink
                           consignmentId={consignment.id}
