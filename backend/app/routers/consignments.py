@@ -549,10 +549,16 @@ async def stream_invoice_pdf(
 _BL_OCEAN_ROOT = Path(os.environ.get("BL_OCEAN_ROOT", "/data/bl_ocean"))
 _POS_ROOT = Path(os.environ.get("POS_ROOT", "/data/pos_documents"))
 _DELIVERY_UK_ROOT = Path(os.environ.get("DELIVERY_UK_ROOT", "/data/delivery_uk"))
+_TRANSLOAD_ROOT = Path(os.environ.get("TRANSLOAD_ROOT", "/data/transload"))
 # Ocean BL number prefix is the SCAC code (4 uppercase letters, e.g. CMDU
 # for CMA-CGM, MAEU for Maersk, MEDU for MSC, HLCU for Hapag-Lloyd)
 # followed by 6–12 digits. Strict anchor keeps URLs safe from path-traversal.
 _BL_OCEAN_RE = re.compile(r"^[A-Z]{4}\d{6,12}$")
+# Transload consolidated-report identifier: e.g. UTB-2025-Q3-CONSOLIDATED.
+# Uppercase letters / digits / single-hyphen separators; bounded length.
+# The strict anchor blocks path-traversal at the URL layer even before the
+# Path.resolve().relative_to(root) defence below.
+_TRANSLOAD_REF_RE = re.compile(r"^[A-Z0-9]+(?:-[A-Z0-9]+){0,8}$")
 
 
 @router.get("/{consignment_id}/bl/{bl_no}.pdf")
@@ -608,6 +614,71 @@ async def stream_bl_ocean_pdf(
         path=candidate,
         media_type="application/pdf",
         filename=f"BL_{bl_no}.pdf",
+        content_disposition_type="attachment" if download else "inline",
+    )
+
+
+# ---------------------------------------------------------------------------
+# UTB transload consolidated report — PDF streaming
+# ---------------------------------------------------------------------------
+
+
+@router.get("/{consignment_id}/transload/{ref}.pdf")
+async def stream_transload_pdf(
+    consignment_id: int,
+    ref: str,
+    _: ViewerUser,
+    db: DbDep,
+    download: bool = False,
+) -> FileResponse:
+    """Auth-gated stream of the UTB transload consolidated PDF.
+
+    Looks up the ``shipment_leg`` row by
+    ``(consignment_id, document_ref=ref, leg_type='utb_transload')`` and
+    resolves ``pdf_ref`` against ``TRANSLOAD_ROOT`` (default
+    ``/data/transload``). Refuses any resolved path that escapes that
+    root — defence against tampered ``pdf_ref`` values.
+
+    Mirrors the Ocean-BL streaming contract: ``inline`` disposition by
+    default so the popup iframe can render the PDF in-place; pass
+    ``?download=1`` to force ``attachment``.
+    """
+    if not _TRANSLOAD_REF_RE.match(ref):
+        raise HTTPException(
+            status_code=400, detail="Invalid transload reference format"
+        )
+    await _get_or_404(db, consignment_id)
+
+    row = (
+        await db.execute(
+            select(ShipmentLeg).where(
+                ShipmentLeg.consignment_id == consignment_id,
+                ShipmentLeg.document_ref == ref,
+                ShipmentLeg.leg_type == "utb_transload",
+                ShipmentLeg.deleted_at.is_(None),
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None or not row.pdf_ref:
+        raise HTTPException(
+            status_code=404, detail="Transload report not found for this reference"
+        )
+
+    root = _TRANSLOAD_ROOT.resolve()
+    candidate = (root / row.pdf_ref).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="pdf_ref escapes transload root"
+        ) from exc
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="Transload PDF missing on disk")
+
+    return FileResponse(
+        path=candidate,
+        media_type="application/pdf",
+        filename=f"{ref}.pdf",
         content_disposition_type="attachment" if download else "inline",
     )
 

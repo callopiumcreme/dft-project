@@ -36,6 +36,7 @@ services:
       - ./data/certificates:/data/certificates:ro
       - ./data/pos_documents:/data/pos_documents:ro
       - ./data/delivery_uk:/data/delivery_uk:ro
+      - ./data/transload:/data/transload:ro
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dft}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-dft}
       SECRET_KEY: ${SECRET_KEY}

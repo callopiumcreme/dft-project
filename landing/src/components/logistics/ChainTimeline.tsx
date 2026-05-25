@@ -126,6 +126,22 @@ export function ChainTimeline({ legs, consignmentId }: ChainTimelineProps) {
                           PDF
                         </OceanBlLink>
                       )}
+                      {/* DFTEN-166: transload consolidated report — auth-gated
+                          PDF served via /api/consignments/<cid>/transload/<ref>/pdf.
+                          Opens in a new tab (no popup modal needed for the
+                          ISCC §5 continuity record — single artefact, no
+                          per-row metadata header). */}
+                      {leg.leg_type === 'utb_transload' && leg.pdf_ref && (
+                        <a
+                          href={`/api/consignments/${consignmentId}/transload/${leg.document_ref}/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Open transload report ${leg.document_ref} (opens in new tab)`}
+                          className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                        >
+                          PDF
+                        </a>
+                      )}
                     </span>
                   </>
                 )}
