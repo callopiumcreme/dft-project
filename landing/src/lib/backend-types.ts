@@ -672,6 +672,13 @@ export interface components {
             document_url?: string | null;
             /** Notes */
             notes?: string | null;
+            /**
+             * Pdf Ref
+             * Relative path under /data/certificates for the archived PDF.
+             * Hand-synced with backend CertificateBase (DFTEN-178) because
+             * the containerised backend has openapi.json disabled.
+             */
+            pdf_ref?: string | null;
             /** Id */
             id: number;
             /**

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { deleteCertificateAction, restoreCertificateAction } from '@/lib/certificate-actions';
+import { CertificatePdfLink } from '@/components/certificates';
 
 type Certificate = components['schemas']['CertificateRead'];
 type Supplier = components['schemas']['SupplierRead'];
@@ -200,16 +201,41 @@ export default async function CertificateDetailPage({ params, searchParams }: Pa
           )}
         </DataBlock>
 
-        {cert.document_url && (
+        {(cert.document_url || cert.pdf_ref) && (
           <DataBlock title="Document" full>
-            <a
-              href={cert.document_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-[0.78rem] text-ink underline hover:text-ink-soft break-all"
-            >
-              {cert.document_url}
-            </a>
+            <div className="space-y-2">
+              {cert.pdf_ref && (
+                <div className="flex items-baseline gap-3">
+                  <CertificatePdfLink
+                    certId={cert.id}
+                    header={{
+                      certNumber: cert.cert_number,
+                      scheme: cert.scheme,
+                      status: STATUS_LABEL[status],
+                      issuedAt: cert.issued_at ?? null,
+                      expiresAt: cert.expires_at ?? null,
+                      isPlaceholder: cert.is_placeholder,
+                    }}
+                    className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                  >
+                    PDF
+                  </CertificatePdfLink>
+                  <span className="font-mono text-[0.7rem] text-ink-mute break-all">
+                    {cert.pdf_ref}
+                  </span>
+                </div>
+              )}
+              {cert.document_url && (
+                <a
+                  href={cert.document_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block font-mono text-[0.78rem] text-ink underline hover:text-ink-soft break-all"
+                >
+                  {cert.document_url}
+                </a>
+              )}
+            </div>
           </DataBlock>
         )}
 
