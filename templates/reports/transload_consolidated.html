@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UTB Transload Consolidated Report — {{ document_ref }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 22mm 18mm 22mm 18mm;
+            @bottom-left {
+                content: "ISCC EU §5 mass-balance continuity — UTB BV Dordrecht";
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+            @bottom-right {
+                content: "Page " counter(page) " / " counter(pages);
+                font-family: "Helvetica", "Arial", sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        body {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 10pt;
+            color: #111;
+            line-height: 1.4;
+        }
+        header.letterhead {
+            border-bottom: 1.5pt solid #111;
+            padding-bottom: 6pt;
+            margin-bottom: 14pt;
+        }
+        header.letterhead .brand {
+            font-size: 14pt;
+            font-weight: bold;
+            letter-spacing: 0.04em;
+        }
+        header.letterhead .legal {
+            font-size: 8pt;
+            color: #555;
+            margin-top: 2pt;
+        }
+        h1 {
+            font-size: 13pt;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin: 0 0 4pt 0;
+        }
+        h2 {
+            font-size: 10.5pt;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin: 16pt 0 6pt 0;
+            border-bottom: 0.5pt solid #888;
+            padding-bottom: 2pt;
+        }
+        .ref-block {
+            display: table;
+            width: 100%;
+            margin-bottom: 12pt;
+            font-size: 9pt;
+        }
+        .ref-block .col {
+            display: table-cell;
+            vertical-align: top;
+            padding-right: 12pt;
+        }
+        .ref-block .label {
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 7.5pt;
+        }
+        .ref-block .value {
+            font-family: "Courier New", monospace;
+            font-size: 9.5pt;
+            color: #111;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin-top: 4pt;
+        }
+        th, td {
+            border: 0.5pt solid #888;
+            padding: 4pt 6pt;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background: #eee;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 8pt;
+            letter-spacing: 0.04em;
+        }
+        td.num, th.num {
+            text-align: right;
+            font-family: "Courier New", monospace;
+            font-variant-numeric: tabular-nums;
+        }
+        .summary-grid {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4pt;
+        }
+        .summary-row {
+            display: table-row;
+        }
+        .summary-row > div {
+            display: table-cell;
+            border: 0.5pt solid #888;
+            padding: 6pt 8pt;
+        }
+        .summary-row .label {
+            background: #eee;
+            width: 45%;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: 8pt;
+        }
+        .summary-row .value {
+            font-family: "Courier New", monospace;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+        }
+        .check-ok {
+            color: #1c6a2c;
+            font-weight: bold;
+        }
+        .check-fail {
+            color: #a01818;
+            font-weight: bold;
+        }
+        p.note {
+            font-size: 8.5pt;
+            color: #444;
+            margin-top: 6pt;
+            font-style: italic;
+        }
+        section.signature {
+            margin-top: 28pt;
+            font-size: 9pt;
+        }
+        section.signature .line {
+            border-top: 0.5pt solid #111;
+            display: inline-block;
+            min-width: 60mm;
+            padding-top: 4pt;
+            margin-top: 22pt;
+            font-family: "Courier New", monospace;
+        }
+    </style>
+</head>
+<body>
+
+<header class="letterhead">
+    <div class="brand">UTB BV — Storage Terminal Dordrecht</div>
+    <div class="legal">
+        Wilhelminahaven NZ 12, 3331 LK Dordrecht, Netherlands &middot;
+        ISCC EU certified storage point &middot;
+        Operator on behalf of OisteBio GmbH (CH)
+    </div>
+</header>
+
+<h1>Transload Consolidated Report</h1>
+<p style="font-size: 9pt; color: #555; margin: 0 0 12pt 0;">
+    ISCC EU §5 mass-balance continuity record — quarterly aggregate
+</p>
+
+<div class="ref-block">
+    <div class="col">
+        <div class="label">Report reference</div>
+        <div class="value">{{ document_ref }}</div>
+    </div>
+    <div class="col">
+        <div class="label">Period</div>
+        <div class="value">{{ period }}</div>
+    </div>
+    <div class="col">
+        <div class="label">Consignment</div>
+        <div class="value">{{ consignment_code }}</div>
+    </div>
+    <div class="col">
+        <div class="label">Product grade</div>
+        <div class="value">{{ product_grade }}</div>
+    </div>
+</div>
+
+<h2>Inbound legs (Cartagena → Rotterdam, transload to UTB Dordrecht)</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Seq</th>
+            <th>BL ocean</th>
+            <th>BL date</th>
+            <th>Vessel / voyage</th>
+            <th>Route</th>
+            <th class="num">Net kg</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for leg in inbound_legs %}
+        <tr>
+            <td>{{ leg.seq }}</td>
+            <td>{{ leg.document_ref }}</td>
+            <td>{{ leg.document_date }}</td>
+            <td>{{ leg.carrier }}</td>
+            <td>{{ leg.origin_node }} → {{ leg.destination_node }}</td>
+            <td class="num">{{ leg.kg_in }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Mass balance at transload node</h2>
+<div class="summary-grid">
+    <div class="summary-row">
+        <div class="label">Total kg received (inbound)</div>
+        <div class="value">{{ kg_in }} kg</div>
+    </div>
+    <div class="summary-row">
+        <div class="label">Total kg released to UK delivery</div>
+        <div class="value">{{ kg_out }} kg</div>
+    </div>
+    <div class="summary-row">
+        <div class="label">Stock residual carried forward</div>
+        <div class="value">{{ kg_stock_residual }} kg</div>
+    </div>
+    <div class="summary-row">
+        <div class="label">Conservation check (in = out + residual)</div>
+        <div class="value">
+            {% if conservation_ok %}
+            <span class="check-ok">PASS</span>
+            {% else %}
+            <span class="check-fail">FAIL — Δ = {{ conservation_delta }} kg</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<p class="note">
+    Per ISCC EU System Document 203 §5, mass-balance continuity at storage nodes
+    requires kg_in = kg_out + kg_stock_residual within rounding tolerance (±1 kg).
+    Stock residual remains under the same chain of custody and is allocated to
+    subsequent outbound deliveries via FIFO.
+</p>
+
+<h2>Outbound leg (UTB Dordrecht → Crown Oil UK)</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Seq</th>
+            <th>Document ref</th>
+            <th>Document date</th>
+            <th>Carrier</th>
+            <th>Route</th>
+            <th class="num">Net kg</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for leg in outbound_legs %}
+        <tr>
+            <td>{{ leg.seq }}</td>
+            <td>{{ leg.document_ref }}</td>
+            <td>{{ leg.document_date }}</td>
+            <td>{{ leg.carrier }}</td>
+            <td>{{ leg.origin_node }} → {{ leg.destination_node }}</td>
+            <td class="num">{{ leg.kg_out }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Operator certification</h2>
+<p style="font-size: 9pt;">
+    UTB BV Dordrecht confirms that the quantities of <strong>{{ product_grade }}</strong>
+    described in this consolidated transload report have been received, stored, and
+    released in full compliance with ISCC EU System Document 203 (Mass Balance) and
+    that no co-mingling with non-certified material has occurred during the storage
+    period. The stock residual of <strong>{{ kg_stock_residual }} kg</strong> remains
+    physically segregated and traceable to the inbound Bills of Lading listed above.
+</p>
+
+<section class="signature">
+    <div>For and on behalf of <strong>UTB BV</strong></div>
+    <div class="line">Authorised signatory<br>Storage operations manager</div>
+</section>
+
+</body>
+</html>
