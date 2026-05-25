@@ -16,11 +16,13 @@ from decimal import Decimal
 from typing import Annotated, get_args
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import extract, func, select
 from sqlalchemy import text as sa_text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import ViewerUser  # noqa: TC001 — Annotated dep used at runtime
 from app.db.session import get_db
+from app.models.consignment_pos import ConsignmentPos
 from app.schemas.warehouse import ProductKind, WarehouseMovement, WarehouseStockRow
 
 router = APIRouter(prefix="/warehouse", tags=["warehouse"])
@@ -89,17 +91,26 @@ async def list_warehouse_stock(
     )
     pos_issued_eu_oil = Decimal(pos_issued_result.scalar_one() or 0)
 
-    pos_issued_by_year_rows = (await db.execute(
-        sa_text(
-            "SELECT EXTRACT(YEAR FROM issuance_date)::int AS yr, "
-            "COALESCE(SUM(kg_net), 0) AS kg "
-            "FROM consignment_pos "
-            "WHERE deleted_at IS NULL AND issuance_date IS NOT NULL "
-            "GROUP BY yr ORDER BY yr"
+    # ORM query (post DFTEN-172): issuance_date is now a Mapped attribute,
+    # so no raw SQL workaround is needed. Cast EXTRACT result to int via
+    # SQLAlchemy.cast equivalent — using label + manual int conversion in
+    # the comprehension keeps the type contract identical to the prior
+    # ``::int`` cast.
+    year_col = extract("year", ConsignmentPos.issuance_date).label("yr")
+    kg_col = func.coalesce(func.sum(ConsignmentPos.kg_net), 0).label("kg")
+    pos_issued_by_year_rows = (
+        await db.execute(
+            select(year_col, kg_col)
+            .where(
+                ConsignmentPos.deleted_at.is_(None),
+                ConsignmentPos.issuance_date.is_not(None),
+            )
+            .group_by(year_col)
+            .order_by(year_col)
         )
-    )).mappings().all()
+    ).mappings().all()
     pos_issued_by_year_eu_oil: dict[str, Decimal] = {
-        str(r["yr"]): Decimal(r["kg"] or 0) for r in pos_issued_by_year_rows
+        str(int(r["yr"])): Decimal(r["kg"] or 0) for r in pos_issued_by_year_rows
     }
 
     at_utb_result = await db.execute(

@@ -97,6 +97,7 @@ class ConsignmentPosCreate(BaseModel):
     pos_number: str = Field(..., min_length=1)
     pdf_ref: str | None = None
     kg_net: Annotated[Decimal | None, Field(default=None, gt=0, decimal_places=3)] = None
+    issuance_date: date | None = None
     ghg_ep: Annotated[Decimal | None, Field(default=None, ge=0, decimal_places=2)] = None
     ghg_etd: Annotated[Decimal | None, Field(default=None, ge=0, decimal_places=2)] = None
     ghg_total: Annotated[Decimal | None, Field(default=None, ge=0, decimal_places=2)] = None
@@ -108,10 +109,12 @@ class ConsignmentPosCreate(BaseModel):
 class ConsignmentPosOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: int
     consignment_id: int
     pos_number: str
     pdf_ref: str | None
     kg_net: Decimal | None
+    issuance_date: date | None = None
     ersv_outbound_no: str | None = None
     ghg_ep: Decimal | None = None
     ghg_etd: Decimal | None = None
