@@ -279,61 +279,65 @@ async def create_sale(
 ) -> ByproductSaleOut:
     """Create a byproduct sale + companion mass_balance_ledger event_type='byproduct_sale'.
 
-    Atomic: both INSERTs share one transaction. FK violations on buyer_id
-    surface as 409.
+    Atomic: both INSERTs run inside ``async with db.begin()``. On any failure
+    (FK violation, check constraint, network drop after the first INSERT) the
+    surrounding context manager rolls back BOTH writes, so the sale row can
+    never survive without its ledger entry. FK violations on buyer_id surface
+    as 409.
     """
     try:
-        sale_result = await db.execute(
-            sa_text(
-                "INSERT INTO byproduct_sale ("
-                "  product_kind, buyer_id, sale_date, kg_net, invoice_no, "
-                "  price_eur, notes"
-                ") VALUES ("
-                "  :product_kind, :buyer_id, :sale_date, :kg_net, :invoice_no, "
-                "  :price_eur, :notes"
-                ") RETURNING id, product_kind, buyer_id, sale_date, kg_net, "
-                "  invoice_no, price_eur, notes, created_at"
-            ),
-            body.model_dump(),
-        )
-        sale_row = sale_result.mappings().one()
+        async with db.begin():
+            sale_result = await db.execute(
+                sa_text(
+                    "INSERT INTO byproduct_sale ("
+                    "  product_kind, buyer_id, sale_date, kg_net, invoice_no, "
+                    "  price_eur, notes"
+                    ") VALUES ("
+                    "  :product_kind, :buyer_id, :sale_date, :kg_net, :invoice_no, "
+                    "  :price_eur, :notes"
+                    ") RETURNING id, product_kind, buyer_id, sale_date, kg_net, "
+                    "  invoice_no, price_eur, notes, created_at"
+                ),
+                body.model_dump(),
+            )
+            sale_row = sale_result.mappings().one()
 
-        post_balance = await _compute_post_balance(
-            db, body.product_kind, -body.kg_net
-        )
+            post_balance = await _compute_post_balance(
+                db, body.product_kind, -body.kg_net
+            )
 
-        await db.execute(
-            sa_text(
-                "INSERT INTO mass_balance_ledger ("
-                "  event_type, event_date, kg_in, kg_out, ref_table, ref_id, "
-                "  ref_doc_no, product_kind, post_balance_kg, notes, created_by"
-                ") VALUES ("
-                "  'byproduct_sale', :event_date, 0, :kg_out, 'byproduct_sale', "
-                "  :ref_id, :ref_doc_no, :product_kind, :post_balance_kg, "
-                "  :notes, :created_by"
-                ")"
-            ),
-            {
-                "event_date": body.sale_date,
-                "kg_out": body.kg_net,
-                "ref_id": sale_row["id"],
-                "ref_doc_no": body.invoice_no,
-                "product_kind": body.product_kind,
-                "post_balance_kg": post_balance,
-                "notes": body.notes,
-                "created_by": user.id,
-            },
-        )
+            await db.execute(
+                sa_text(
+                    "INSERT INTO mass_balance_ledger ("
+                    "  event_type, event_date, kg_in, kg_out, ref_table, ref_id, "
+                    "  ref_doc_no, product_kind, post_balance_kg, notes, created_by"
+                    ") VALUES ("
+                    "  'byproduct_sale', :event_date, 0, :kg_out, 'byproduct_sale', "
+                    "  :ref_id, :ref_doc_no, :product_kind, :post_balance_kg, "
+                    "  :notes, :created_by"
+                    ")"
+                ),
+                {
+                    "event_date": body.sale_date,
+                    "kg_out": body.kg_net,
+                    "ref_id": sale_row["id"],
+                    "ref_doc_no": body.invoice_no,
+                    "product_kind": body.product_kind,
+                    "post_balance_kg": post_balance,
+                    "notes": body.notes,
+                    "created_by": user.id,
+                },
+            )
 
-        buyer_name_result = await db.execute(
-            sa_text("SELECT name FROM byproduct_buyer WHERE id = :id"),
-            {"id": body.buyer_id},
-        )
-        buyer_name = buyer_name_result.scalar_one_or_none()
-
-        await db.commit()
+            buyer_name_result = await db.execute(
+                sa_text("SELECT name FROM byproduct_buyer WHERE id = :id"),
+                {"id": body.buyer_id},
+            )
+            buyer_name = buyer_name_result.scalar_one_or_none()
+        # context manager has committed both INSERTs by this point.
     except IntegrityError as exc:
-        await db.rollback()
+        # ``async with db.begin()`` already issued the rollback before
+        # re-raising. No manual rollback needed here.
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Sale violates DB constraint (buyer_id FK or check constraint)",
