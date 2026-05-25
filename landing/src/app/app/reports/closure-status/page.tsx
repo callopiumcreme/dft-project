@@ -238,17 +238,32 @@ export default async function ClosureStatusPage({ searchParams }: PageProps) {
             )}
             {filtered.map((r) => {
               const b = (BUCKETS as string[]).includes(r.bucket) ? (r.bucket as Bucket) : 'ok';
+              const inputsHref = `/app/inputs?date_from=${r.day}&date_to=${r.day}`;
               return (
                 <tr
                   key={r.day}
                   className={`border-b border-rule/60 last:border-b-0 hover:bg-bg ${BUCKET_ROW[b]}`}
                 >
-                  <Td className="text-ink">{r.day}</Td>
+                  <Td className="text-ink">
+                    <Link
+                      href={inputsHref}
+                      aria-label={`Open daily inputs for ${r.day}`}
+                      className="underline decoration-dotted underline-offset-2 hover:text-olive-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-olive"
+                    >
+                      {r.day}
+                    </Link>
+                  </Td>
                   <Td>
-                    <span className="inline-flex items-center gap-1.5">
+                    <Link
+                      href={inputsHref}
+                      aria-label={`Open daily inputs for ${r.day} (${BUCKET_LABEL[b]})`}
+                      className="inline-flex items-center gap-1.5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-olive"
+                    >
                       <span className={`inline-block h-2 w-2 rounded-full ${BUCKET_DOT[b]}`} />
-                      <span className="text-ink-soft">{BUCKET_LABEL[b]}</span>
-                    </span>
+                      <span className="text-ink-soft underline decoration-dotted underline-offset-2">
+                        {BUCKET_LABEL[b]}
+                      </span>
+                    </Link>
                   </Td>
                   <TdNum>{fmtKg(r.input_total_kg)}</TdNum>
                   <TdNum>{fmtKg(r.output_total_kg)}</TdNum>
