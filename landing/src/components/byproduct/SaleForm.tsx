@@ -11,14 +11,12 @@ import {
 } from '@/components/ui/dialog';
 import {
   createSale,
-  listBuyers,
   type ByproductBuyer,
   type ByproductSale,
   type ByproductSaleIn,
   type SellableKind,
   SELLABLE_KIND_LABELS,
 } from '@/lib/byproduct-client';
-import { BuyerForm } from './BuyerForm';
 
 interface Props {
   open: boolean;
@@ -62,36 +60,21 @@ export function SaleForm({
   const [form, setForm] = React.useState<FormState>(() =>
     buildInitialState(defaultProductKind),
   );
-  const [buyers, setBuyers] = React.useState<ByproductBuyer[]>(initialBuyers);
+  const buyers = initialBuyers;
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [showNewBuyer, setShowNewBuyer] = React.useState(false);
 
   // Reset form whenever the dialog re-opens.
   React.useEffect(() => {
     if (open) {
       setForm(buildInitialState(defaultProductKind));
       setError(null);
-      setShowNewBuyer(false);
-      setBuyers(initialBuyers);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
-
-  const handleBuyerCreated = async (buyer: ByproductBuyer) => {
-    // Refresh the buyer list to stay in sync with backend ordering.
-    try {
-      const refreshed = await listBuyers();
-      setBuyers(refreshed);
-    } catch {
-      setBuyers((bs) => [...bs, buyer].sort((a, b) => a.name.localeCompare(b.name)));
-    }
-    update('buyer_id', String(buyer.id));
-    setShowNewBuyer(false);
-  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,19 +137,7 @@ export function SaleForm({
           </DialogDescription>
         </DialogHeader>
 
-        {showNewBuyer ? (
-          <div className="space-y-3">
-            <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-ink-mute">
-              New buyer
-            </p>
-            <BuyerForm
-              variant="modal"
-              onCreated={handleBuyerCreated}
-              onCancel={() => setShowNewBuyer(false)}
-            />
-          </div>
-        ) : (
-          <form onSubmit={onSubmit} noValidate className="space-y-4">
+        <form onSubmit={onSubmit} noValidate className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Product" required>
                 <select
@@ -182,7 +153,7 @@ export function SaleForm({
               </Field>
 
               <Field label="Buyer" required>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-1">
                   <select
                     required
                     value={form.buyer_id}
@@ -197,14 +168,14 @@ export function SaleForm({
                       </option>
                     ))}
                   </select>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewBuyer(true)}
-                    className="border border-rule bg-bg-soft px-2 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-ink-soft hover:border-ink hover:text-ink"
-                    title="Add a new buyer"
+                  <a
+                    href="/app/buyers/new"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="self-start font-mono text-[0.65rem] uppercase tracking-[0.12em] text-ink-mute hover:text-ink hover:underline"
                   >
-                    + New
-                  </button>
+                    + New buyer (master data) ↗
+                  </a>
                 </div>
               </Field>
 
@@ -290,8 +261,7 @@ export function SaleForm({
                 Cancel
               </button>
             </div>
-          </form>
-        )}
+        </form>
       </DialogContent>
     </Dialog>
   );

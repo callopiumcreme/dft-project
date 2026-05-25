@@ -35,6 +35,7 @@ from app.db.session import get_db
 from app.schemas.warehouse import (
     ByproductBuyerIn,
     ByproductBuyerOut,
+    ByproductBuyerUpdate,
     ByproductSaleIn,
     ByproductSaleOut,
     ProductKind,
@@ -90,6 +91,76 @@ async def create_buyer(
             body.model_dump(),
         )
         row = result.mappings().one()
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Buyer with this name already exists",
+        ) from exc
+    return ByproductBuyerOut(**dict(row))
+
+
+@router.get("/buyers/{buyer_id}", response_model=ByproductBuyerOut)
+async def get_buyer(
+    buyer_id: int,
+    _: ViewerUser,
+    db: DbDep,
+) -> ByproductBuyerOut:
+    """Fetch one active byproduct buyer by id. 404 if absent or soft-deleted."""
+    row = (
+        await db.execute(
+            sa_text(
+                "SELECT id, name, country, vat, contact, notes, created_at "
+                "FROM byproduct_buyer "
+                "WHERE id = :id AND deleted_at IS NULL"
+            ),
+            {"id": buyer_id},
+        )
+    ).mappings().one_or_none()
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Buyer not found"
+        )
+    return ByproductBuyerOut(**dict(row))
+
+
+@router.patch("/buyers/{buyer_id}", response_model=ByproductBuyerOut)
+async def update_buyer(
+    buyer_id: int,
+    body: ByproductBuyerUpdate,
+    _: OperatorUser,
+    db: DbDep,
+) -> ByproductBuyerOut:
+    """Partial-update an active buyer. 404 if absent; 409 on name conflict.
+
+    Only fields explicitly supplied in the request body are written
+    (Pydantic v2 ``model_dump(exclude_unset=True)``). Empty body = no-op
+    UPDATE that still returns the current row so the client can refresh.
+    """
+    patch = body.model_dump(exclude_unset=True)
+    if not patch:
+        # No-op: just re-read the row so the client gets the latest state.
+        return await get_buyer(buyer_id, _, db)
+
+    set_clause = ", ".join(f"{k} = :{k}" for k in patch)
+    params: dict[str, object] = {**patch, "id": buyer_id}
+    try:
+        row = (
+            await db.execute(
+                sa_text(
+                    f"UPDATE byproduct_buyer SET {set_clause} "  # noqa: S608 — keys come from a fixed Pydantic schema
+                    "WHERE id = :id AND deleted_at IS NULL "
+                    "RETURNING id, name, country, vat, contact, notes, created_at"
+                ),
+                params,
+            )
+        ).mappings().one_or_none()
+        if row is None:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Buyer not found"
+            )
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()

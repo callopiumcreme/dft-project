@@ -32,6 +32,8 @@ export interface ByproductBuyerIn {
   notes?: string;
 }
 
+export type ByproductBuyerPatch = Partial<ByproductBuyerIn>;
+
 export interface ByproductSale {
   id: number;
   product_kind: SellableKind;
@@ -107,6 +109,32 @@ export async function listBuyers(): Promise<ByproductBuyer[]> {
 export async function createBuyer(body: ByproductBuyerIn): Promise<ByproductBuyer> {
   const res = await fetch('/api/byproduct/buyers', {
     method: 'POST',
+    credentials: 'same-origin',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body),
+  });
+  await ensureOk(res);
+  return (await res.json()) as ByproductBuyer;
+}
+
+export async function getBuyer(buyerId: number): Promise<ByproductBuyer> {
+  const res = await fetch(`/api/byproduct/buyers/${buyerId}`, {
+    method: 'GET',
+    credentials: 'same-origin',
+    cache: 'no-store',
+    headers: { Accept: 'application/json' },
+  });
+  await ensureOk(res);
+  return (await res.json()) as ByproductBuyer;
+}
+
+export async function updateBuyer(
+  buyerId: number,
+  body: ByproductBuyerPatch,
+): Promise<ByproductBuyer> {
+  const res = await fetch(`/api/byproduct/buyers/${buyerId}`, {
+    method: 'PATCH',
     credentials: 'same-origin',
     cache: 'no-store',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },

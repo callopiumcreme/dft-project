@@ -7,6 +7,65 @@ export const dynamic = 'force-dynamic';
 
 const ID_RE = /^\d{1,9}$/;
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const token = cookies().get(SESSION_COOKIE)?.value;
+  if (!token) return NextResponse.json({ detail: 'unauthorized' }, { status: 401 });
+
+  if (!ID_RE.test(params.id)) {
+    return NextResponse.json({ detail: 'invalid buyer id' }, { status: 400 });
+  }
+
+  try {
+    const upstream = await apiFetch(`/byproduct/buyers/${params.id}`, {
+      headers: { Accept: 'application/json' },
+    });
+    const text = await upstream.text();
+    return new NextResponse(text, {
+      status: upstream.status,
+      headers: {
+        'Content-Type': upstream.headers.get('Content-Type') ?? 'application/json',
+        'Cache-Control': 'no-store',
+      },
+    });
+  } catch {
+    return NextResponse.json({ detail: 'upstream error' }, { status: 502 });
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const token = cookies().get(SESSION_COOKIE)?.value;
+  if (!token) return NextResponse.json({ detail: 'unauthorized' }, { status: 401 });
+
+  if (!ID_RE.test(params.id)) {
+    return NextResponse.json({ detail: 'invalid buyer id' }, { status: 400 });
+  }
+
+  const raw = await req.text();
+  try {
+    const upstream = await apiFetch(`/byproduct/buyers/${params.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: raw,
+    });
+    const text = await upstream.text();
+    return new NextResponse(text, {
+      status: upstream.status,
+      headers: {
+        'Content-Type': upstream.headers.get('Content-Type') ?? 'application/json',
+        'Cache-Control': 'no-store',
+      },
+    });
+  } catch {
+    return NextResponse.json({ detail: 'upstream error' }, { status: 502 });
+  }
+}
+
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } },

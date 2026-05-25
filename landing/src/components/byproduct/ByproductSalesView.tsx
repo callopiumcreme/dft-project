@@ -12,7 +12,6 @@ import {
   type SellableKind,
 } from '@/lib/byproduct-client';
 import { SaleForm } from './SaleForm';
-import { BuyerForm } from './BuyerForm';
 
 interface Props {
   initialSales: ByproductSale[];
@@ -287,18 +286,13 @@ export function ByproductSalesView({
               </div>
             </div>
 
-            <div>
-              <h3 className="mb-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-ink-mute">
-                Add buyer
-              </h3>
-              <BuyerForm
-                variant="inline"
-                onCreated={(b) => {
-                  setBuyers((bs) => [...bs, b].sort((a, c) => a.name.localeCompare(c.name)));
-                  router.refresh();
-                }}
-              />
-            </div>
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-ink-mute">
+              To create a new buyer, go to{' '}
+              <a href="/app/buyers/new" className="text-ink underline hover:text-olive-deep">
+                Master data → Buyers
+              </a>
+              .
+            </p>
           </div>
         )}
       </section>
