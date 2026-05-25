@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { deleteContractAction, restoreContractAction } from '@/lib/contract-actions';
+import { ContractLink } from '@/components/contracts';
 
 type Contract = components['schemas']['ContractRead'];
 type Supplier = components['schemas']['SupplierRead'];
@@ -147,7 +148,13 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
 
       <section className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <DataBlock title="Identity">
-          <Row label="Code">{contract.code}</Row>
+          <Row label="Code">
+            <ContractLink
+              contractId={contract.id}
+              contractCode={contract.code}
+              className="font-mono text-[0.78rem] text-ink hover:text-olive-deep"
+            />
+          </Row>
           <Row label="Supplier">
             {supplier ? (
               <Link href={`/app/suppliers/${supplier.id}`} className="hover:text-ink">

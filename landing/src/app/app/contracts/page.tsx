@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { ContractLink } from '@/components/contracts/contract-link';
-import { ContractModalProvider } from '@/components/contracts/contract-modal-provider';
 import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 
 type Contract = components['schemas']['ContractRead'];
@@ -84,7 +83,6 @@ export default async function ContractsPage({ searchParams }: PageProps) {
   );
 
   return (
-    <ContractModalProvider>
     <div className="mx-auto max-w-editorial">
       <UmamiViewEvent
         name="view_contracts_list"
@@ -267,7 +265,6 @@ export default async function ContractsPage({ searchParams }: PageProps) {
         </table>
       </section>
     </div>
-    </ContractModalProvider>
   );
 }
 

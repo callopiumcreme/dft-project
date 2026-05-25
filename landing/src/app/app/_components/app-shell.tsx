@@ -11,6 +11,7 @@ import { CustomsEadModalProvider } from '@/components/customs';
 import { CustomsInvoiceModalProvider } from '@/components/invoices';
 import { OceanBlModalProvider } from '@/components/bl';
 import { CertificatePdfModalProvider } from '@/components/certificates';
+import { ContractModalProvider } from '@/components/contracts';
 import { TicketModalProvider } from '@/components/ticket';
 import { UmamiIdentify } from '@/components/analytics/umami-identify';
 import { Toaster } from '@/components/ui/toaster';
@@ -35,6 +36,7 @@ export function AppShell({ children, user, userIdHash }: Props) {
     <CustomsInvoiceModalProvider>
     <OceanBlModalProvider>
     <CertificatePdfModalProvider>
+    <ContractModalProvider>
     <TicketModalProvider>
     <UmamiIdentify userId={userIdHash} role={user.role} />
     <div className="min-h-dvh bg-bg">
@@ -84,6 +86,7 @@ export function AppShell({ children, user, userIdHash }: Props) {
     </div>
     <Toaster />
     </TicketModalProvider>
+    </ContractModalProvider>
     </CertificatePdfModalProvider>
     </OceanBlModalProvider>
     </CustomsInvoiceModalProvider>
