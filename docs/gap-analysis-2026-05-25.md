@@ -380,6 +380,24 @@ Output pre-flight = uno di:
 - **Shopping list non vuota** → micro-tasks (provisioning file, migration prep, auth scaffold) **prima** del sprint vero, poi sprint
 - **Blocker esterno** (utente fornisce file, decisione regulatory, accesso terzo) → sprint sospeso fino al ritorno
 
+### Pre-sprint regression guard (CRITICAL)
+
+Aggiunto 2026-05-25 su input utente: *"non sovrascriviamo cose già fate importanti, punto cruciale e delicato"*. Progetto ha 32 migrations + 119 Plane issues + 50+ artefatti RTFO prod-deployed — single silent overwrite può rompere audit trail Crown Oil.
+
+**Discipline rigida prima di ogni Edit/Write nello sprint:**
+
+1. **Read THEN edit** — mai overwrite cieco. `Read` tool sul file target PRIMA di `Edit`. Inspect imports, decorator, soft-delete patterns già presenti.
+2. **grep overlap** — per ogni nuovo symbol/route/table/migration: `grep -rn '<name>' backend/ landing/` per scoprire usi pre-esistenti. Tabelle: `grep -rn 'CREATE TABLE <name>' backend/alembic/versions/`.
+3. **Migration check** — `ls backend/alembic/versions/` PRIMA di nuovo file. Ultima versione tracked = `0032`. Nuova migration parte da `0033_`. Mai duplicare prefix.
+4. **Git clean check** — `git status --short` deve essere coerente con stato sprint. File `M` non legati allo sprint → branch separato o stash.
+5. **File inventory marker** — apertura sprint produce lista file con tag `[NEW] / [EXTEND] / [REPLACE]`. `[REPLACE]` richiede conferma utente esplicita prima di toccare.
+6. **Soft-deprecate, never delete** — codice obsoleto si marca `# DEPRECATED <date> — see <new>` o `@deprecated`; non si rimuove. Stessa filosofia di `deleted_at = NOW()` per DB.
+7. **Existing-flow smoke test** — prima close-out sprint: pytest existing suite + manual click chain-of-custody c-1 + logistics/c-1 (già wired, baseline). Se rompe → rollback prima merge.
+8. **Plane close-out comment** — su ogni DFTEN-xxx chiuso, lista file:line modificati nel comment. Audit trail completo.
+9. **ASK on ambiguous overlap** — qualsiasi func/route/model che TOUCH file con >50 righe esistenti senza pattern chiaro → `AskUserQuestion` PRIMA di Edit.
+
+**Doc storici sono pre-Sprint downstream — fonte di verità per "esistente vs missing" è il CODE (migrations 0021-0032 + ORM + router), non i doc gap-storici.** Vedi §1 doc-claim vs code-truth.
+
 ### Sprint closeout
 
 Al termine sprint:
@@ -387,7 +405,8 @@ Al termine sprint:
 - PATCH Plane issues coperte → `Done`
 - Update gap-doc §10 mutazioni eseguite + §8 sequenza (mark sprint completato)
 - Cross-link commit hash nel sprint summary
-- Update changelog §12 footer
+- Run regression smoke (chain-of-custody c-1 + pytest)
+- Update changelog §13 footer
 
 ---
 
@@ -425,3 +444,4 @@ Al termine sprint:
 
 - **2026-05-25** — initial drop (commit `0afebdd`): §1-§9 doc-claim/code-truth, gap tables G/C/F, piano azione FASE 1-6, sequence, references.
 - **2026-05-25** — Plane sync integration: added Plane column to §2/§3/§4 tables (DFTEN-xxx refs), inserted §10 Plane tracking (10 modules + mutazioni: 3 PATCH, 18 CREATE, 7 priority bump) e §11 Sprint workflow methodology (pre-flight ingredients + shopping list), §8 sequenza riscritta in chiave module-ordered. Coherence check 1:1 gap-doc ↔ Plane = zero contraddizioni.
+- **2026-05-25** — Pre-sprint regression guard aggiunto a §11 (input utente: punto cruciale e delicato). 9-step discipline: Read-before-Edit, grep overlap, migration check, file inventory `[NEW]/[EXTEND]/[REPLACE]`, soft-deprecate never delete, existing-flow smoke test, Plane close-out comment, ASK on ambiguous overlap. Source-of-truth = code, NOT doc storici.
