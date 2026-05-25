@@ -547,6 +547,7 @@ async def stream_invoice_pdf(
 
 
 _BL_OCEAN_ROOT = Path(os.environ.get("BL_OCEAN_ROOT", "/data/bl_ocean"))
+_POS_ROOT = Path(os.environ.get("POS_ROOT", "/data/pos_documents"))
 # Ocean BL number prefix is the SCAC code (4 uppercase letters, e.g. CMDU
 # for CMA-CGM, MAEU for Maersk, MEDU for MSC, HLCU for Hapag-Lloyd)
 # followed by 6–12 digits. Strict anchor keeps URLs safe from path-traversal.
@@ -706,6 +707,68 @@ async def detach_pos(
         )
     obj.deleted_at = datetime.now(UTC)
     await db.commit()
+
+
+@router.get("/{consignment_id}/pos/{pos_number}.pdf")
+async def stream_pos_pdf(
+    consignment_id: int,
+    pos_number: str,
+    _: ViewerUser,
+    db: DbDep,
+    download: bool = False,
+) -> FileResponse:
+    """Auth-gated stream of the Proof-of-Sustainability PDF.
+
+    Looks up the ``consignment_pos`` row by ``(consignment_id, pos_number)``
+    and resolves ``pdf_ref`` against ``POS_ROOT`` (default
+    ``/data/pos_documents``). Refuses any resolved path that escapes the
+    PoS root — defence against tampered ``pdf_ref`` values (which still
+    carry historical ``gdrive:…`` prefixes until the G6 backfill runs).
+
+    Defaults to ``Content-Disposition: inline`` so the popup iframe can
+    render the PDF via the browser's built-in viewer. Pass
+    ``?download=1`` to force ``attachment``.
+    """
+    await _get_or_404(db, consignment_id)
+
+    row = (
+        await db.execute(
+            select(ConsignmentPos).where(
+                ConsignmentPos.consignment_id == consignment_id,
+                ConsignmentPos.pos_number == pos_number,
+                ConsignmentPos.deleted_at.is_(None),
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None or not row.pdf_ref:
+        raise HTTPException(status_code=404, detail="PoS not found for this consignment")
+
+    # Refuse historical Drive refs explicitly — surfaces the migration
+    # state instead of silently 404-ing on a missing local file.
+    if row.pdf_ref.startswith("gdrive:"):
+        raise HTTPException(
+            status_code=409,
+            detail="PoS pdf_ref still points at Drive — run scripts/backfill_pos_pdf_ref.py",
+        )
+
+    root = _POS_ROOT.resolve()
+    candidate = (root / row.pdf_ref).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="pdf_ref escapes pos_documents root"
+        ) from exc
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="PoS PDF missing on disk")
+
+    safe_no = re.sub(r"[^A-Za-z0-9_.-]+", "_", pos_number)
+    return FileResponse(
+        path=candidate,
+        media_type="application/pdf",
+        filename=f"PoS_{safe_no}.pdf",
+        content_disposition_type="attachment" if download else "inline",
+    )
 
 
 # ---------------------------------------------------------------------------
