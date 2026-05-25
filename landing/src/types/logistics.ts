@@ -77,6 +77,29 @@ export interface ProductionLink {
   kg_allocated: string;
 }
 
+/**
+ * EAD (Export Accompanying Document) — DMS export customs declaration
+ * filed by BiNova BV as NL declarant. One row per PoS, 1:1 mapping.
+ * Renders in the Outbound table where the old "eRSV outbound" column
+ * lived (eRSV is Colombia-only — never for EU→UK).
+ */
+export interface ConsignmentPosCustoms {
+  consignment_id: number;
+  pos_number: string;
+  mrn: string;
+  lrn: string | null;
+  customs_office: string | null;
+  container_no: string | null;
+  gross_kg: string | null;
+  net_kg: string | null;
+  invoice_no: string | null;
+  declarant_name: string | null;
+  declarant_vat: string | null;
+  issuing_date: string | null;
+  pdf_ref: string | null;
+  created_at: string;
+}
+
 export interface ConsignmentSummary {
   id: number;
   code: string;
@@ -102,4 +125,5 @@ export interface ConsignmentDetail extends ConsignmentSummary {
   legs: ShipmentLeg[];
   pos: ConsignmentPos[];
   production_links: ProductionLink[];
+  customs: ConsignmentPosCustoms[];
 }

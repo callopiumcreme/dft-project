@@ -122,6 +122,37 @@ class ConsignmentPosOut(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# ConsignmentPosCustoms — EAD (Export Accompanying Document) per PoS
+# ---------------------------------------------------------------------------
+
+
+class ConsignmentPosCustomsOut(BaseModel):
+    """One EAD row joined 1:1 with a ConsignmentPos.
+
+    Used by the landing's Outbound table — replaces the previous
+    "eRSV outbound" column (Colombia-only format, mislabelled) with the
+    correct DMS export customs reference filed by BiNova BV in NL.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    consignment_id: int
+    pos_number: str
+    mrn: str
+    lrn: str | None = None
+    customs_office: str | None = None
+    container_no: str | None = None
+    gross_kg: Decimal | None = None
+    net_kg: Decimal | None = None
+    invoice_no: str | None = None
+    declarant_name: str | None = None
+    declarant_vat: str | None = None
+    issuing_date: date | None = None
+    pdf_ref: str | None = None
+    created_at: datetime
+
+
+# ---------------------------------------------------------------------------
 # ConsignmentProductionLink
 # ---------------------------------------------------------------------------
 
@@ -324,3 +355,4 @@ class ConsignmentDetail(ConsignmentOut):
     legs: list[ShipmentLegDetail] = Field(default_factory=list)
     pos: list[ConsignmentPosOut] = Field(default_factory=list)
     production_links: list[ConsignmentProductionLinkOut] = Field(default_factory=list)
+    customs: list[ConsignmentPosCustomsOut] = Field(default_factory=list)

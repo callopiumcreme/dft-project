@@ -8,11 +8,15 @@ No audit on consignment_pos / consignment_production_link (association rows —
 """
 from __future__ import annotations
 
+import os
+import re
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +27,7 @@ from app.db.session import get_db
 from sqlalchemy import text as sa_text
 from app.models.consignment import Consignment
 from app.models.consignment_pos import ConsignmentPos
+from app.models.consignment_pos_customs import ConsignmentPosCustoms
 from app.models.consignment_production_link import ConsignmentProductionLink
 from app.models.off_taker import OffTaker
 from app.models.shipment_leg import ShipmentLeg
@@ -32,6 +37,7 @@ from app.schemas.logistics import (
     ConsignmentDetail,
     ConsignmentOut,
     ConsignmentPosCreate,
+    ConsignmentPosCustomsOut,
     ConsignmentPosOut,
     ConsignmentProductionLinkCreate,
     ConsignmentProductionLinkOut,
@@ -247,6 +253,20 @@ async def get_consignment_detail(
         for lk in links_result.scalars().all()
     ]
 
+    # Customs (EAD) records — 1:1 with PoS, ordered by issuing_date.
+    customs_result = await db.execute(
+        select(ConsignmentPosCustoms)
+        .where(
+            ConsignmentPosCustoms.consignment_id == consignment_id,
+            ConsignmentPosCustoms.deleted_at.is_(None),
+        )
+        .order_by(ConsignmentPosCustoms.issuing_date, ConsignmentPosCustoms.pos_number)
+    )
+    customs_list = [
+        ConsignmentPosCustomsOut.model_validate(c)
+        for c in customs_result.scalars().all()
+    ]
+
     base = ConsignmentOut.model_validate(obj)
     return ConsignmentDetail(
         **base.model_dump(),
@@ -254,6 +274,7 @@ async def get_consignment_detail(
         legs=leg_details,
         pos=pos_list,
         production_links=links,
+        customs=customs_list,
     )
 
 
@@ -360,6 +381,90 @@ async def soft_delete_consignment(
         changed_by=user.id,
     )
     await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Customs (EAD) sub-resource — PDF streaming
+# ---------------------------------------------------------------------------
+
+
+_CUSTOMS_ROOT = Path(os.environ.get("CUSTOMS_ROOT", "/data/customs"))
+# MRN format on Dutch DMS export: 18 chars, alphanumeric uppercase
+# (e.g. `25NL00021BHA22GMD8`). Anchor strictly to prevent path-traversal.
+_MRN_RE = re.compile(r"^[0-9A-Z]{18}$")
+
+
+@router.get(
+    "/{consignment_id}/customs",
+    response_model=list[ConsignmentPosCustomsOut],
+)
+async def list_consignment_customs(
+    consignment_id: int,
+    _: ViewerUser,
+    db: DbDep,
+) -> list[ConsignmentPosCustomsOut]:
+    """List EAD customs records attached to this consignment.
+
+    Same data also embedded in ConsignmentDetail.customs — this endpoint
+    exists for standalone use (e.g. customs-only screens).
+    """
+    await _get_or_404(db, consignment_id)
+    rows = await db.execute(
+        select(ConsignmentPosCustoms)
+        .where(
+            ConsignmentPosCustoms.consignment_id == consignment_id,
+            ConsignmentPosCustoms.deleted_at.is_(None),
+        )
+        .order_by(ConsignmentPosCustoms.issuing_date, ConsignmentPosCustoms.pos_number)
+    )
+    return [ConsignmentPosCustomsOut.model_validate(c) for c in rows.scalars().all()]
+
+
+@router.get("/{consignment_id}/customs/{mrn}.pdf")
+async def stream_customs_pdf(
+    consignment_id: int,
+    mrn: str,
+    _: ViewerUser,
+    db: DbDep,
+) -> FileResponse:
+    """Auth-gated stream of the EAD PDF.
+
+    Looks up the customs row by (consignment_id, mrn) and resolves
+    ``pdf_ref`` against ``CUSTOMS_ROOT`` (default ``/data/customs``).
+    Refuses any resolved path that escapes the customs root — defence
+    against tampered ``pdf_ref`` values.
+    """
+    if not _MRN_RE.match(mrn):
+        raise HTTPException(status_code=400, detail="Invalid MRN format")
+    # Verify parent consignment is alive.
+    await _get_or_404(db, consignment_id)
+
+    row = (
+        await db.execute(
+            select(ConsignmentPosCustoms).where(
+                ConsignmentPosCustoms.consignment_id == consignment_id,
+                ConsignmentPosCustoms.mrn == mrn,
+                ConsignmentPosCustoms.deleted_at.is_(None),
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None or not row.pdf_ref:
+        raise HTTPException(status_code=404, detail="EAD not found for this MRN")
+
+    root = _CUSTOMS_ROOT.resolve()
+    candidate = (root / row.pdf_ref).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="pdf_ref escapes customs root") from exc
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="EAD PDF missing on disk")
+
+    return FileResponse(
+        path=candidate,
+        media_type="application/pdf",
+        filename=f"DMS_EXPORT_{mrn}.pdf",
+    )
 
 
 # ---------------------------------------------------------------------------

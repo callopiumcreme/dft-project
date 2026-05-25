@@ -2,6 +2,7 @@ from app.models.audit_log import AuditLog
 from app.models.certificate import Certificate
 from app.models.consignment import Consignment
 from app.models.consignment_pos import ConsignmentPos
+from app.models.consignment_pos_customs import ConsignmentPosCustoms
 from app.models.consignment_production_link import ConsignmentProductionLink
 from app.models.contract import Contract
 from app.models.daily_input import DailyInput
@@ -18,6 +19,7 @@ __all__ = [
     "Certificate",
     "Consignment",
     "ConsignmentPos",
+    "ConsignmentPosCustoms",
     "ConsignmentProductionLink",
     "Contract",
     "DailyInput",

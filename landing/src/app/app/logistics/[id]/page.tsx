@@ -10,6 +10,7 @@ import {
 } from '@/components/chain-of-custody';
 import { OutboundErsvLink } from '@/components/ersv-outbound';
 import { InlandErsvLink } from '@/components/ersv-inland';
+import { CustomsEadLink } from '@/components/customs';
 import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 import type { ConsignmentDetail, ConsignmentStatus } from '@/types/logistics';
 
@@ -128,8 +129,8 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
   // Aggregate unit count across all legs
   const totalUnits = consignment.legs.reduce((s, l) => s + l.units.length, 0);
 
-  // Per-PoS eRSV is per-row now (since 0022). Count allocated for header chip.
-  const ersvAllocated = consignment.pos.filter((p) => p.ersv_outbound_no).length;
+  // Per-PoS EAD allocation chip (customs row present == filed export).
+  const eadAllocated = consignment.customs.length;
 
   // Pre-render inline detail tables — injected into the chain-of-custody
   // widget so each summary row drills down into its own underlying table.
@@ -213,6 +214,13 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
   const oceanDetail =
     consignment.legs.length > 0 ? <ChainTimeline legs={consignment.legs} /> : null;
 
+  // Customs (EAD) is the correct "Outbound" document: DMS Export Accompanying
+  // Document filed by BiNova BV in NL on the OisteBio → Crown Oil UK shipment.
+  // Join PoS rows with their customs row by pos_number; PoS rows without a
+  // customs match still render so gaps are visible (kg_net col stays from PoS).
+  const customsByPos = new Map(
+    consignment.customs.map((c) => [c.pos_number, c]),
+  );
   const posTotalKg = consignment.pos.reduce(
     (s, p) => s + (Number(p.kg_net) || 0),
     0,
@@ -226,58 +234,81 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
               <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
                 <Th>PoS number</Th>
                 <ThNum>kg net</ThNum>
-                <Th>PDF</Th>
-                <Th>eRSV outbound</Th>
+                <Th>EAD MRN</Th>
+                <Th>Container</Th>
+                <Th>Issuing date</Th>
                 <Th className="text-right">
-                  <span className="sr-only">Render</span>
+                  <span className="sr-only">EAD PDF</span>
                 </Th>
               </tr>
             </thead>
             <tbody>
-              {consignment.pos.map((p) => (
-                <tr
-                  key={`${p.consignment_id}-${p.pos_number}`}
-                  className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
-                >
-                  <Td className="text-ink">{p.pos_number}</Td>
-                  <TdNum>{fmtKg(p.kg_net)}</TdNum>
-                  <Td>
-                    {p.pdf_ref ? (
-                      <span
-                        className="cursor-help font-mono text-[0.65rem] uppercase tracking-[0.1em] text-ink-mute underline decoration-dotted underline-offset-2"
-                        title={`Stored on Google Drive: ${p.pdf_ref}`}
-                      >
-                        gdrive
-                      </span>
-                    ) : (
-                      <span className="text-ink-mute">—</span>
-                    )}
-                  </Td>
-                  <Td className="text-ink-soft">
-                    {p.ersv_outbound_no ?? <span className="text-ink-mute">—</span>}
-                  </Td>
-                  <Td className="text-right">
-                    <OutboundErsvLink
-                      consignmentId={consignment.id}
-                      posNumber={p.pos_number}
-                      header={{
-                        offTakerCode: consignment.off_taker?.code ?? null,
-                        posNumber: p.pos_number,
-                        kgNet: p.kg_net,
-                        ersvOutboundNo: p.ersv_outbound_no,
-                        prodDateFrom: consignment.prod_date_from,
-                        prodDateTo: consignment.prod_date_to,
-                      }}
-                      className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
-                    >
-                      Render
-                    </OutboundErsvLink>
-                  </Td>
-                </tr>
-              ))}
+              {consignment.pos.map((p) => {
+                const c = customsByPos.get(p.pos_number);
+                return (
+                  <tr
+                    key={`${p.consignment_id}-${p.pos_number}`}
+                    className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
+                  >
+                    <Td className="text-ink">{p.pos_number}</Td>
+                    <TdNum>{fmtKg(p.kg_net)}</TdNum>
+                    <Td className="text-ink-soft">
+                      {c?.mrn ?? <span className="text-ink-mute">—</span>}
+                    </Td>
+                    <Td className="text-ink-soft">
+                      {c?.container_no ?? <span className="text-ink-mute">—</span>}
+                    </Td>
+                    <Td className="text-ink-soft">
+                      {c?.issuing_date ? fmtDate(c.issuing_date) : (
+                        <span className="text-ink-mute">—</span>
+                      )}
+                    </Td>
+                    <Td className="text-right">
+                      {c ? (
+                        <CustomsEadLink
+                          consignmentId={consignment.id}
+                          header={{
+                            posNumber: p.pos_number,
+                            mrn: c.mrn,
+                            lrn: c.lrn,
+                            customsOffice: c.customs_office,
+                            containerNo: c.container_no,
+                            netKg: c.net_kg,
+                            grossKg: c.gross_kg,
+                            invoiceNo: c.invoice_no,
+                            declarantName: c.declarant_name,
+                            declarantVat: c.declarant_vat,
+                            issuingDate: c.issuing_date,
+                          }}
+                          className="!border !border-olive-deep !bg-olive-deep !text-bg !no-underline hover:!bg-olive !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                        >
+                          EAD PDF
+                        </CustomsEadLink>
+                      ) : (
+                        <OutboundErsvLink
+                          consignmentId={consignment.id}
+                          posNumber={p.pos_number}
+                          header={{
+                            offTakerCode: consignment.off_taker?.code ?? null,
+                            posNumber: p.pos_number,
+                            kgNet: p.kg_net,
+                            ersvOutboundNo: p.ersv_outbound_no,
+                            prodDateFrom: consignment.prod_date_from,
+                            prodDateTo: consignment.prod_date_to,
+                          }}
+                          className="!border !border-rule !bg-bg !text-ink-soft !no-underline hover:!bg-bg-soft !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                        >
+                          PoS only
+                        </OutboundErsvLink>
+                      )}
+                    </Td>
+                  </tr>
+                );
+              })}
               <tr className="border-t border-rule bg-bg font-semibold text-ink">
                 <Td>TOT</Td>
                 <TdNum>{fmtKg(String(posTotalKg))}</TdNum>
+                <Td>{null}</Td>
                 <Td>{null}</Td>
                 <Td>{null}</Td>
                 <Td>{null}</Td>
@@ -286,10 +317,12 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
           </table>
         </div>
         <p className="mt-2 font-mono text-[0.68rem] text-ink-mute">
-          PoS = Outgoing Material Declaration ISCC (OISCRO-XXXX-25 series).
-          Each PoS carries its own outbound eRSV (CO/{'{yy}'}/{'{seq}'}) + GHG
-          values per cliente direction 2026-05-23. PDFs stored on Google Drive
-          — download via direct gdrive path.
+          PoS = ISCC Outgoing Material Declaration OisteBio (OISCRO-XXXX-25).
+          EAD = DMS Export Accompanying Document (MRN 25NL…) filed by{' '}
+          <strong className="font-semibold text-ink-soft">BiNova BV</strong> as
+          NL customs declarant for OisteBio Swiss GmbH on the OisteBio → Crown
+          Oil UK shipment. The eRSV format is Colombia-only (inbound feedstock
+          + Girardot → Cartagena inland) — never used on the EU → UK leg.
         </p>
       </>
     ) : null;
@@ -382,7 +415,7 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
           </span>
           {consignment.pos.length > 0 && (
             <span className="inline-block border border-rule bg-bg px-2 py-0.5 font-mono text-[0.65rem] uppercase text-ink-soft">
-              eRSV {ersvAllocated}/{consignment.pos.length} allocated
+              EAD {eadAllocated}/{consignment.pos.length} filed
             </span>
           )}
           {consignment.port_rsv_no && (

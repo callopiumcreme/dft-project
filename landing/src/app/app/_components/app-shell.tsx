@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { ErsvModalProvider } from '@/components/ersv';
 import { OutboundErsvModalProvider } from '@/components/ersv-outbound';
 import { InlandErsvModalProvider } from '@/components/ersv-inland';
+import { CustomsEadModalProvider } from '@/components/customs';
 import { TicketModalProvider } from '@/components/ticket';
 import { UmamiIdentify } from '@/components/analytics/umami-identify';
 import { Toaster } from '@/components/ui/toaster';
@@ -27,6 +28,7 @@ export function AppShell({ children, user, userIdHash }: Props) {
     <ErsvModalProvider>
     <OutboundErsvModalProvider>
     <InlandErsvModalProvider>
+    <CustomsEadModalProvider>
     <TicketModalProvider>
     <UmamiIdentify userId={userIdHash} role={user.role} />
     <div className="min-h-dvh bg-bg">
@@ -76,6 +78,7 @@ export function AppShell({ children, user, userIdHash }: Props) {
     </div>
     <Toaster />
     </TicketModalProvider>
+    </CustomsEadModalProvider>
     </InlandErsvModalProvider>
     </OutboundErsvModalProvider>
     </ErsvModalProvider>
