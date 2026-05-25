@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Batch summary — {{ consignment.code }}</title>
+    <link rel="stylesheet" href="../verifier_bundle/bundle.css">
+</head>
+<body data-generated-at="{{ generated_at }}">
+
+<h1>Batch summary</h1>
+<div class="section-meta">
+    Consignment {{ consignment.code }} (id {{ consignment.id }}) &middot;
+    {{ production_links|length }} production-link rows &middot;
+    {{ '%.3f'|format(total_kg_allocated) }} kg allocated total
+</div>
+
+<h2>Consignment record</h2>
+<table>
+    <tr><th style="width:38%">Code</th><td>{{ consignment.code }}</td></tr>
+    <tr><th>Product grade</th><td>{{ consignment.product_grade }}</td></tr>
+    <tr><th>Status</th><td>{{ consignment.status }}</td></tr>
+    <tr><th>Production window</th>
+        <td>{{ consignment.prod_date_from or '—' }} → {{ consignment.prod_date_to or '—' }}</td></tr>
+    <tr><th>Total declared mass (kg)</th><td class="num">{{ consignment.total_kg or '—' }}</td></tr>
+    <tr><th>Total allocated (kg)</th>
+        <td class="num">{{ '%.3f'|format(total_kg_allocated) }}</td></tr>
+    <tr><th>Variance (kg)</th>
+        <td class="num">{{ '%.3f'|format(variance_kg) }}</td></tr>
+    <tr><th>Created at</th><td>{{ consignment.created_at }}</td></tr>
+    <tr><th>Updated at</th><td>{{ consignment.updated_at }}</td></tr>
+</table>
+
+<h2>Production-link rows (per prod_date)</h2>
+{% if production_links %}
+<table class="compact">
+    <thead>
+        <tr>
+            <th>prod_date</th>
+            <th>kg allocated</th>
+            <th>created_at</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for link in production_links %}
+        <tr>
+            <td>{{ link.prod_date }}</td>
+            <td class="num">{{ '%.3f'|format(link.kg_allocated) }}</td>
+            <td>{{ link.created_at or '—' }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <th style="text-align:right">TOTAL</th>
+            <th class="num">{{ '%.3f'|format(total_kg_allocated) }}</th>
+            <th></th>
+        </tr>
+    </tbody>
+</table>
+{% else %}
+<div class="note">No production-link rows for this consignment.</div>
+{% endif %}
+
+</body>
+</html>

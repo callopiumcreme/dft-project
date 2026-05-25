@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Supply chain — {{ consignment.code }}</title>
+    <link rel="stylesheet" href="../verifier_bundle/bundle.css">
+    <style>
+        .leg-card {
+            border: 0.4pt solid #888;
+            padding: 4pt 6pt;
+            margin: 4pt 0;
+            background: #fafafa;
+        }
+        .leg-head {
+            font-weight: bold;
+            font-size: 9.5pt;
+            margin-bottom: 2pt;
+        }
+        .arrow {
+            color: #888;
+            text-align: center;
+            font-size: 10pt;
+            margin: 2pt 0;
+        }
+    </style>
+</head>
+<body data-generated-at="{{ generated_at }}">
+
+<h1>Supply chain diagram</h1>
+<div class="section-meta">
+    {{ legs|length }} shipment_leg rows for consignment {{ consignment.code }}.
+    Sorted by stage order (load → ocean → discharge → transload → delivery).
+</div>
+
+{% if legs %}
+{% for leg in legs %}
+<div class="leg-card">
+    <div class="leg-head">
+        Stage {{ loop.index }}: {{ leg.leg_type }}
+        {% if leg.document_ref %}— <span class="mono">{{ leg.document_ref }}</span>{% endif %}
+    </div>
+    <table class="compact" style="margin:0">
+        <tr>
+            <th style="width:22%">Origin</th><td>{{ leg.origin_node or '—' }}</td>
+            <th style="width:22%">Destination</th><td>{{ leg.destination_node or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Document date</th><td>{{ leg.document_date or '—' }}</td>
+            <th>Carrier</th><td>{{ leg.carrier or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Mass in (kg)</th><td class="num">{{ '%.3f'|format(leg.kg_in) }}</td>
+            <th>Mass out (kg)</th><td class="num">{{ '%.3f'|format(leg.kg_out) }}</td>
+        </tr>
+        <tr>
+            <th>Stock residual (kg)</th>
+            <td class="num">{{ '%.3f'|format(leg.kg_stock_residual) if leg.kg_stock_residual is not none else '—' }}</td>
+            <th>Document type</th><td>{{ leg.document_type }}</td>
+        </tr>
+        <tr>
+            <th>Operator cert</th>
+            <td colspan="3">
+                {% if leg.operator_cert %}
+                    {{ leg.operator_cert.cert_number }}
+                    ({{ leg.operator_cert.scheme }},
+                    {{ leg.operator_cert.issued_at }} → {{ leg.operator_cert.expires_at }})
+                {% else %}<span class="muted">—</span>{% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>PDF</th>
+            <td colspan="3">
+                {% if leg.pdf_ref %}<span class="mono">{{ leg.pdf_ref }}</span>
+                {% else %}<span class="muted">—</span>{% endif %}
+            </td>
+        </tr>
+    </table>
+</div>
+{% if not loop.last %}<div class="arrow">▼</div>{% endif %}
+{% endfor %}
+{% else %}
+<div class="note">No shipment_leg rows for this consignment.</div>
+{% endif %}
+
+</body>
+</html>

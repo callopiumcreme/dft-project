@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GHG worksheet — {{ consignment.code }}</title>
+    <link rel="stylesheet" href="../verifier_bundle/bundle.css">
+</head>
+<body data-generated-at="{{ generated_at }}">
+
+<h1>GHG worksheet</h1>
+<div class="section-meta">
+    Proof-of-Sustainability rows for consignment {{ consignment.code }} &middot;
+    {{ pos_rows|length }} PoS &middot;
+    weighted GHG saving {{ '%.2f'|format(weighted_saving_pct) }} %
+</div>
+
+<h2>Per-PoS GHG breakdown</h2>
+{% if pos_rows %}
+<table class="compact">
+    <thead>
+        <tr>
+            <th>PoS number</th>
+            <th>Mass (kg)</th>
+            <th>E<sub>p</sub> (g CO₂eq/MJ)</th>
+            <th>E<sub>td</sub> (g CO₂eq/MJ)</th>
+            <th>Total (g CO₂eq/MJ)</th>
+            <th>Saving %</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for pos in pos_rows %}
+        <tr>
+            <td>{{ pos.pos_number }}</td>
+            <td class="num">{{ '%.3f'|format(pos.kg_net) if pos.kg_net is not none else '—' }}</td>
+            <td class="num">{{ '%.2f'|format(pos.ghg_ep) if pos.ghg_ep is not none else '—' }}</td>
+            <td class="num">{{ '%.2f'|format(pos.ghg_etd) if pos.ghg_etd is not none else '—' }}</td>
+            <td class="num">{{ '%.2f'|format(pos.ghg_total) if pos.ghg_total is not none else '—' }}</td>
+            <td class="num">{{ '%.2f'|format(pos.ghg_saving_pct) if pos.ghg_saving_pct is not none else '—' }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <th style="text-align:right">Mass-weighted</th>
+            <th class="num">{{ '%.3f'|format(total_mass_kg) }}</th>
+            <th class="num">{{ '%.2f'|format(weighted_ep) }}</th>
+            <th class="num">{{ '%.2f'|format(weighted_etd) }}</th>
+            <th class="num">{{ '%.2f'|format(weighted_total) }}</th>
+            <th class="num">{{ '%.2f'|format(weighted_saving_pct) }}</th>
+        </tr>
+    </tbody>
+</table>
+{% else %}
+<div class="note">No PoS rows attached to this consignment.</div>
+{% endif %}
+
+<div class="note">
+    Weighted averages are mass-weighted across all PoS rows with non-NULL
+    values for the column. Missing values are excluded from the denominator.
+    Reference benchmark: 94 g CO₂eq/MJ (RED II fossil comparator).
+</div>
+
+</body>
+</html>
