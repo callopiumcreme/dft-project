@@ -288,21 +288,45 @@ export default async function ConsignmentDetailPage({ params }: PageProps) {
                           >
                             PDF
                           </CustomsEadLink>
-                          {c.invoice_no && c.invoice_pdf_ref ? (
-                            <CustomsInvoiceLink
-                              consignmentId={consignment.id}
-                              header={{
-                                posNumber: p.pos_number,
-                                invoiceNo: c.invoice_no,
-                                mrn: c.mrn,
-                                netKg: c.net_kg,
-                                issuingDate: c.issuing_date,
-                              }}
-                              className="!border !border-rule !bg-bg !text-ink-soft !no-underline hover:!bg-bg-soft !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
-                            >
-                              Invoice
-                            </CustomsInvoiceLink>
-                          ) : null}
+                          {/* DFTEN-170 (E8-F2): invoice chip falls back to
+                              the filename stem of invoice_pdf_ref when
+                              invoice_no is NULL. Old behaviour skipped the
+                              chip entirely if invoice_no was missing, even
+                              though the PDF was already archived under the
+                              convention `INV_<invoice_no>.pdf` — so we can
+                              derive a usable invoice_no by stripping the
+                              `INV_` prefix and `.pdf` suffix from the file
+                              stem and then mint a chip that goes through
+                              the same /consignments/<id>/invoices/<no>.pdf
+                              backend route as the populated case.
+                              Order: explicit invoice_no > derived stem. */}
+                          {(() => {
+                            const derivedFromFilename = c.invoice_pdf_ref
+                              ?.split('/')
+                              .pop()
+                              ?.replace(/\.pdf$/i, '')
+                              .replace(/^INV[_-]/i, '');
+                            const invoiceRef =
+                              c.invoice_no?.trim() ||
+                              derivedFromFilename ||
+                              null;
+                            if (!c.invoice_pdf_ref || !invoiceRef) return null;
+                            return (
+                              <CustomsInvoiceLink
+                                consignmentId={consignment.id}
+                                header={{
+                                  posNumber: p.pos_number,
+                                  invoiceNo: invoiceRef,
+                                  mrn: c.mrn,
+                                  netKg: c.net_kg,
+                                  issuingDate: c.issuing_date,
+                                }}
+                                className="!border !border-rule !bg-bg !text-ink-soft !no-underline hover:!bg-bg-soft !decoration-transparent inline-block px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.1em]"
+                              >
+                                Invoice
+                              </CustomsInvoiceLink>
+                            );
+                          })()}
                         </div>
                       ) : (
                         <OutboundErsvLink
