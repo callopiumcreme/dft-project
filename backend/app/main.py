@@ -20,6 +20,7 @@ from app.routers import (
     off_takers,
     reports,
     shipments,
+    signing,
     tickets,
     warehouse,
 )
@@ -71,6 +72,7 @@ app.include_router(consignments.router)
 app.include_router(shipments.router)
 app.include_router(warehouse.router)
 app.include_router(byproduct_sales.router)
+app.include_router(signing.router)
 
 
 @app.get("/health")
