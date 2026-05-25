@@ -7,6 +7,7 @@ import {
   type WarehouseStockRow,
   type WarehouseMovement,
 } from '@/lib/warehouse-client';
+import { WarehouseRefDocLink } from '@/components/warehouse';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Warehouse — DFT' };
@@ -303,7 +304,13 @@ export default async function WarehousePage({ searchParams }: PageProps) {
                   <Td className="text-right tabular-nums text-ink font-medium">
                     {fmtKg(m.post_balance_kg)}
                   </Td>
-                  <Td className="text-ink-soft">{m.ref_doc_no ?? '—'}</Td>
+                  <Td className="text-ink-soft">
+                    <WarehouseRefDocLink
+                      refDocNo={m.ref_doc_no}
+                      consignmentId={m.consignment_id}
+                      productKind={m.product_kind}
+                    />
+                  </Td>
                   <Td className="text-ink-mute" title={m.notes ?? undefined}>
                     {m.notes ?? '—'}
                   </Td>
