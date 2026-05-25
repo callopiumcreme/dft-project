@@ -548,6 +548,7 @@ async def stream_invoice_pdf(
 
 _BL_OCEAN_ROOT = Path(os.environ.get("BL_OCEAN_ROOT", "/data/bl_ocean"))
 _POS_ROOT = Path(os.environ.get("POS_ROOT", "/data/pos_documents"))
+_DELIVERY_UK_ROOT = Path(os.environ.get("DELIVERY_UK_ROOT", "/data/delivery_uk"))
 # Ocean BL number prefix is the SCAC code (4 uppercase letters, e.g. CMDU
 # for CMA-CGM, MAEU for Maersk, MEDU for MSC, HLCU for Hapag-Lloyd)
 # followed by 6–12 digits. Strict anchor keeps URLs safe from path-traversal.
@@ -767,6 +768,66 @@ async def stream_pos_pdf(
         path=candidate,
         media_type="application/pdf",
         filename=f"PoS_{safe_no}.pdf",
+        content_disposition_type="attachment" if download else "inline",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Delivery-UK bundle sub-resource — PDF streaming
+# ---------------------------------------------------------------------------
+
+
+@router.get("/{consignment_id}/delivery-uk.pdf")
+async def stream_delivery_uk_pdf(
+    consignment_id: int,
+    _: ViewerUser,
+    db: DbDep,
+    download: bool = False,
+) -> FileResponse:
+    """Auth-gated stream of the JLY commercial-invoice bundle.
+
+    Looks up the ``shipment_leg`` row by
+    ``(consignment_id, leg_type='delivery_uk', deleted_at IS NULL)`` and
+    resolves ``pdf_ref`` against ``DELIVERY_UK_ROOT`` (default
+    ``/data/delivery_uk``). Refuses any resolved path that escapes the
+    delivery-uk root — defence against tampered ``pdf_ref`` values.
+
+    Defaults to ``Content-Disposition: inline`` so the popup iframe can
+    render the bundle in-place. Pass ``?download=1`` to force
+    ``attachment`` (used by the modal's Download button).
+    """
+    await _get_or_404(db, consignment_id)
+
+    row = (
+        await db.execute(
+            select(ShipmentLeg).where(
+                ShipmentLeg.consignment_id == consignment_id,
+                ShipmentLeg.leg_type == "delivery_uk",
+                ShipmentLeg.deleted_at.is_(None),
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None or not row.pdf_ref:
+        raise HTTPException(
+            status_code=404, detail="Delivery-UK bundle not found for this consignment"
+        )
+
+    root = _DELIVERY_UK_ROOT.resolve()
+    candidate = (root / row.pdf_ref).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="pdf_ref escapes delivery_uk root"
+        ) from exc
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="Delivery-UK PDF missing on disk")
+
+    safe_ref = re.sub(r"[^A-Za-z0-9_.-]+", "_", row.document_ref or "delivery-uk")
+    return FileResponse(
+        path=candidate,
+        media_type="application/pdf",
+        filename=f"{safe_ref}.pdf",
         content_disposition_type="attachment" if download else "inline",
     )
 
