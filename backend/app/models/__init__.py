@@ -7,6 +7,8 @@ from app.models.consignment_production_link import ConsignmentProductionLink
 from app.models.contract import Contract
 from app.models.daily_input import DailyInput
 from app.models.daily_production import DailyProduction
+from app.models.inland_shipment import InlandShipment
+from app.models.mass_balance_ledger import MassBalanceLedger
 from app.models.off_taker import OffTaker
 from app.models.shipment_leg import ShipmentLeg
 from app.models.shipment_unit import ShipmentUnit
@@ -24,6 +26,8 @@ __all__ = [
     "Contract",
     "DailyInput",
     "DailyProduction",
+    "InlandShipment",
+    "MassBalanceLedger",
     "OffTaker",
     "ShipmentLeg",
     "ShipmentUnit",
