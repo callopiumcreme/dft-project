@@ -1,22 +1,35 @@
 // audit_paper_records_banner_smoke.mjs
-// Regression smoke for round-3 audit finding N6:
-// SyntheticRenderBanner must render inside the eRSV modal for entries dated
-// inside the paper-records window. After Step 1 the window starts on
-// 2025-01-01, so a January row triggers the banner; February is the legacy
-// positive case kept as a regression guard.
+// Regression smoke for round-3 audit findings N6 + N7:
 //
-// Verifies:
-//   - /app/inputs/20997 (2025-01-02) — ErsvLink click opens modal, banner present.
-//   - /app/inputs/21211 (2025-02-01) — same assertion, banner still works for Feb.
+//   N6 — SyntheticRenderBanner must render inside the eRSV modal for entries
+//        dated inside the paper-records window (2025-01-01 → 2025-08-31).
+//
+//   N7 — Personal-data fields (driver, cédula, placa, hora de salida, báscula
+//        operator) inside the iframe must render the literal marker
+//        ``[Paper record — Girardot archive]`` rather than any synthetic
+//        plausible Colombian name. The marker is the verifier-facing signal
+//        that the cell is bound to the paper archive; emitting a synthetic
+//        name (e.g. ``Carlos Ramírez Gómez``) would re-introduce the
+//        symbolic-data trap that N7 closes.
+//
+// Verifies (in order):
+//   1. /app/inputs/20997 (2025-01-02) and /app/inputs/21211 (2025-02-01)
+//      open ErsvModal on first ErsvLink click.
+//   2. SyntheticRenderBanner is present (N6).
+//   3. iframe srcDoc body contains the marker text at least 4× (the four
+//      personal-data <td> cells in the Transporte block) (N7).
+//   4. iframe body does NOT contain any of the known synthetic-name
+//      fragments from the legacy generator pool (N7).
 //
 // Exit code:
-//   0 — both rows show the banner.
-//   1 — either row missing the banner.
+//   0 — every assertion green on both rows.
+//   1 — any assertion fails on any row.
 //
 // Output:
-//   /tmp/audit_pr_banner_<id>_dom.txt   — modal HTML capture
-//   /tmp/audit_pr_banner_<id>.png       — fullpage screenshot
-//   /tmp/audit_pr_banner_report.json    — structured report
+//   /tmp/audit_pr_banner_<id>_dom.txt    — outer modal HTML capture
+//   /tmp/audit_pr_banner_<id>_iframe.txt — iframe body innerText capture
+//   /tmp/audit_pr_banner_<id>.png        — fullpage screenshot
+//   /tmp/audit_pr_banner_report.json     — structured report
 
 import { chromium } from '/home/usergianni/.npm/_npx/a8a7eec953f1f314/node_modules/@playwright/test/index.mjs';
 import { execFileSync } from 'node:child_process';
@@ -92,11 +105,56 @@ async function probeOne(ctx, { id, date, label }) {
     modalHtml = await page.content();
   }
 
+  // ---- N7 — assert the marker reached the iframe body ---------------------
+  // The eRSV iframe uses srcDoc, so the iframe lives at the modal's
+  // <iframe> element; Playwright exposes its document via contentFrame().
+  let iframeBody = '';
+  let markerCount = 0;
+  let forbiddenHits = [];
+  const PAPER_RECORD_MARKER = '[Paper record — Girardot archive]';
+  // Sample of plausible Colombian names + plate prefixes from the legacy
+  // ersv_pool generator. If any of these survives into an in-window
+  // iframe body, Step 2 has regressed.
+  const FORBIDDEN = [
+    'Carlos Ramírez',
+    'José Luis Hernández',
+    'Andrés Felipe Torres',
+    'Juan Pablo Restrepo',
+    'Diego Alejandro Vargas',
+    'Luis Fernando Marín',
+    'Hernán Darío Quintero',
+    'Sergio Mauricio Patiño',
+    'Óscar Iván Castaño',
+    'Edwin Mauricio López',
+    'Mario Andrés Sepúlveda',
+    'Wilson Alberto Cárdenas',
+  ];
+  try {
+    const iframeEl = await page.waitForSelector('[role="dialog"] iframe', { timeout: 5000 });
+    const frame = await iframeEl.contentFrame();
+    if (frame) {
+      // srcDoc renders synchronously but the body innerHTML is observable
+      // via DOM query — no extra wait needed.
+      iframeBody = await frame.evaluate(() => document.body ? document.body.innerHTML : '');
+      // Count marker occurrences (string contains, not regex — marker has
+      // em-dash U+2014 + brackets that need no escaping).
+      let idx = 0;
+      while ((idx = iframeBody.indexOf(PAPER_RECORD_MARKER, idx)) !== -1) {
+        markerCount += 1;
+        idx += PAPER_RECORD_MARKER.length;
+      }
+      forbiddenHits = FORBIDDEN.filter((n) => iframeBody.includes(n));
+    }
+  } catch (e) {
+    waitErr = waitErr || (e instanceof Error ? e.message : String(e));
+  }
+
   writeFileSync(`/tmp/audit_pr_banner_${id}_dom.txt`, modalHtml);
+  writeFileSync(`/tmp/audit_pr_banner_${id}_iframe.txt`, iframeBody);
   await page.screenshot({ path: `/tmp/audit_pr_banner_${id}.png`, fullPage: true });
   await page.close();
 
-  return { id, date, label, bannerCount, consoleErrors, waitErr };
+  return { id, date, label, bannerCount, markerCount, forbiddenHits, consoleErrors, waitErr };
 }
 
 async function main() {
@@ -119,8 +177,15 @@ async function main() {
   const results = [];
   for (const t of TARGETS) {
     const r = await probeOne(ctx, t);
-    console.log(`[smoke] ${r.label} (id=${r.id} date=${r.date}) banner_count=${r.bannerCount}`);
+    console.log(
+      `[smoke] ${r.label} (id=${r.id} date=${r.date}) ` +
+        `banner_count=${r.bannerCount} marker_count=${r.markerCount} ` +
+        `forbidden=${r.forbiddenHits.length}`,
+    );
     if (r.waitErr) console.log('  WAIT ' + r.waitErr.slice(0, 200));
+    if (r.forbiddenHits.length) {
+      console.log('  LEAK ' + r.forbiddenHits.join(', '));
+    }
     if (r.consoleErrors.length) {
       r.consoleErrors.slice(0, 5).forEach((e) => console.log('  ERR ' + e.slice(0, 200)));
     }
@@ -130,12 +195,20 @@ async function main() {
   writeFileSync('/tmp/audit_pr_banner_report.json', JSON.stringify({ results }, null, 2));
   await browser.close();
 
-  const fail = results.some((r) => r.bannerCount < 1);
+  // Pass criteria — every row must satisfy ALL of:
+  //   banner_count ≥ 1                — N6 (banner mounted)
+  //   marker_count ≥ 4                — N7 (≥4 personal-data cells carry marker)
+  //   forbiddenHits.length === 0      — N7 (no synthetic-name leak)
+  const fail = results.some(
+    (r) => r.bannerCount < 1 || r.markerCount < 4 || r.forbiddenHits.length > 0,
+  );
   if (fail) {
-    console.error('[smoke] FAIL — banner missing on at least one in-window row');
+    console.error(
+      '[smoke] FAIL — N6/N7 regression: banner missing, marker absent, or synthetic name leaked',
+    );
     process.exit(1);
   }
-  console.log('[smoke] PASS — banner renders for all in-window rows');
+  console.log('[smoke] PASS — N6 banner + N7 marker assertions green on all in-window rows');
 }
 
 main().catch((e) => {

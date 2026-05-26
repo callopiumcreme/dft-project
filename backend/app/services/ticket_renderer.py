@@ -32,7 +32,11 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import text
 
-from app.services.ersv_pool import build_pool_fields
+from app.services.ersv_pool import (
+    PAPER_RECORD_MARKER,
+    build_pool_fields,
+    is_in_paper_records_window,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -198,7 +202,15 @@ def build_ticket_data(
     sal_min = (hora_ent.hour * 60 + hora_ent.minute) + rrng.randint(60, 120)
     hora_sal = dt.time((sal_min // 60) % 24, sal_min % 60)
     tare = rrng.randint(14000, 18000)
-    weigher = rrng.choice(WEIGHERS)
+    # PESADO POR / báscula operator falls under the Step 2 personal-data
+    # marker scope alongside driver/cédula/placa (see ersv_pool.py header
+    # — N6 / N7). Driver/cédula/plate come through ``pool`` already
+    # marker-substituted by build_pool_fields when in-window; the weigher
+    # is local to this renderer so we substitute it here.
+    if is_in_paper_records_window(entry_date):
+        weigher = PAPER_RECORD_MARKER
+    else:
+        weigher = rrng.choice(WEIGHERS)
 
     net_int = int(net)
     peso_sal = tare

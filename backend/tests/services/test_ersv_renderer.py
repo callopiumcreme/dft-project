@@ -192,6 +192,62 @@ def test_render_html_regen_row_shows_watermark() -> None:
     assert "2026-05-22" in artefact.html
 
 
+def test_render_html_in_window_emits_marker_on_personal_data() -> None:
+    """Round-3 N6/N7 — in-window row renders the paper-record marker
+    on every personal-data cell (driver / cédula / placa / hora de salida)
+    instead of any synthetic plausible value.
+
+    Baseline _row() entry_date is 2025-02-19, which sits inside the
+    paper-records window (2025-01-01 → 2025-08-31), so build_pool_fields
+    should emit the marker via the renderer.
+    """
+    from app.services.ersv_pool import PAPER_RECORD_MARKER
+
+    session = _FakeSession(rows=[_row()])
+    artefact = asyncio.run(render_ersv_to_html(session, "00042/25"))  # type: ignore[arg-type]
+    html = artefact.html
+
+    # Marker must appear at least once per personal-data cell. The four
+    # cells are rendered as separate <td> values in the Transporte block,
+    # so we count occurrences ≥4 to confirm none of the cells fell back
+    # to a synthetic name.
+    assert html.count(PAPER_RECORD_MARKER) >= 4, (
+        f"Expected ≥4 marker occurrences (driver/cédula/placa/hora), got "
+        f"{html.count(PAPER_RECORD_MARKER)}"
+    )
+
+    # None of the legacy synthetic Colombian names may appear in-window.
+    for forbidden in (
+        "Carlos Ramírez Gómez", "José Luis Hernández", "Andrés Felipe Torres",
+        "MDL-", "BOG-", "CAL-", "MED-",
+    ):
+        assert forbidden not in html, (
+            f"Synthetic placeholder leaked into in-window render: {forbidden!r}"
+        )
+
+    # doc-meta footer must use entry_date_eu (real delivery date) — never
+    # the marker. Pre-Step-2 the footer used hora_salida_date_eu which now
+    # gets replaced by the marker.
+    assert "emitido [Paper record" not in html
+    assert "emitido 19/02/2025" in html
+
+
+def test_render_html_out_of_window_keeps_synthetic_values() -> None:
+    """Out-of-window row (Sep 2025 onward) keeps the deterministic generator
+    output — no marker leakage."""
+    from app.services.ersv_pool import PAPER_RECORD_MARKER
+
+    out_row = _row(
+        id=21900,
+        entry_date=date(2025, 10, 12),
+        ersv_number="00500/25",
+        original_values=None,
+    )
+    session = _FakeSession(rows=[out_row])
+    artefact = asyncio.run(render_ersv_to_html(session, "00500/25"))  # type: ignore[arg-type]
+    assert PAPER_RECORD_MARKER not in artefact.html
+
+
 def test_render_html_etag_is_stable_across_renders() -> None:
     """Two renders of the same row produce the same ETag (stable across calls)."""
     session = _FakeSession(rows=[_row()])

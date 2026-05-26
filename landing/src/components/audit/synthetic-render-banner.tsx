@@ -10,16 +10,20 @@
  * banner uses `formatPaperRecordsWindowLabel()` to display the live
  * window label rather than hard-coding the period).
  *
- * Personal-data fields (driver name, cédula, vehicle plate, transport
- * company, hora de salida, signatures, báscula operator) are produced by
- * a deterministic placeholder pool (`app.services.ersv_pool`) and are NOT
- * source-of-truth. The paper-records statement at
+ * Personal-data fields inside the window (driver name, cédula, vehicle
+ * plate, hora de salida, báscula operator) render the literal marker
+ * `[Paper record — Girardot archive]` instead of any plausible value
+ * (see `backend/app/services/ersv_pool.py` — Round-3 findings N6 / N7).
+ * The marker tells the verifier that those cells are bound to the paper
+ * archive retained at OisteBio Girardot (operator: Zuniga Martinez
+ * S.A.S.) and are not per-row attestations in this document. The
+ * countersigned statement at
  * `docs/audit-dft-c1-paper-records-statement.md` (Paolo Ughetti,
  * Geschäftsführer OisteBio GmbH) is the binding disclosure.
  *
  * The banner renders only when `entryDate` falls between the configured
  * window bounds (inclusive). It renders nothing otherwise (e.g. September
- * 2025 and later electronic-capture rows).
+ * 2025 and later electronic-capture rows where the data is real per-row).
  */
 
 import * as React from 'react';
@@ -44,20 +48,24 @@ export function SyntheticRenderBanner({ entryDate }: Props): React.JSX.Element |
       className="border-b border-accent/40 bg-accent/10 px-6 py-3"
     >
       <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-accent">
-        Audit disclosure — synthetic rendering
+        Audit disclosure — paper-record marker
       </p>
       <p className="mt-1 text-[0.72rem] leading-snug text-ink">
-        Personal-data fields below (driver, cédula, plate, transport,
-        signatures, hora de salida, báscula operator) are{' '}
-        <strong>deterministic placeholders</strong> seeded by stable row
-        identifiers. They are <strong>not source-of-truth</strong>.
-        Source-of-truth records are paper weighbridge tickets and original
-        eRSV documents retained at OisteBio Girardot (operator: Zuniga
-        Martinez S.A.S.) for the {windowLabel} redistribution window. See{' '}
+        Personal-data fields below (driver, cédula, plate, hora de salida,
+        báscula operator) render the literal marker{' '}
+        <code className="bg-bg-soft px-1">
+          [Paper record — Girardot archive]
+        </code>{' '}
+        rather than any per-row value. The marker indicates that each
+        such cell is bound to the paper archive retained at OisteBio
+        Girardot (operator: Zuniga Martinez S.A.S.) for the {windowLabel}{' '}
+        redistribution window — not to a per-row attestation in this
+        document. See{' '}
         <code className="bg-bg-soft px-1">
           audit-dft-c1-paper-records-statement
         </code>{' '}
-        (Paolo Ughetti, Geschäftsführer OisteBio GmbH).
+        (Paolo Ughetti, Geschäftsführer OisteBio GmbH) for the
+        countersigned disclosure.
       </p>
     </div>
   );

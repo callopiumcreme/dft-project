@@ -1,18 +1,40 @@
-"""Deterministic on-flight pool for eRSV synthetic fields.
+"""On-flight pool for eRSV personal-data fields.
 
-The eRSV is reconstructed for the Feb-Aug 2025 redistribution window
-(migration 0017) — original paper docs were reassigned and the underlying
-driver/vehicle/signature data was never captured digitally. For audit
-display we synthesise plausible Colombian-context values, seeded by
-``hash(ersv_number)`` so the same eRSV always shows the same driver,
-plate, cedula and signature scrawls across re-renders.
+Background — the eRSV is reconstructed for the Jan-Aug 2025 redistribution
+window (migration 0017 + 0018) because the original paper docs were
+reassigned across deliveries and the driver/vehicle/signature data was
+never captured digitally during that period.
 
-No DB writes — this is purely a render-time helper. The seeded RNG
-gives stable assignments without persisting synthetic values that could
-later be confused with primary record.
+Round-3 audit findings N6 + N7: emitting deterministic plausible names
+(``Carlos Ramírez Gómez``, ``MDL-238`` …) on documents handed to a DfT
+verifier exposes a self-incriminating "symbolic data" surface — the
+verifier cannot tell synthetic from real, and any plausible-but-fictional
+name is an attestation OisteBio cannot stand behind. So when an
+``entry_date`` falls inside the paper-records window we emit the literal
+marker ``PAPER_RECORD_MARKER`` (see below) on every personal-data field
+instead of generating a deterministic placeholder. The marker is the
+single signal the verifier needs: "this cell is bound to the paper
+archive at OisteBio Girardot, not to a per-row attestation in this
+document". The countersigned statement at
+``docs/audit-dft-c1-paper-records-statement.md`` (Paolo Ughetti,
+Geschäftsführer OisteBio GmbH) is the binding disclosure.
+
+Outside the window the deterministic generator stays — kept for back-
+compatibility (legacy tests / future electronic-capture rows that for
+some reason still call this helper). No DB writes — this is purely a
+render-time helper.
+
+Window bounds MUST mirror ``landing/src/config/paper-records-window.ts``
+exactly (Round-2 finding N1 — single source of truth). When the
+frontend window changes, update the Python constants below in the same
+commit. Drift between the two surfaces would re-introduce the gap N1
+closed.
 
 Public API:
-    build_pool_fields(ersv_number, entry_date) -> dict
+    build_pool_fields(ersv_number, entry_date, …) -> dict
+    is_in_paper_records_window(entry_date) -> bool
+    PAPER_RECORD_MARKER  — the literal string emitted on synthetic
+                           personal-data cells when in-window.
 """
 
 from __future__ import annotations
@@ -20,6 +42,35 @@ from __future__ import annotations
 import hashlib
 from datetime import date, time, timedelta
 from random import Random
+
+# ---------------------------------------------------------------------------
+# Paper-records window — mirror of landing/src/config/paper-records-window.ts
+# (N1 enforcement). The marker is emitted by ``build_pool_fields`` whenever
+# the delivery ``entry_date`` falls inclusively between these bounds.
+# ---------------------------------------------------------------------------
+PAPER_RECORDS_WINDOW_START: date = date(2025, 1, 1)
+PAPER_RECORDS_WINDOW_END: date = date(2025, 8, 31)
+
+# Literal sentinel rendered on personal-data fields (driver name, cédula,
+# vehicle plate, hora de salida, báscula operator) when the row is inside
+# the paper-records window. The em-dash is U+2014. Width = 35 chars — fits
+# the 48-column báscula ticket layout (longest label "EMPRESA TRANSPORTE:"
+# is 19 chars, leaving 29 — see ticket_renderer for marker substitution on
+# the weigher; PLACA/CONDUCTOR/CEDULA labels are ≤10 chars so the value
+# column comfortably fits the marker).
+PAPER_RECORD_MARKER: str = "[Paper record — Girardot archive]"
+
+
+def is_in_paper_records_window(entry_date: date | None) -> bool:
+    """True when entry_date sits inside the inclusive window.
+
+    Mirrors the TS helper ``isInPaperRecordsWindow`` in
+    ``landing/src/config/paper-records-window.ts``. Returns False on
+    None so callers can pass partial data safely.
+    """
+    if entry_date is None:
+        return False
+    return PAPER_RECORDS_WINDOW_START <= entry_date <= PAPER_RECORDS_WINDOW_END
 
 # ---------------------------------------------------------------------------
 # Pools — kept inline to avoid a separate JSON load per render.
@@ -223,8 +274,39 @@ def build_pool_fields(
         prior assignments stable.
     """
     row_key = f"{ersv_number}|{daily_input_id}" if daily_input_id is not None else ersv_number
-    has_day = position_in_day is not None and total_in_day is not None
 
+    # Supplier-table values (real, not per-row synthetic). transport_company
+    # is also kept deterministic — the supplier→carrier set is real, only
+    # the per-row attribution is not. Plan §2 Step 2 scopes the marker
+    # strictly to personal-data fields (driver / cédula / placa / hora /
+    # báscula operator) so transport_company stays out.
+    pickup = _pickup_fields(supplier_code)
+    transport = _transport_company(supplier_code, row_key)
+
+    if is_in_paper_records_window(entry_date):
+        # In-window — emit the paper-record marker on every personal-data
+        # field rather than synthesising plausible Colombian names. The
+        # banner + statement carry the disclosure; the marker carries the
+        # binding on every cell. salida_date_iso is kept ISO-real so the
+        # template doc-meta footer can still render a meaningful emission
+        # date (it now uses entry_date_eu — see templates/reports/ersv.html
+        # — but other downstream consumers may still read the iso form).
+        salida_date = entry_date - timedelta(days=1)
+        return {
+            "driver_name": PAPER_RECORD_MARKER,
+            "driver_cedula": PAPER_RECORD_MARKER,
+            "vehicle_plate": PAPER_RECORD_MARKER,
+            "transport_company": transport,
+            "hora_salida_date_iso": salida_date.isoformat(),
+            "hora_salida_date_eu": PAPER_RECORD_MARKER,
+            "hora_salida_time": PAPER_RECORD_MARKER,
+            "holder_country_label": pickup["holder_country_label"],
+            "loading_address": pickup["loading_address"],
+            "distance_km": pickup["distance_km"],
+        }
+
+    # Out-of-window fallback — deterministic generator (legacy path).
+    has_day = position_in_day is not None and total_in_day is not None
     if has_day:
         driver = _day_driver(entry_date, position_in_day, total_in_day)  # type: ignore[arg-type]
         placa = _day_placa(entry_date, position_in_day, total_in_day)  # type: ignore[arg-type]
@@ -235,12 +317,11 @@ def build_pool_fields(
         cedula = _cedula(ersv_number)
 
     salida_date, salida_str = _hora_salida(row_key, entry_date)
-    pickup = _pickup_fields(supplier_code)
     return {
         "driver_name": driver,
         "driver_cedula": cedula,
         "vehicle_plate": placa,
-        "transport_company": _transport_company(supplier_code, row_key),
+        "transport_company": transport,
         "hora_salida_date_iso": salida_date.isoformat(),
         "hora_salida_date_eu": salida_date.strftime("%d/%m/%Y"),
         "hora_salida_time": salida_str,
@@ -250,4 +331,10 @@ def build_pool_fields(
     }
 
 
-__all__ = ["build_pool_fields"]
+__all__ = [
+    "build_pool_fields",
+    "is_in_paper_records_window",
+    "PAPER_RECORD_MARKER",
+    "PAPER_RECORDS_WINDOW_START",
+    "PAPER_RECORDS_WINDOW_END",
+]
