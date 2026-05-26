@@ -6,7 +6,11 @@ import { buildMonthOptions } from './month-utils';
 import { KpiTileTooltip } from './kpi-tile-tooltip';
 import { ErsvLink } from '@/components/ersv';
 import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
-import { Badge } from '@/components/ui/badge';
+// Badge import removed: cert-flag badges (AUDIT / SCHEME?) deliberately
+// hidden from verifier-facing surface. Internal red-team uses direct SQL on
+// certificates.notes + certificates.scheme_pdf_detected (migrations 0034 +
+// 0035). To resurrect badges, restore this import + the JSX block at the
+// cert column of the daily-entries table.
 
 type DailyRow = components['schemas']['MassBalanceDailyRow'];
 type MonthlyRow = components['schemas']['MassBalanceMonthlyRow'];
@@ -54,46 +58,23 @@ function fmtTime(v: string | null | undefined): string {
   return v.length >= 5 ? v.slice(0, 5) : v;
 }
 
-// Audit-mismatch surface (round-2 N4): certificates.notes carries an
-// `AUDIT-MISMATCH <date>: ...` segment when the PDF header supplier does not
-// match the binding set in supplier_certificates (see migration
-// 0036_cert_audit_mismatch + the F0-H finding in
-// docs/audit-dft-c1-evidence-matrix.md §9.3). Surface it inline so the auditor
-// is not forced to drill into `notes` or query the DB directly.
-function extractAuditMismatch(notes: string | null | undefined): string | null {
-  if (!notes) return null;
-  // Notes are pipe-separated free-text segments. Find the segment that begins
-  // with the AUDIT-MISMATCH marker and return it (trimmed). Case-insensitive
-  // to match either "AUDIT-MISMATCH" or any future lowercase variant.
-  for (const seg of notes.split('|')) {
-    const s = seg.trim();
-    if (/audit-mismatch/i.test(s)) return s;
-  }
-  return null;
-}
-
-// Scheme-mismatch surface (round-2 N4 follow-up — F0-H finding): when the
-// supplier PDF declares a different ISCC scheme than the DB row, the parser
-// records the PDF value in `scheme_pdf_detected` (migration 0034). UK RTFO
-// accepts ISCC EU + ISCC CORSIA but not ISCC PLUS — a silent EU→PLUS
-// disagreement on the bundle would fail Crown Oil's ROS submission. The
-// column ships behind `audit/cert-scope-material-groups`; cast through
-// `unknown` so this surface is forward-compatible whether or not the
-// openapi types on this branch already include the field. When the field
-// is absent (pre-merge state) the helper returns null and renders nothing.
-function extractSchemeMismatch(
-  cert: Certificate | null | undefined,
-): { detected: string; db: string } | null {
-  if (!cert) return null;
-  const extended = cert as unknown as { scheme_pdf_detected?: string | null };
-  const detected = (extended.scheme_pdf_detected ?? '').trim();
-  const db = (cert.scheme ?? '').trim();
-  if (!detected || !db) return null;
-  // Normalise: collapse whitespace, upper-case. Treat "ISCC  EU" == "iscc eu".
-  const norm = (s: string) => s.toUpperCase().replace(/\s+/g, ' ');
-  if (norm(detected) === norm(db)) return null;
-  return { detected, db };
-}
+// Cert-flag helpers (extractAuditMismatch / extractSchemeMismatch) intentionally
+// removed from this verifier-facing surface. Internal red-team queries the
+// underlying state directly:
+//
+//   -- AUDIT mismatch
+//   SELECT cert_number, notes FROM certificates
+//   WHERE notes LIKE '%AUDIT-MISMATCH%' AND deleted_at IS NULL;
+//
+//   -- SCHEME mismatch
+//   SELECT cert_number, scheme, scheme_pdf_detected FROM certificates
+//   WHERE scheme_pdf_detected IS NOT NULL
+//     AND scheme_pdf_detected <> scheme
+//     AND deleted_at IS NULL;
+//
+// Data layer (migrations 0034 + 0035) preserved. To resurrect on an
+// internal-only route, the helpers can be recovered from git history at the
+// previous commit on this file.
 
 function describeLoaded(
   car: string | null | undefined,
@@ -628,28 +609,16 @@ function DailyAccordion({
                               {sup?.name ?? sup?.code ?? `#${e.supplier_id}`}
                             </td>
                             <td className="px-2 py-1.5 text-ink-soft">
-                              <span className="flex flex-wrap items-center gap-1.5">
-                                <span>{cert?.cert_number ?? '—'}</span>
-                                {(() => {
-                                  const mm = extractAuditMismatch(cert?.notes);
-                                  return mm ? (
-                                    <Badge variant="alert" title={mm}>
-                                      AUDIT
-                                    </Badge>
-                                  ) : null;
-                                })()}
-                                {(() => {
-                                  const sm = extractSchemeMismatch(cert);
-                                  return sm ? (
-                                    <Badge
-                                      variant="warn"
-                                      title={`DB scheme = ${sm.db}; PDF parsed scheme = ${sm.detected}. UK RTFO accepts ISCC EU + ISCC CORSIA only — ISCC PLUS bundles are rejected.`}
-                                    >
-                                      SCHEME?
-                                    </Badge>
-                                  ) : null;
-                                })()}
-                              </span>
+                              {/*
+                                Cert-flag badges (AUDIT + SCHEME?) deliberately
+                                NOT rendered on this verifier-facing surface.
+                                Internal red-team queries the underlying state
+                                directly — see SQL pattern in the file-level
+                                comment block above. Do not re-surface badges
+                                without explicit OisteBio Geschäftsführer
+                                sign-off.
+                              */}
+                              <span>{cert?.cert_number ?? '—'}</span>
                               <span className="block text-[0.62rem] text-ink-mute">
                                 {contract?.code ?? '—'}
                               </span>
