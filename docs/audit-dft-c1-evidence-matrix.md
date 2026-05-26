@@ -581,3 +581,28 @@ non-submittable** until cliente returns Tier C data.
 
 **Signed** · Deeba Rehman · UK DfT Low Carbon Fuels · 2026-05-26 (round 2)
 
+---
+
+## 10. Tier C — cliente input batched (Step 7)
+
+**Questionario drafted**: `docs/audit-dft-c1-f0-questionnaire.md` (2026-05-26)
+**Plane ticket**: _TBD — sostituire con ID dopo apertura_
+**Scope**: F0-A, F0-B, F0-C, F0-D, F0-E, F0-G, F0-H (7 item; F0-F chiuso
+via 0038)
+**Due date**: 2026-06-05
+**Owner**: Paolo Ughetti (+ Hugo, Marco countersign)
+
+| F0 | Stato richiesta | Stato risposta |
+|----|-----------------|----------------|
+| A | drafted | ⏳ |
+| B | drafted | ⏳ |
+| C | drafted | ⏳ |
+| D | drafted | ⏳ |
+| E | drafted (PDFs already linked, registry screenshots only) | ⏳ |
+| F | n/a — chiuso 0038 | ✅ |
+| G | drafted | ⏳ |
+| H | drafted | ⏳ |
+
+**Criterio chiusura §10**: tutti F0 sopra in stato ✅ → trigger Step 8
+Statement rewrite (Phase 3, action plan §4).
+
