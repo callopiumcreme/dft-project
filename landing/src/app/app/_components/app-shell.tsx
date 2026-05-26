@@ -10,7 +10,6 @@ import { InlandErsvModalProvider } from '@/components/ersv-inland';
 import { CustomsEadModalProvider } from '@/components/customs';
 import { CustomsInvoiceModalProvider } from '@/components/invoices';
 import { OceanBlModalProvider } from '@/components/bl';
-import { TicketModalProvider } from '@/components/ticket';
 import { UmamiIdentify } from '@/components/analytics/umami-identify';
 import { Toaster } from '@/components/ui/toaster';
 import { SidebarNav } from './sidebar-nav';
@@ -33,7 +32,6 @@ export function AppShell({ children, user, userIdHash }: Props) {
     <CustomsEadModalProvider>
     <CustomsInvoiceModalProvider>
     <OceanBlModalProvider>
-    <TicketModalProvider>
     <UmamiIdentify userId={userIdHash} role={user.role} />
     <div className="min-h-dvh bg-bg">
       <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:w-60 md:flex-col md:border-r md:border-rule md:bg-bg">
@@ -81,7 +79,6 @@ export function AppShell({ children, user, userIdHash }: Props) {
       </div>
     </div>
     <Toaster />
-    </TicketModalProvider>
     </OceanBlModalProvider>
     </CustomsInvoiceModalProvider>
     </CustomsEadModalProvider>

@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { ErsvLink } from '@/components/ersv';
-import { TicketLink } from '@/components/ticket';
 
 type Input = components['schemas']['DailyInputRead'];
 type Supplier = components['schemas']['SupplierRead'];
@@ -178,7 +177,6 @@ export default async function InputsPage({ searchParams }: PageProps) {
               <Th>Time</Th>
               <Th>Supplier</Th>
               <Th>eRSV</Th>
-              <Th>TICKET</Th>
               <Th className="text-right">Car</Th>
               <Th className="text-right">Truck</Th>
               <Th className="text-right">Special</Th>
@@ -191,7 +189,7 @@ export default async function InputsPage({ searchParams }: PageProps) {
           <tbody>
             {rows.length === 0 && !fetchError && (
               <tr>
-                <td colSpan={10} className="px-3 py-6 text-center text-ink-mute">
+                <td colSpan={9} className="px-3 py-6 text-center text-ink-mute">
                   No inputs match the filter.
                 </td>
               </tr>
@@ -214,9 +212,6 @@ export default async function InputsPage({ searchParams }: PageProps) {
                     ) : (
                       '—'
                     )}
-                  </Td>
-                  <Td className="text-ink-mute">
-                    <TicketLink dailyInputId={r.id} />
                   </Td>
                   <Td className="text-right text-ink-soft">{fmtKg(r.car_kg)}</Td>
                   <Td className="text-right text-ink-soft">{fmtKg(r.truck_kg)}</Td>
