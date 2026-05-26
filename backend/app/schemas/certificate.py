@@ -43,3 +43,13 @@ class CertificateRead(CertificateBase):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None = None
+    # Parser-derived read-only fields (migration 0034 — F0-F/F0-H finding).
+    # Populated by `scripts/backfill_cert_scope.py` reading the supplier PDF;
+    # not user-settable. Surfaced so the auditor UI can compare DB-`scheme`
+    # against `scheme_pdf_detected` (round-2 finding N4 scheme-mismatch badge)
+    # and inspect the original scope text without re-extracting the PDF.
+    pdf_ref: str | None = None
+    scope_material_groups: list[str] | None = None
+    scope_raw: str | None = None
+    scope_parsed_at: datetime | None = None
+    scheme_pdf_detected: str | None = None
