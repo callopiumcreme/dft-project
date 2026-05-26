@@ -17,6 +17,7 @@ import {
   ErsvNotFoundError,
   type ErsvDetail,
 } from '@/lib/ersv-client';
+import { SyntheticRenderBanner } from '@/components/audit/synthetic-render-banner';
 
 interface Props {
   ersvNumber: string | null;
@@ -106,6 +107,9 @@ export function ErsvModal({ ersvNumber, dailyInputId = null, onClose }: Props) {
         </DialogHeader>
 
         <div className="overflow-auto bg-bg-soft min-h-[50vh]">
+          {state.kind === 'ready' && (
+            <SyntheticRenderBanner entryDate={state.metadata.entry_date} />
+          )}
           {state.kind === 'loading' && (
             <div className="flex h-full min-h-[50vh] items-center justify-center">
               <p className="font-mono text-[0.75rem] uppercase tracking-[0.14em] text-ink-mute">
