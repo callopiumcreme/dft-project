@@ -81,3 +81,137 @@ Dopo risposta cliente:
 - Assignee: Paolo Ughetti
 - Watchers: Hugo, Ferdinando, Marco, Gianni
 - Description: link a questo file (`docs/audit-dft-c1-f0-questionnaire.md`) + tabella sopra inline
+
+---
+
+## RISPOSTE CLIENTE — compilare qui
+
+> Compilare ciascuna sezione. Allegare PDF / scan al Drive folder
+> `gdrive:DFT_2025/PARTICULARES/F0-responses/<F0-ID>/` (creare se non
+> esiste). Riga `Allegati:` lista filename del Drive folder.
+> Riga `Firma + data:` obbligatoria su F0-A, F0-B, F0-C, F0-D, F0-G, F0-H.
+
+### F0-A — LE5TON 309 rows · risposta
+
+- **Decisione classifica (sustainable / non-sustainable)**:
+  > [ ]
+- **Statement paper-records firmato?** (file `audit-dft-c1-paper-records-statement.pdf` + firma Paolo)
+  > [ ]
+- **Paper samples allegati (min 5 ticket Q3)**:
+  > [ ]
+- **Nota in `certificates.notes` (testo proposto)**:
+  > [ ]
+- **Allegati Drive**:
+  > [ ]
+- **Firma + data**:
+  > [ ]
+
+---
+
+### F0-B — FMS / C14 · risposta
+
+- **Protocollo FMS Girardot (versione + data approvazione)**:
+  > [ ]
+- **Lab C14 reports (Jul, Aug, Sep 2025 — min 1 each)**:
+  > [ ]
+- **Statement sul perché coverage attuale 4.7 %**:
+  > [ ]
+- **Allegati Drive**:
+  > [ ]
+- **Firma Hugo + Paolo countersign + data**:
+  > [ ]
+
+---
+
+### F0-C — BL2 CMDU877254433 pre-dating · risposta
+
+- **Spiegazione 7gg discrepanza (BL 2025-07-03 vs load 2025-07-10)**:
+  > [ ]
+- **Amendment BL CMA-CGM esiste?** (sì/no, se sì allegare)
+  > [ ]
+- **Allegati Drive**:
+  > [ ]
+- **Firma Marco + Paolo countersign + data**:
+  > [ ]
+
+---
+
+### F0-D — Byproduct sales Q3 · risposta
+
+- **Numero invoice fossil-fraction Q3 2025 disponibili**:
+  > [ ]
+- **Controparti acquirenti (lista)**:
+  > [ ]
+- **Allegati Drive (min 3 invoice PDF)**:
+  > [ ]
+- **Syngas burnt-for-power: claimato sì/no?**:
+  > [ ]
+- **Firma Paolo + Marco + data**:
+  > [ ]
+
+---
+
+### F0-E — ISCC registry screenshots · risposta
+
+- **Screenshot generati per quanti cert?** (target: 16/16)
+  > [ ]
+- **Cert con problemi su registry** (es. expired non visibile, scope diverso):
+  > [ ]
+- **Allegati Drive folder**:
+  > [ ]
+- **Data**:
+  > [ ]
+
+---
+
+### F0-G — Per-PoS GHG calc · risposta
+
+- **Working paper Annex V Part C disponibile per ciascun supplier?** (target: 6/6)
+  > [ ]
+- **Range realistico atteso post-recalc (gCO2eq/MJ)**:
+  > [ ]
+- **Defaults values usati (eec, ep, etd, eccs, eccr)**:
+  > [ ]
+- **Allegati Drive**:
+  > [ ]
+- **Firma Paolo + data**:
+  > [ ]
+
+---
+
+### F0-H — Scheme mismatch 5 cert ISCC PLUS · risposta
+
+| Cert | Holder | Decisione (a / b / c) | Note |
+|---|---|---|---|
+| CO222-00000026 | LITOPLAS | [ ] | [ ] |
+| CO222-00000027 | ESENTTIA | [ ] | [ ] |
+| US201-120372025 | BOLDER | [ ] | [ ] |
+| US201-138762025 | KALTIRE | [ ] | [ ] |
+| US201-158772025 | EFFICIEN | [ ] | [ ] |
+
+Legenda:
+- (a) PDF ISCC EU corretto esiste → allegare al Drive folder
+- (b) Solo ISCC PLUS disponibile → re-classifica DB + downgrade RTFC
+- (c) ISCC PLUS è downstream documentation, ISCC EU separato esiste → allegare entrambi
+
+- **Allegati Drive**:
+  > [ ]
+- **Firma Paolo + data**:
+  > [ ]
+
+---
+
+## Conferma chiusura batch
+
+Quando tutti i F0 sopra hanno `Firma + data` compilati e gli allegati
+sono su Drive:
+
+- [ ] Tutti F0-A..H risposti
+- [ ] Tutti allegati su `gdrive:DFT_2025/PARTICULARES/F0-responses/`
+- [ ] Plane ticket #<TBD> aggiornato con riepilogo
+
+**Firma Paolo (conferma batch completo)**:
+> [ ]
+
+**Data**:
+> [ ]
