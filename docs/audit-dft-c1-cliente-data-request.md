@@ -13,9 +13,11 @@ Crown Oil UK, Q3 2025) inoppugnabile in audit DfT
 
 Il consignment `DEL-CRW-2025-2` è il primo lotto oggetto dell'audit DfT
 (Deeba Rehman, UK Low Carbon Fuels). Abbiamo completato la mappatura
-tecnica della catena di custodia. **Per chiudere l'audit servono 13 elementi
+tecnica della catena di custodia. **Per chiudere l'audit servono 12 elementi
 di dato che NON sono presenti nel nostro sistema** e che possono essere
-forniti solo da OisteBio operations o dai fornitori.
+forniti solo da OisteBio operations o dai fornitori. (Item 7 cert
+mis-attribution è stato chiuso internamente 2026-05-26 via migration
+0038 — niente input cliente richiesto.)
 
 Ogni elemento è categorizzato:
 - 🔴 **BLOCCANTE** — senza questo l'audit boccia il bundle e Crown Oil non
@@ -240,29 +242,27 @@ certifier (SCS Global / Control Union / etc.) per:
 
 ---
 
-### 7 🔴 Chiarimento certificati mis-attributed: LITOPLAS, ECOGRAS
+### 7 ✅ CLOSED 2026-05-26 — cert mis-attribution risolta internamente via 0038
 
-**Stato sistema**: i PDF dei certificati a disco rivelano due
-discrepanze rispetto al binding fornitore↔certificato in `supplier_
-certificates`:
+**Risoluzione**: drift riconciliato con migration
+`0038_cert_reality_sync` (commit `5ed6097`, branch
+`audit/cert-reality-sync`). Non serve input cliente.
 
-| Cert | PDF reale (intestazione) | Binding DB (errato) |
-|---|---|---|
-| CO222-00000026 | **LITOPLAS SA** | ESENTTIA + ≤5 TON + LITOPLAS |
-| ES216-20254036 | **CI ECOGRAS COLOMBIA SAS** | ≤5 TON + LITOPLAS |
+**Fix applicati**:
+- Cert id 4 cert_number `ES216-20268083` → `ES216-20258083` (typo
+  pos 8: 6→5). PDF reale = SANIMAX su `data/certificates/supplier-q3/`.
+- Cert id 4 binding ESENTTIA + LITOPLAS rimosso; binding SANIMAX
+  aggiunto.
+- 45 daily_inputs re-attribuiti: 20 ESENTTIA → CO222-00000027, 18
+  LITOPLAS → CO222-00000026, 7 CIECOGRAS → ES216-20254036.
+- 3 fornitori restored (SANIMAX, CIECOGRAS, ECODIESEL — erano in
+  soft-delete sbagliato).
+- 3 nuovi certs inseriti con pdf_ref (ES216-20244036 ECOGRAS 2024,
+  US201-100862024 ECODIESEL, LV227-00000597 OisteBio own).
 
-**Quesito**: si tratta di residui di un'importazione legacy (pre-
-migration 0010) o sono vere attribuzioni di sostenibilità (es. LITOPLAS
-opera come trader/transferer di ECOGRAS)?
-
-**Cosa serve**:
-- Spiegazione scritta della relazione commerciale LE5TON ↔ LITOPLAS ↔
-  ECOGRAS (se esiste)
-- Se NON esiste relazione: rimuovere il binding errato (richiede
-  migration 0020 cert-correction-round-2 — soft-deprecate, non hard
-  delete, per audit history)
-- Se esiste: documentare nel campo `certificates.notes` il trasferimento
-  di titolo
+**Audit trail**: 61 audit_log entries (52 update + 4 insert + 3
+restore + 2 delete). Mini audit PASS 5/5 a
+`/tmp/audit_step_77/0038_cert_reality_sync_audit.md`.
 
 ---
 

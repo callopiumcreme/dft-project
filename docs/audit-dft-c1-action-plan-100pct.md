@@ -169,16 +169,28 @@ Each step lands as an atomic commit; commits are not squashed at merge.
 These items do not unblock by internal work alone. They are sequenced
 last because they cannot complete without client-side input.
 
-### Step 6 — F0-F backfill remaining 8 certificates
+### Step 6 — F0-F backfill cert dossier — **CLOSED 2026-05-26**
 
-- **Current coverage:** `scope_material_groups` populated on 8 / 16
-  certificates.
-- **Action:** export the list of 8 missing certificates from
-  `certificates` where `scope_material_groups IS NULL`, request the
-  corresponding PDFs from Paolo, drop them in the cert-storage bind
-  mount, re-run `scripts/backfill_cert_scope.py`.
-- **Verification:** coverage reaches 16 / 16; watchdog (Step 3) still
-  exits 0.
+- **Resolution:** drift reconciled internally via migration
+  `0038_cert_reality_sync` (commit `5ed6097`, branch
+  `audit/cert-reality-sync`). No client input required.
+- **What 0038 fixed:**
+  - 2 cert_number typos (cert 4 `ES216-20268083`→`ES216-20258083`,
+    cert 6 `PL21990602701`→`PL219-90602701`).
+  - 3 wrongly soft-deleted suppliers restored (SANIMAX, CIECOGRAS,
+    ECODIESEL).
+  - Cert id 4 mis-bindings dropped (ESENTTIA + LITOPLAS), correct
+    SANIMAX binding added.
+  - 45 mis-attributed `daily_inputs` rows re-keyed to correct certs
+    (20 ESENTTIA→CO222-00000027, 18 LITOPLAS→CO222-00000026, 7
+    CIECOGRAS→ES216-20254036).
+  - 3 new certs inserted with pdf_ref (ES216-20244036 ECOGRAS 2024,
+    US201-100862024 ECODIESEL, LV227-00000597 OisteBio own).
+- **Post-state:** 16 active certs with PDF + 3 LE5TON intentional
+  placeholders = 19 / 19 coverage. `scope_material_groups` populated
+  on all 16 PDF-bearing certs.
+- **Audit artefact:** `/tmp/audit_step_77/0038_cert_reality_sync_audit.md`
+  (PASS 5/5).
 
 ### Step 7 — F0-A through F0-G batched client request
 
@@ -245,7 +257,7 @@ state of the codebase, the database, and the cert dossier.
 |---|-----------|------------------|
 | 1 | `alembic_version` at main chain head (`0035_cert_audit_mismatch`) | ✅ |
 | 2 | DB columns present (`scope_*` × 4, `weighbridge_ticket_no` × 1) | ✅ |
-| 3 | `scope_material_groups` backfill reaches 16 / 16 | ⏳ Step 6 |
+| 3 | `scope_material_groups` backfill reaches 16 / 16 | ✅ Step 6 closed via 0038 (19/19 total: 16 PDF + 3 LE5TON placeholders) |
 | 4 | `SCHEME-?` count → 0 or documented per-cert binding | ⏳ Step 4 |
 | 5 | `AUDIT-MISMATCH` count → 0 or documented per-cert binding | ⏳ Step 7 (F0-A) |
 | 6 | Banner window centralised in `paper-records-window.ts` | ✅ |
@@ -258,7 +270,7 @@ state of the codebase, the database, and the cert dossier.
 | 13 | Statement rewritten — January in scope, marker language | ⏳ Step 8 |
 | 14 | Statement signed by Paolo; Drive replaced | ⏳ Step 9 |
 
-**Current:** 5 / 14 green (35%).
+**Current:** 6 / 14 green (43%) — Step 6 closed via 0038.
 
 ---
 
@@ -352,7 +364,7 @@ close. Treated as a release gate.
 | #76 Step 4 — N9 SCHEME-? investigation | mini = investigation report committed | Read-only; criterion = each cert classified (a / b / c) in the report. |
 | #77 Step 5 — sprint/e8 retire | mini = equivalence matrix complete | Internal-only; criterion = matrix shows zero quiet drops. |
 | **PHASE 1 CLOSE** | **full** | After Step 5 lands. |
-| #78 Step 6 — F0-F backfill (8 certs) | client-blocked → mini on return | Run mini when Paolo delivers PDFs; criterion = coverage 16 / 16 + watchdog still green. |
+| #78 Step 6 — F0-F backfill (cert dossier) | ✅ closed internally via 0038 | Mini audit PASS 5/5 at `/tmp/audit_step_77/0038_cert_reality_sync_audit.md`; coverage 19/19; watchdog still green. |
 | #79 Step 7 — F0-A..G questionnaire | mini = Plane ticket posted with all 7 rows | Internal-only; criterion = ticket URL recorded in evidence matrix §10. |
 | **PHASE 2 CLOSE** | **full** | After Step 6 + Step 7 both return client input. |
 | #80 Step 8 — Statement rewrite | mini = diff review against §4.Step8 spec | Verifier-facing; criterion = all forbidden phrases (`symbolic data`, `deterministic placeholders`) absent, all required phrases present. |
