@@ -21,21 +21,19 @@
 
 import * as React from 'react';
 
-const WINDOW_START_ISO = '2025-02-01';
-const WINDOW_END_ISO = '2025-08-31';
+import {
+  formatPaperRecordsWindowLabel,
+  isInPaperRecordsWindow,
+} from '@/config/paper-records-window';
 
 interface Props {
   /** ISO date string `YYYY-MM-DD` of the delivery entry (or undefined while loading). */
   entryDate: string | null | undefined;
 }
 
-function isInWindow(entryDate: string | null | undefined): boolean {
-  if (!entryDate) return false;
-  return entryDate >= WINDOW_START_ISO && entryDate <= WINDOW_END_ISO;
-}
-
 export function SyntheticRenderBanner({ entryDate }: Props): React.JSX.Element | null {
-  if (!isInWindow(entryDate)) return null;
+  if (!isInPaperRecordsWindow(entryDate)) return null;
+  const windowLabel = formatPaperRecordsWindowLabel();
   return (
     <div
       role="note"
@@ -52,7 +50,7 @@ export function SyntheticRenderBanner({ entryDate }: Props): React.JSX.Element |
         identifiers. They are <strong>not source-of-truth</strong>.
         Source-of-truth records are paper weighbridge tickets and original
         eRSV documents retained at OisteBio Girardot (operator: Zuniga
-        Martinez S.A.S.) for the Feb-Aug 2025 redistribution window. See{' '}
+        Martinez S.A.S.) for the {windowLabel} redistribution window. See{' '}
         <code className="bg-bg-soft px-1">
           audit-dft-c1-paper-records-statement
         </code>{' '}

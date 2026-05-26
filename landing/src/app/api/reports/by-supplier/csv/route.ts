@@ -3,6 +3,10 @@ import { cookies } from 'next/headers';
 import { apiGet, ApiError, SESSION_COOKIE } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { rowsToCsv } from '@/lib/csv';
+import {
+  WINDOW_START_ISO as REDIST_FROM,
+  WINDOW_END_ISO as REDIST_TO,
+} from '@/config/paper-records-window';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,8 +37,6 @@ const COLS: { key: keyof EnrichedRow; header: string }[] = [
 ];
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const REDIST_FROM = '2025-02-01';
-const REDIST_TO = '2025-08-31';
 
 function sanitizeDate(v: string | null): string | undefined {
   if (!v) return undefined;
