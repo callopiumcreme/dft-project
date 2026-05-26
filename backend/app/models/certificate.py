@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, Text
+from sqlalchemy import ARRAY, BigInteger, Boolean, CheckConstraint, Date, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -32,6 +32,10 @@ class Certificate(Base):
         server_default=func.now(), onupdate=func.now(), nullable=False
     )
     deleted_at: Mapped[datetime | None] = mapped_column()
+    pdf_ref: Mapped[str | None] = mapped_column(Text)
+    scope_material_groups: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
+    scope_raw: Mapped[str | None] = mapped_column(Text)
+    scope_parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     suppliers: Mapped[list["Supplier"]] = relationship(  # noqa: F821
         secondary="supplier_certificates", back_populates="certificates", lazy="selectin"
