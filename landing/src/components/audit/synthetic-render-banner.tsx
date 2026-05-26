@@ -5,7 +5,10 @@
  *
  * Displays a clearly-visible disclosure banner inside any modal that
  * renders weighbridge-ticket or inbound-eRSV personal-data fields for
- * deliveries dated within the Feb-Aug 2025 redistribution window.
+ * deliveries dated within the paper-records redistribution window
+ * (see `@/config/paper-records-window` for the configured bounds; the
+ * banner uses `formatPaperRecordsWindowLabel()` to display the live
+ * window label rather than hard-coding the period).
  *
  * Personal-data fields (driver name, cédula, vehicle plate, transport
  * company, hora de salida, signatures, báscula operator) are produced by
@@ -15,8 +18,8 @@
  * Geschäftsführer OisteBio GmbH) is the binding disclosure.
  *
  * The banner renders only when `entryDate` falls between the configured
- * window bounds (inclusive). It renders nothing otherwise (e.g. January
- * 2025 frozen rows; September 2025 and later electronic-capture rows).
+ * window bounds (inclusive). It renders nothing otherwise (e.g. September
+ * 2025 and later electronic-capture rows).
  */
 
 import * as React from 'react';

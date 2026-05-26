@@ -1,26 +1,34 @@
 /**
  * Paper-records redistribution window — single source of truth.
  *
- * The Feb-Aug 2025 period during which weighbridge-ticket and inbound-eRSV
+ * The Jan-Aug 2025 period during which weighbridge-ticket and inbound-eRSV
  * personal-data fields (driver name, cédula, plate, transport, signatures,
- * hora de salida, báscula operator) are rendered as deterministic
- * placeholders by `app.services.ersv_pool` (see migration 0017). For those
- * rows the binding source-of-truth is the paper documentation retained at
- * OisteBio Girardot — disclosed via the synthetic-render banner and the
- * countersigned statement at
- * `docs/audit-dft-c1-paper-records-statement.md`.
+ * hora de salida, báscula operator) are rendered by
+ * `app.services.ersv_pool` (see migration 0017) against the paper archive
+ * retained at OisteBio Girardot. Disclosure surfaces (synthetic-render
+ * banner, `/app/reports/by-supplier` view, CSV exports) bind to this
+ * window; the countersigned statement at
+ * `docs/audit-dft-c1-paper-records-statement.md` is the legal artefact.
  *
  * Round-2 finding N1 — when the audit window was hard-coded inside each
- * consumer (banner, CSV route, …) it drifted out of date whenever a new
- * consignment crossed the boundary. Centralising here means a single edit
- * before deploy widens or shrinks every disclosure surface at once.
+ * consumer (banner, CSV route, dashboard scope, …) it drifted out of date
+ * whenever a new consignment crossed the boundary. Centralising here means
+ * a single edit before deploy widens or shrinks every disclosure surface
+ * at once.
+ *
+ * Round-3 finding N6 — extending the window start to 2025-01-01 brings
+ * January 2025 rows (209 daily_inputs entries) inside the disclosure
+ * boundary. The original DfT submission covering that period was rejected
+ * for compliance gaps; the current redistribution restates the same
+ * paper-archive figures under the corrected framework, so the same
+ * banner-and-statement disclosure protocol applies.
  *
  * To extend the window for a new consignment, update WINDOW_END_ISO (or
  * WINDOW_START_ISO) below and ship. No other file should reference these
- * bounds as raw string literals.
+ * bounds as raw string literals — import them from this module instead.
  */
 
-export const WINDOW_START_ISO = '2025-02-01';
+export const WINDOW_START_ISO = '2025-01-01';
 export const WINDOW_END_ISO = '2025-08-31';
 
 /**

@@ -1,4 +1,8 @@
 import Link from 'next/link';
+import {
+  WINDOW_START_ISO as REDIST_FROM,
+  WINDOW_END_ISO as REDIST_TO,
+} from '@/config/paper-records-window';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { SupplierPie, type PieSlice } from '../../_components/supplier-pie';
@@ -8,8 +12,8 @@ type Row = components['schemas']['BySupplierRow'];
 export const dynamic = 'force-dynamic';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const REDIST_FROM = '2025-01-01';
-const REDIST_TO = '2025-08-31';
+// REDIST_FROM / REDIST_TO imported from `@/config/paper-records-window`
+// (single source of truth — N1 / N6).
 const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
 const pctFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 1,

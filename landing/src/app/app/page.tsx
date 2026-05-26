@@ -1,4 +1,8 @@
 import { Card } from '@/components/ui/card';
+import {
+  WINDOW_START_ISO as PERIOD_FROM,
+  WINDOW_END_ISO as PERIOD_TO,
+} from '@/config/paper-records-window';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { Sparkline, type SparkPoint } from './_components/sparkline';
@@ -32,8 +36,10 @@ async function safeFetch<T>(path: string, query?: Record<string, string | number
   }
 }
 
-const PERIOD_FROM = '2025-01-01';
-const PERIOD_TO = '2025-08-31';
+// PERIOD_FROM / PERIOD_TO are now imported from `@/config/paper-records-window`
+// (formerly `WINDOW_START_ISO` / `WINDOW_END_ISO`). The dashboard scope
+// is bound to the disclosure window so a single edit there reshapes every
+// surface at once — see file header in paper-records-window.ts (N1 / N6).
 
 export default async function AppHomePage() {
   const [daily, closure] = await Promise.all([
