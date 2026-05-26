@@ -10,7 +10,7 @@
 
 ## 1. Sintesi
 
-5 dei 7 certificati ISCC oggi registrati in `certificates` come
+5 degli 8 certificati ISCC oggi registrati in `certificates` con
 `scheme='ISCC EU'` sono in realtà documenti **ISCC PLUS** (schema
 circular plastics, non sustainability biofuel). Il mismatch è
 verificabile in ~30 secondi dall'header di ciascun PDF.
@@ -21,17 +21,26 @@ attuale, presenta 5 supplier "ISCC-certified" con documentazione che
 un verificatore DfT identificherebbe come schema sbagliato alla prima
 verifica cross-check sul portale ISCC.
 
+**Nota correzione 2026-05-26 (backfill run)**: il cert PYRCOM
+(ES216-20249051) era già registrato in DB come `scheme='ISCC PLUS'`
+— quindi NON è un mismatch, è correctly labelled. Il finding originale
+includeva PYRCOM per errore; backfill su tutti i record con `pdf_ref`
+ha invece scoperto un 8° cert (BOLDER, US201-120372025) finora non
+considerato. Il set finale dei mismatch è quindi: **LITOPLAS,
+ESENTTIA, KALTIRE, EFFICIEN, BOLDER** (5/8).
+
 ## 2. Dati verificabili
 
-| Cert number | DB `scheme` | PDF schema | Holder | Note |
+| Cert number | DB `scheme` | PDF schema | Holder | Verdetto |
 |---|---|---|---|---|
-| CO222-00000026 | ISCC EU | **ISCC PLUS** | LITOPLAS SA | Annex I = plastiche (PP, HDPE) |
-| CO222-00000027 | ISCC EU | **ISCC PLUS** | ESENTTIA | scope-block extract `Mass Balance` only |
-| ES216-20249051 | ISCC EU | **ISCC PLUS** | PYRCOM | parser estrae `Mixed waste plastics` |
-| US201-138762025 | ISCC EU | **ISCC PLUS** | KALTIRE | nessun material group in scope inline |
-| US201-158772025 | ISCC EU | **ISCC PLUS** | EFFICIEN | parser estrae `End-of-life tyres (ELT)` |
-| ES216-20254036 | ISCC EU | ISCC EU ✓ | ECOGRAS | parser estrae `Used cooking oil (UCO)` |
-| EU-ISCC-Cert-NL220-2228065006 | ISCC EU | ISCC EU ✓ | UTB BV | scope-block empty (Trader scope) |
+| CO222-00000026 | ISCC EU | **ISCC PLUS** | LITOPLAS SA | mismatch ⚠ (Annex I = plastiche PP/HDPE) |
+| CO222-00000027 | ISCC EU | **ISCC PLUS** | ESENTTIA | mismatch ⚠ |
+| ES216-20249051 | ISCC PLUS | ISCC PLUS | PYRCOM | match ✓ (parser estrae `Mixed waste plastics`) |
+| ES216-20254036 | ISCC EU | ISCC EU | ECOGRAS | match ✓ (parser estrae UCO) |
+| EU-ISCC-Cert-NL220-2228065006 | ISCC EU | ISCC EU | UTB BV | match ✓ (Trader, no material) |
+| US201-120372025 | ISCC EU | **ISCC PLUS** | BOLDER | mismatch ⚠ |
+| US201-138762025 | ISCC EU | **ISCC PLUS** | KALTIRE | mismatch ⚠ |
+| US201-158772025 | ISCC EU | **ISCC PLUS** | EFFICIEN | mismatch ⚠ (parser estrae ELT) |
 
 Comando di verifica:
 
@@ -44,9 +53,10 @@ for f in [
     'supplier-q3/CO222-00000026_LITOPLAS.pdf',
     'supplier-q3/CO222-00000027_ESENTTIA.pdf',
     'supplier-q3/ES216-20249051_PYRCOM.pdf',
+    'supplier-q3/ES216-20254036_ECOGRAS.pdf',
+    'supplier-q3/US201-120372025_BOLDER.pdf',
     'supplier-q3/US201-138762025_KALTIRE.pdf',
     'supplier-q3/US201-158772025_EFFICIEN.pdf',
-    'supplier-q3/ES216-20254036_ECOGRAS.pdf',
     'utb-bv/CERTIFICATE_UTB_BV.pdf',
 ]:
     r = parse_cert_pdf(Path('data/certificates') / f)

@@ -362,17 +362,18 @@ arm's-length transaction.
 **Scoperta**: in fase di costruzione del parser scope material groups
 (`backend/app/services/cert_scope_parser.py`, audit F0-F), il parser
 ha confrontato l'intestazione di ciascun PDF certificato con il valore
-`scheme` nella nostra DB. Risultato:
+`scheme` nella nostra DB. Risultato (8 cert con PDF in DB):
 
 | Cert number | DB `scheme` | Schema effettivo nel PDF | Verdetto |
 |---|---|---|---|
-| CO222-00000026 (LITOPLAS) | ISCC EU | **ISCC PLUS** | mismatch |
-| CO222-00000027 (ESENTTIA) | ISCC EU | **ISCC PLUS** | mismatch |
-| ES216-20249051 (PYRCOM) | ISCC EU | **ISCC PLUS** | mismatch |
-| US201-138762025 (KALTIRE) | ISCC EU | **ISCC PLUS** | mismatch |
-| US201-158772025 (EFFICIEN) | ISCC EU | **ISCC PLUS** | mismatch |
+| CO222-00000026 (LITOPLAS) | ISCC EU | **ISCC PLUS** | mismatch ⚠ |
+| CO222-00000027 (ESENTTIA) | ISCC EU | **ISCC PLUS** | mismatch ⚠ |
+| ES216-20249051 (PYRCOM) | ISCC PLUS | ISCC PLUS | match ✓ |
 | ES216-20254036 (ECOGRAS) | ISCC EU | ISCC EU | match ✓ |
 | EU-ISCC-Cert-NL220-2228065006 (UTB BV) | ISCC EU | ISCC EU | match ✓ |
+| US201-120372025 (BOLDER) | ISCC EU | **ISCC PLUS** | mismatch ⚠ |
+| US201-138762025 (KALTIRE) | ISCC EU | **ISCC PLUS** | mismatch ⚠ |
+| US201-158772025 (EFFICIEN) | ISCC EU | **ISCC PLUS** | mismatch ⚠ |
 
 **Perché è bloccante**: UK RTFO accetta **ISCC EU** o **ISCC CORSIA**
 come schemi voluntary qualificanti. **ISCC PLUS** è uno schema diverso
@@ -387,7 +388,7 @@ material: PP (Circular BOPP), HDPE (HDPE Pellets), polietilene packaging
 
 - Il cert LITOPLAS attestato in DFT è il cert PLUS per il loro business
   di plastic recycling, non un cert sostenibilità ELT.
-- Stesso pattern probabile per ESENTTIA, PYRCOM, KALTIRE, EFFICIEN.
+- Stesso pattern probabile per ESENTTIA, KALTIRE, EFFICIEN, BOLDER.
 
 **Implicazione audit DEL-CRW-2025-2**: 5 supplier su 7 oggi figurano
 come fonti certificate ISCC EU nella catena, ma quella attestazione si
@@ -396,8 +397,8 @@ identificherebbe alla prima ispezione cross-check con il portale ISCC.
 
 **Quesiti per Paolo**:
 
-1. Per ciascuno dei 5 supplier (LITOPLAS, ESENTTIA, PYRCOM, KALTIRE,
-   EFFICIEN) — esiste un cert **ISCC EU** distinto, oltre al PDF PLUS
+1. Per ciascuno dei 5 supplier (LITOPLAS, ESENTTIA, KALTIRE, EFFICIEN,
+   BOLDER) — esiste un cert **ISCC EU** distinto, oltre al PDF PLUS
    che oggi abbiamo? Se sì, è quello il cert da usare per RTFO (non il
    PLUS).
 2. Se NON esiste un cert ISCC EU separato per quei supplier — la loro
