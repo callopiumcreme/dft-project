@@ -592,17 +592,29 @@ via 0038)
 **Due date**: 2026-06-05
 **Owner**: Paolo Ughetti (+ Hugo, Marco countersign)
 
-| F0 | Stato richiesta | Stato risposta |
-|----|-----------------|----------------|
-| A | drafted | ⏳ |
-| B | drafted | ⏳ |
-| C | drafted | ⏳ |
-| D | drafted | ⏳ |
-| E | drafted (PDFs already linked, registry screenshots only) | ⏳ |
-| F | n/a — chiuso 0038 | ✅ |
-| G | drafted | ⏳ |
-| H | drafted | ⏳ |
+**Round 1 ricevuto**: 2026-05-26 — `gdrive:DFT_2025/PARTICULARES/audit-dft-c1-f0-questionnaire_COMPILATO.pdf` (112 KB).
+**Parse + verdetto**: `docs/audit-dft-c1-f0-responses-round1.md`.
 
-**Criterio chiusura §10**: tutti F0 sopra in stato ✅ → trigger Step 8
-Statement rewrite (Phase 3, action plan §4).
+| F0 | Stato richiesta | Stato risposta | Verdetto round-1 |
+|----|-----------------|----------------|------------------|
+| A | drafted | ricevuto | ⚫ **VOID** — SANIMAX retired (legacy, non-active per cliente 2026-05-26). Migration 0039 soft-deprecated supplier + cert ES216-20258083. Stessa retire CIECOGRAS+ECODIESEL. F0-A non più applicabile. |
+| B | drafted | ricevuto | 🟡 partial — FMS v1.0 doc pending, "4.7%" non capito |
+| C | drafted | ricevuto | 🟢 chiuso framework — "BL data indicativa NO amendment" |
+| D | drafted | ricevuto | 🟡 partial — Conquer Trade buyer DEV-P200, 8 fatture pending; syngas no double-claim (schema CHECK) |
+| E | drafted (PDFs already linked, registry screenshots only) | ricevuto | 🔴 non capito — riformulare walkthrough |
+| F | n/a — chiuso 0038 | ✅ | — |
+| G | drafted | ricevuto | 🟡 partial — direzione POSs ambigua |
+| H | drafted | ricevuto | 🟢 **RESOLVED Q3 2025** via Path B — OisteBio site cert `LV227-00000597` ISCC EU (valid 24.10.24→23.10.25 copre Q3 2025) → output PoS sotto EU. Upstream PLUS irrilevante. Auditor + Pyrum precedent + RTFO 2024 stats. Crown Oil conferma non necessaria; temporalmente assurda (maggio 2026 per merce ago 2025). |
+
+**Net**: 2🟢 + 3🟡 + 1🔴-soft + 1⚫VOID. **NO regulatory blocker** per Q3 2025 bundle release.
+
+**Update 2026-05-26 (post-cliente "trash" call)**: SANIMAX, CIECOGRAS, ECODIESEL soft-deprecated via migration `0039_retire_legacy_suppliers`. Linked certs `ES216-20258083` (SANIMAX, prev. status=active), `ES216-20244036` (CIECOGRAS, expired), `US201-100862024` (ECODIESEL, expired) → status='revoked' + deleted_at. Authoritative active-supplier set = Drive `RTFO-310825/03_supplier_evidence/certificates/` (7 supplier ELT + OisteBio own + UTB off-taker).
+
+**Update 2026-05-26 (post-F0-H resolution)**: F0-H Path B confermato per Q3 2025. OisteBio site cert ISCC EU `LV227-00000597` (BM Certification Latvia, valid 24.10.24→23.10.25) → output DEV-P100 sotto scheme EU DfT-recognized. Upstream feedstock PLUS è chain-of-custody internal, non determina output PoS scheme. Crown Oil scritta conferma NON necessaria. Restano solo gap doc upload cliente (FMS, fatture Conquer Trade, walkthrough, POSs).
+
+**Criterio chiusura §10**: tutti F0 sopra in stato 🟢 → trigger Step 8
+Statement rewrite (Phase 3, action plan §4). **Regulatory blocker rimosso**
+(F0-H Q3 2025 Path B via OisteBio EU site cert). Restano 3🟡 + 1🔴-soft
+su gap doc cliente; chiudibili appena upload arriva su
+`gdrive:DFT_2025/PARTICULARES/F0-responses/`.
 
