@@ -303,4 +303,75 @@ must:
 Single-author document. Revisions happen by direct edit on `main`; the
 git history of this file is the change log.
 
+---
+
+## 10. Audit cadence per step
+
+Added 2026-05-26 during Step 2 closure. Each step in §2–§4 carries an
+explicit audit obligation. Two grades of audit, deliberately
+asymmetric in cost and scope:
+
+### 10.1 Mini red-audit (5–10 min) — per step
+
+Runs **after every step lands on main**, before moving to the next.
+
+- **Binary criterion declared BEFORE the step starts.** No post-hoc
+  goalpost shift. The criterion is written as a single PASS/FAIL
+  predicate against a measurable artefact.
+- **Scope = only that step's surface.** Cross-step regressions are
+  not in scope; that is the milestone audit's job.
+- **1–2 targeted probes maximum.** A single Playwright smoke, a single
+  curl + diff, a single DB query — whichever directly answers the
+  criterion.
+- **One durable artefact** persisted to `/tmp/audit_step_<n>_*`
+  (smoke output, screenshot, query result, diff). The artefact path
+  is recorded in the commit body or in a follow-up note.
+- **Output: PASS or FAIL.** No "almost". A FAIL blocks the next step
+  until reconciled.
+
+### 10.2 Full red-audit (30–60 min) — at phase milestone
+
+Runs at Phase 1 close, Phase 2 close (post-client-return), Phase 3
+close. Treated as a release gate.
+
+- Re-executes all gates G1–G6 from §6.
+- Re-runs every step's mini criterion as a regression suite — catches
+  the cross-step interactions the mini audits intentionally ignore.
+- Verifies emergent properties (statement wording vs marker semantics
+  vs Drive bundle integrity, e.g. §4 Step 8 + Step 9).
+- Failure rolls back the most recent phase boundary, not the whole
+  plan.
+
+### 10.3 Per-step scope assignment
+
+| Step | Audit grade | Notes |
+|------|-------------|-------|
+| #73 Step 1 — N6 window extend | mini — done in commit smoke | Verifier-facing UI change. |
+| #74 Step 2 — N6/N7 marker | **mini — done in commit `61513ef`** | Verifier-facing UI + backend output; artefacts under `/tmp/audit_pr_banner_*`. |
+| #75 Step 3 — cert-flag watchdog | mini = spot-check on script output | Internal-only; criterion = exit 0 against current DB + exit 1 after seeded drift. |
+| #76 Step 4 — N9 SCHEME-? investigation | mini = investigation report committed | Read-only; criterion = each cert classified (a / b / c) in the report. |
+| #77 Step 5 — sprint/e8 retire | mini = equivalence matrix complete | Internal-only; criterion = matrix shows zero quiet drops. |
+| **PHASE 1 CLOSE** | **full** | After Step 5 lands. |
+| #78 Step 6 — F0-F backfill (8 certs) | client-blocked → mini on return | Run mini when Paolo delivers PDFs; criterion = coverage 16 / 16 + watchdog still green. |
+| #79 Step 7 — F0-A..G questionnaire | mini = Plane ticket posted with all 7 rows | Internal-only; criterion = ticket URL recorded in evidence matrix §10. |
+| **PHASE 2 CLOSE** | **full** | After Step 6 + Step 7 both return client input. |
+| #80 Step 8 — Statement rewrite | mini = diff review against §4.Step8 spec | Verifier-facing; criterion = all forbidden phrases (`symbolic data`, `deterministic placeholders`) absent, all required phrases present. |
+| #81 Step 9 — Drive replace + signature | mini = SHA-256 of uploaded bundle matches local | Outward-facing; criterion = Drive file SHA matches local + Paolo signature attached. |
+| **PHASE 3 CLOSE** | **full + handover** | After Step 9. This is the Crown Oil handover gate. |
+
+### 10.4 Why this asymmetric design
+
+1. **Binary criteria upfront** — matches the project-wide rule of
+   verifying every claim before reporting; "looks fine" is not a
+   PASS.
+2. **Bounded scope per mini** — prevents audit fatigue and scope
+   creep; an audit that re-checks everything every time gets skipped.
+3. **Durable artefacts** — `/tmp/audit_step_<n>_*` paths are
+   replayable evidence; we never depend on "I remember the screenshot
+   was green".
+4. **Milestone re-audit** — the regression suite catches the
+   cross-step interactions the minis miss by design (e.g. Step 8
+   wording assumes Step 2 marker semantics; only the Phase 3 full
+   audit verifies both together).
+
 — end of binding action plan —
