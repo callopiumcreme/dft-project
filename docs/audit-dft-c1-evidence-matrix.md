@@ -504,3 +504,80 @@ Da inviare via email separata.
   always`
 
 End §7.
+
+---
+
+## 9. Red-team round 2 (DfT auditor pass · 2026-05-26 — post-Tier-A)
+
+**Auditor**: same persona — Deeba Rehman, UK DfT Low Carbon Fuels.
+**Trigger**: re-pass after audit-handover work (paper-records statement,
+lettera cliente, banner UI synthetic-render, TICKET col removal,
+migration 0036 annotation, 7 cert PDF linked DB).
+**Verdict consignment-level**: **STILL REJECT.** 5 of 7 F0 failures
+intact. Disclosure framework improved but **bundle remains
+non-submittable** until cliente returns Tier C data.
+
+### 9.1 F0 failure modes — round 2 status
+
+| # | Round 1 | Patch applied | Round 2 verdict |
+|---|---|---|---|
+| F0-A | LE5TON 309 rows, no cert, no eRSV | Lettera §1 (paper-records retention disclosure tutti supplier); statement Paolo draftato | **REJECT data, COND-ACCEPT framework**. Disclosure exists. Decision: cliente delivers paper samples + statement firmato → fine. |
+| F0-B | FMS/C14 4.7 % coverage | Lettera §2 (protocol + lab Q3) | **REJECT** — unchanged, blocks RTFO ELT eligibility |
+| F0-C | BL2 pre-dating 7gg | Lettera §3 (CMA-CGM expl) | **REJECT** — unchanged |
+| F0-D | byproduct_sale 0 attivi | Lettera §4 (invoice Q3) | **REJECT** — unchanged; syngas double-claim risk |
+| F0-E | 7 cert pdf_ref NULL | Tier A §8.2 — 7/7 `pdf_ref` SET on disk | **PARTIAL ACCEPT** — PDFs linked, registry screenshot still pending (lettera §6) |
+| F0-F | scope_material_groups col absent | nessun patch | **REJECT** — schema migration tier B not started |
+| F0-G | 20/20 PoS GHG identici | Lettera §5 (per-PoS Annex V) | **REJECT** — unchanged |
+
+**Round 2 toll**: 1 PARTIAL ACCEPT (F0-E), 1 COND-ACCEPT framework only
+(F0-A), 5 REJECT intatti.
+
+### 9.2 Cross-cutting — round 2 status
+
+| # | Round 1 | Patch | Round 2 |
+|---|---|---|---|
+| X1 | no sust/non-sust segregation upstream | none | 🔴 |
+| X2 | per-PoS Annex V absent | Lettera §5 | ⏳ cliente |
+| X3 | ISCC scope strings unverified | migration 0036 annotation flag (mismatch only, no scope) | 🔴 — annotation does not address scope; still need 0036b for scope material groups |
+| X4 | RECONCILIATION.md no sig /tmp | Lettera §12 | ⏳ cliente |
+| X5 | no weighbridge_ticket_no col | Statement Paolo + banner UI + TICKET col removed mass-balance | 🟡 — disclosure layer present; column add deferred to tier B |
+| X6 | 75,860 kg UTB residual no carry | none | 🔴 |
+| X7 | header reconciliation line missing | none | 🟢 cosmetic |
+| X8 | 19/20 PoS missing outbound eRSV | Lettera §10 | ⏳ cliente |
+
+### 9.3 Nuovi gap creati dai patch (round 2 audit-trail)
+
+| # | Issue | Severity |
+|---|---|---|
+| N1 | Banner UI synthetic-render: window `2025-02-01..2025-08-31` hard-coded in `synthetic-render-banner.tsx`. Drift se ridistribution window cambia. Config exposure absent. | 🟡 |
+| N2 | Statement Paolo paper-records: docx su Drive, **no signature**. Statement è draft, NON declaration. Auditor non può accettare disclosure non firmata. | 🔴 |
+| N3 | TICKET col removed da `/app/reports/mass-balance` ma `TicketLink` ancora attivo su `/app/inputs/page.tsx` + `app-shell.tsx`. Banner è dentro modal, non in row list. Auditor che apre Daily Inputs vede link senza warning iniziale. | 🟡 |
+| N4 | Migration 0036 annotation in `certificates.notes`. UI mass-balance non legge `notes`. Solo audit via SQL diretto. Surface UI assente. | 🟡 |
+| N5 | Sprint `e8-audit-handover` diverge 18 commit da main. Lavoro audit-handover pubblicato in prod ma resto sprint E8 (nuove ORM, signer PAdES, transload PDF) non testato in prod. Merge debt accumulato. | 🟡 |
+
+### 9.4 Mandatory remediation before round 3
+
+1. **N2 firma Paolo statement** — blocker disclosure framework F0-A (senza firma, COND-ACCEPT decade a REJECT)
+2. **N3 banner extension** — add disclosure surface al daily-inputs ticket link OR remove TicketLink dalle 2 sedi residue
+3. **F0-F scope migration** — `certificates.scope_material_groups` col + parser ingest cert scope text (tier B item, autonomo nostro)
+4. **X3 follow-up** — dopo cliente risponde §7, redigere 0037 soft-deprecate
+5. **F0-A..G** — tutti pending cliente Tier C (no nostra action ulteriore senza dati)
+
+### 9.5 Pipeline forward (aggiornata)
+
+| # | Step | Stato |
+|---|---|---|
+| 1 | Matrix v1 | ✅ |
+| 2 | Red-team round 1 | ✅ |
+| 3 | Tier A (matrix v1.1 + 7 cert PDF) | ✅ |
+| 3.5 | Audit-handover patches (statement + lettera + banner UI + TICKET col removal + migration 0036) | ✅ |
+| 4 | Red-team round 2 | ✅ (questo doc) |
+| 5 | Cliente delivers Tier C | ⏳ blocked Paolo / Hugo |
+| 6 | Tier B parziale (F0-F scope col + X5 weighbridge_ticket_no col) | 🔴 autonomo nostro, pronto a partire |
+| 7 | Paolo signature on paper-records statement | ⏳ |
+| 8 | Migration 0037 soft-deprecate (post Tier C §7) | ⏳ blocked |
+| 9 | Red-team round 3 patched bundle | ⏳ |
+| 10 | Final bundle PDF + cover letter Crown Oil | ⏳ |
+
+**Signed** · Deeba Rehman · UK DfT Low Carbon Fuels · 2026-05-26 (round 2)
+
