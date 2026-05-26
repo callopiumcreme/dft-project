@@ -70,7 +70,9 @@ def mint_token(email: str, role: str, ttl_minutes: int = 30) -> str:
 def probe_backend(token: str, name: str, path: str, expect_ct: str) -> dict[str, object]:
     """Hit a backend endpoint with Bearer token; assert status 200 + Content-Type."""
     url = BACKEND_URL.rstrip("/") + path
-    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+    req = urllib.request.Request(  # noqa: S310 — local dev only
+        url, headers={"Authorization": f"Bearer {token}"}
+    )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 — local dev only
             ct = resp.headers.get("Content-Type", "")
@@ -87,12 +89,16 @@ def probe_backend(token: str, name: str, path: str, expect_ct: str) -> dict[str,
                 "status": resp.status,
                 "content_type": ct,
                 "length": length,
-                "pdf_magic_ok": magic.startswith(b"%PDF-") if expect_ct == "application/pdf" else None,
+                "pdf_magic_ok": (
+                    magic.startswith(b"%PDF-")
+                    if expect_ct == "application/pdf"
+                    else None
+                ),
                 "ok": ok,
             }
     except urllib.error.HTTPError as e:
         return {"name": name, "url": url, "status": e.code, "error": e.reason, "ok": False}
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return {"name": name, "url": url, "error": repr(e), "ok": False}
 
 
@@ -206,7 +212,7 @@ def main() -> int:
             print(f"→ {name}: {url}")
             try:
                 res = smoke_page(page, url, out_dir, name, expect)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 res = {"url": url, "error": repr(e)}
                 print(f"  ERROR: {e!r}")
             results.append({"name": name, **res})
