@@ -36,6 +36,7 @@ class Certificate(Base):
     scope_material_groups: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
     scope_raw: Mapped[str | None] = mapped_column(Text)
     scope_parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    scheme_pdf_detected: Mapped[str | None] = mapped_column(Text)
 
     suppliers: Mapped[list["Supplier"]] = relationship(  # noqa: F821
         secondary="supplier_certificates", back_populates="certificates", lazy="selectin"
