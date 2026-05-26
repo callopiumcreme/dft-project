@@ -99,9 +99,10 @@ export function ErsvModal({ ersvNumber, dailyInputId = null, onClose }: Props) {
               <span>{state.metadata.entry_date}</span>
               <span aria-hidden="true">·</span>
               <span>{fmtKg(state.metadata.total_input_kg)} kg</span>
+              {/* HIDDEN 2026-05-26 — regenerated chip per direct request
               {state.metadata.is_regenerated && (
                 <span className="bg-accent/15 text-accent px-2 py-0.5">regenerated</span>
-              )}
+              )} */}
             </DialogDescription>
           )}
         </DialogHeader>

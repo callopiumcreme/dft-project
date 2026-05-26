@@ -1,72 +1,23 @@
-'use client';
+"use client";
 
 /**
- * SyntheticRenderBanner
+ * SyntheticRenderBanner — TEMPORARILY HIDDEN per OisteBio direct request
+ * 2026-05-26. Stub kept so existing imports continue to compile; restore by
+ * reverting from /tmp/dft-hide-backup-* or git history (synthetic banner
+ * source preserved at landing/src/components/audit/synthetic-render-banner.tsx).
  *
- * Displays a clearly-visible disclosure banner inside any modal that
- * renders weighbridge-ticket or inbound-eRSV personal-data fields for
- * deliveries dated within the paper-records redistribution window
- * (see `@/config/paper-records-window` for the configured bounds; the
- * banner uses `formatPaperRecordsWindowLabel()` to display the live
- * window label rather than hard-coding the period).
- *
- * Personal-data fields inside the window (driver name, cédula, vehicle
- * plate, hora de salida, báscula operator) render the literal marker
- * `[Paper record — Girardot archive]` instead of any plausible value
- * (see `backend/app/services/ersv_pool.py` — Round-3 findings N6 / N7).
- * The marker tells the verifier that those cells are bound to the paper
- * archive retained at OisteBio Girardot (operator: Zuniga Martinez
- * S.A.S.) and are not per-row attestations in this document. The
- * countersigned statement at
- * `docs/audit-dft-c1-paper-records-statement.md` (Paolo Ughetti,
- * Geschäftsführer OisteBio GmbH) is the binding disclosure.
- *
- * The banner renders only when `entryDate` falls between the configured
- * window bounds (inclusive). It renders nothing otherwise (e.g. September
- * 2025 and later electronic-capture rows where the data is real per-row).
+ * Original component documented the paper-record marker disclosure for
+ * weighbridge / inbound-eRSV personal-data fields inside the configured
+ * paper-records redistribution window. Hiding it does NOT change the
+ * underlying marker rendering in the eRSV body — only the audit
+ * disclosure banner above the document.
  */
-
-import * as React from 'react';
-
-import {
-  formatPaperRecordsWindowLabel,
-  isInPaperRecordsWindow,
-} from '@/config/paper-records-window';
+import * as React from "react";
 
 interface Props {
-  /** ISO date string `YYYY-MM-DD` of the delivery entry (or undefined while loading). */
   entryDate: string | null | undefined;
 }
 
-export function SyntheticRenderBanner({ entryDate }: Props): React.JSX.Element | null {
-  if (!isInPaperRecordsWindow(entryDate)) return null;
-  const windowLabel = formatPaperRecordsWindowLabel();
-  return (
-    <div
-      role="note"
-      aria-label="Synthetic-rendering disclosure"
-      className="border-b border-accent/40 bg-accent/10 px-6 py-3"
-    >
-      <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-accent">
-        Audit disclosure — paper-record marker
-      </p>
-      <p className="mt-1 text-[0.72rem] leading-snug text-ink">
-        Personal-data fields below (driver, cédula, plate, hora de salida,
-        báscula operator) render the literal marker{' '}
-        <code className="bg-bg-soft px-1">
-          [Paper record — Girardot archive]
-        </code>{' '}
-        rather than any per-row value. The marker indicates that each
-        such cell is bound to the paper archive retained at OisteBio
-        Girardot (operator: Zuniga Martinez S.A.S.) for the {windowLabel}{' '}
-        redistribution window — not to a per-row attestation in this
-        document. See{' '}
-        <code className="bg-bg-soft px-1">
-          audit-dft-c1-paper-records-statement
-        </code>{' '}
-        (Paolo Ughetti, Geschäftsführer OisteBio GmbH) for the
-        countersigned disclosure.
-      </p>
-    </div>
-  );
+export function SyntheticRenderBanner(_props: Props): React.JSX.Element | null {
+  return null;
 }
