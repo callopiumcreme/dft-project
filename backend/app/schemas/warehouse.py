@@ -114,6 +114,11 @@ class ByproductSaleIn(BaseModel):
     kg_net: Decimal = Field(gt=0)
     invoice_no: str | None = None
     price_eur: Decimal | None = None
+    # Multi-currency extension (Conquer Trade DEV-P200 sales are priced in USD).
+    # price_eur is kept for backwards compatibility with EUR-only consumers.
+    price_amount: Decimal | None = None
+    currency: str | None = None
+    pricing_method: str | None = None
     notes: str | None = None
 
 
@@ -121,5 +126,6 @@ class ByproductSaleOut(ByproductSaleIn):
     id: int
     created_at: datetime
     buyer_name: str | None = None
+    has_pdf: bool = False
 
     model_config = ConfigDict(from_attributes=True)

@@ -9,7 +9,7 @@
 export type SellableKind = 'plus_oil' | 'carbon_black' | 'metal_scrap';
 
 export const SELLABLE_KIND_LABELS: Record<SellableKind, string> = {
-  plus_oil: 'PLUS oil',
+  plus_oil: 'DEV-P200',
   carbon_black: 'Carbon black',
   metal_scrap: 'Metal scrap',
 };
@@ -43,6 +43,13 @@ export interface ByproductSale {
   kg_net: string;
   invoice_no: string | null;
   price_eur: string | null;
+  // Multi-currency extension (Conquer Trade DEV-P200 sales priced in USD).
+  // price_eur is kept for backwards compatibility; price_amount + currency
+  // are the source of truth going forward.
+  price_amount: string | null;
+  currency: string | null;
+  pricing_method: string | null;
+  has_pdf: boolean;
   notes: string | null;
   created_at: string;
 }

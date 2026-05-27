@@ -12,6 +12,7 @@ import {
   type SellableKind,
 } from '@/lib/byproduct-client';
 import { SaleForm } from './SaleForm';
+import { ByproductInvoiceModal } from './ByproductInvoiceModal';
 
 interface Props {
   initialSales: ByproductSale[];
@@ -20,19 +21,15 @@ interface Props {
   defaultProductKind?: SellableKind;
 }
 
-const kgFmt = new Intl.NumberFormat('it-IT', {
+const kgFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 3,
   maximumFractionDigits: 3,
 });
-const eurFmt = new Intl.NumberFormat('it-IT', {
+const eurFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-const dateFmt = new Intl.DateTimeFormat('it-IT', { dateStyle: 'medium' });
-const dateTimeFmt = new Intl.DateTimeFormat('it-IT', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
+const dateFmt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
 
 function fmtKg(v: string | null | undefined): string {
   if (v === null || v === undefined) return '—';
@@ -55,13 +52,6 @@ function fmtDate(v: string | null | undefined): string {
   return dateFmt.format(d);
 }
 
-function fmtDateTime(v: string | null | undefined): string {
-  if (!v) return '—';
-  const d = new Date(v);
-  if (!Number.isFinite(d.getTime())) return v;
-  return dateTimeFmt.format(d);
-}
-
 export function ByproductSalesView({
   initialSales,
   initialBuyers,
@@ -75,6 +65,7 @@ export function ByproductSalesView({
   const [pendingSaleDelete, setPendingSaleDelete] = React.useState<number | null>(null);
   const [pendingBuyerDelete, setPendingBuyerDelete] = React.useState<number | null>(null);
   const [showBuyers, setShowBuyers] = React.useState(false);
+  const [previewSale, setPreviewSale] = React.useState<ByproductSale | null>(null);
 
   // Keep state in sync if parent server-re-renders (filter changes).
   React.useEffect(() => {
@@ -163,8 +154,6 @@ export function ByproductSalesView({
               <Th>Buyer</Th>
               <ThNum>kg net</ThNum>
               <Th>Invoice</Th>
-              <ThNum>Price EUR</ThNum>
-              <Th>Created at</Th>
               <Th className="text-right">
                 <span className="sr-only">Actions</span>
               </Th>
@@ -173,7 +162,7 @@ export function ByproductSalesView({
           <tbody>
             {sales.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-ink-mute">
+                <td colSpan={6} className="px-3 py-6 text-center text-ink-mute">
                   No sales match the selected filter.
                 </td>
               </tr>
@@ -193,9 +182,20 @@ export function ByproductSalesView({
                     {r.buyer_name ?? `#${r.buyer_id}`}
                   </Td>
                   <TdNum>{fmtKg(r.kg_net)}</TdNum>
-                  <Td className="text-ink-soft">{r.invoice_no ?? '—'}</Td>
-                  <TdNum>{fmtEur(r.price_eur)}</TdNum>
-                  <Td className="text-ink-mute">{fmtDateTime(r.created_at)}</Td>
+                  <Td className="text-ink-soft">
+                    {r.invoice_no ? (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewSale(r)}
+                        className="font-mono text-[0.72rem] text-ink underline decoration-dotted underline-offset-2 hover:text-olive-deep"
+                        aria-label={`Preview invoice ${r.invoice_no}`}
+                      >
+                        {r.invoice_no}
+                      </button>
+                    ) : (
+                      '—'
+                    )}
+                  </Td>
                   <Td className="text-right">
                     <button
                       type="button"
@@ -303,6 +303,11 @@ export function ByproductSalesView({
         initialBuyers={buyers}
         defaultProductKind={defaultProductKind}
         onCreated={handleSaleCreated}
+      />
+
+      <ByproductInvoiceModal
+        sale={previewSale}
+        onClose={() => setPreviewSale(null)}
       />
     </>
   );

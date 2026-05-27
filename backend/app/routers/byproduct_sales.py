@@ -17,11 +17,14 @@ Tables / FKs / CHECKs live in alembic 0026_warehouse_inventory.
 """
 from __future__ import annotations
 
+import os
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import FileResponse
 from sqlalchemy import text as sa_text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -220,7 +223,9 @@ async def list_sales(
     """
     sql = (
         "SELECT s.id, s.product_kind, s.buyer_id, s.sale_date, s.kg_net, "
-        "s.invoice_no, s.price_eur, s.notes, s.created_at, b.name AS buyer_name "
+        "s.invoice_no, s.price_eur, s.price_amount, s.currency, s.pricing_method, "
+        "(s.pdf_ref IS NOT NULL) AS has_pdf, "
+        "s.notes, s.created_at, b.name AS buyer_name "
         "FROM byproduct_sale s "
         "LEFT JOIN byproduct_buyer b ON b.id = s.buyer_id "
         "WHERE s.deleted_at IS NULL"
@@ -431,3 +436,65 @@ async def soft_delete_sale(
     )
 
     await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Sale invoice PDF — auth-gated streaming
+# ---------------------------------------------------------------------------
+
+
+_BYPRODUCT_ROOT = Path(os.environ.get("BYPRODUCT_ROOT", "/data/byproduct"))
+
+
+@router.get("/sales/{sale_id}/pdf")
+async def stream_sale_pdf(
+    sale_id: int,
+    _: ViewerUser,
+    db: DbDep,
+    download: bool = False,
+) -> FileResponse:
+    """Auth-gated stream of the byproduct-sale invoice PDF.
+
+    Looks up the sale by id and resolves ``pdf_ref`` against
+    ``BYPRODUCT_ROOT`` (default ``/data/byproduct``). Refuses any
+    resolved path that escapes the byproduct root — defence against
+    tampered ``pdf_ref`` values.
+
+    Defaults to ``Content-Disposition: inline`` so the popup iframe can
+    render the PDF in-place. Pass ``?download=1`` to force
+    ``attachment`` (used by the modal's Download button).
+    """
+    row = (
+        await db.execute(
+            sa_text(
+                "SELECT id, invoice_no, pdf_ref FROM byproduct_sale "
+                "WHERE id = :id AND deleted_at IS NULL"
+            ),
+            {"id": sale_id},
+        )
+    ).mappings().one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Sale not found")
+    if not row["pdf_ref"]:
+        raise HTTPException(
+            status_code=404, detail="No PDF attached to this sale"
+        )
+
+    root = _BYPRODUCT_ROOT.resolve()
+    candidate = (root / row["pdf_ref"]).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="pdf_ref escapes byproduct root"
+        ) from exc
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="PDF missing on disk")
+
+    filename = f"{row['invoice_no'] or f'sale-{sale_id}'}.pdf"
+    return FileResponse(
+        path=candidate,
+        media_type="application/pdf",
+        filename=filename,
+        content_disposition_type="attachment" if download else "inline",
+    )
