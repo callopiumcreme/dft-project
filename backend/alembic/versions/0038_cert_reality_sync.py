@@ -82,6 +82,24 @@ depends_on = None
 
 def upgrade() -> None:
     # -----------------------------------------------------------------
+    # PRE. Ensure `certificates.pdf_ref` exists.
+    #
+    # This column is referenced by sections E + F below (INSERT ...
+    # pdf_ref ... and UPDATE ... SET pdf_ref ...), but no earlier
+    # migration on disk explicitly adds it — it was added to LOCAL by
+    # an out-of-band hotfix and never captured in alembic. On a fresh
+    # environment (prod 2026-05-27 deploy) the chain reaches 0038 with
+    # the column missing and INSERT raises UndefinedColumnError.
+    #
+    # IF NOT EXISTS keeps the patch idempotent: harmless on LOCAL where
+    # the column already exists, additive on prod where it does not.
+    # -----------------------------------------------------------------
+    op.execute(
+        "ALTER TABLE certificates "
+        "ADD COLUMN IF NOT EXISTS pdf_ref text;"
+    )
+
+    # -----------------------------------------------------------------
     # A. Restore wrongly soft-deleted suppliers
     # -----------------------------------------------------------------
     op.execute(
