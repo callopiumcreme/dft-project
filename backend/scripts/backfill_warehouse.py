@@ -569,21 +569,16 @@ async def main() -> None:
         elif args.reset and args.dry_run:
             print("  reset: SKIPPED (dry-run)")
 
-        existing_opening: set[str] = set()
-        if not args.reset:
-            existing_opening = await _opening_already_present(db, from_date)
-
         # Build event list
         events: list[dict] = []
-        # Opening: only for product_kinds not already opened (idempotency).
-        for ev in _opening_events(from_date):
-            if ev["product_kind"] not in existing_opening:
-                events.append(ev)
-            else:
-                print(
-                    f"  skip opening (already present): "
-                    f"product_kind={ev['product_kind']}"
-                )
+        # Opening rows are always included. When the natural key already
+        # exists in mass_balance_ledger the UPSERT (ON CONFLICT … DO
+        # UPDATE) is a no-op on the kg_in/kg_out values, but the events
+        # remaining in `events` seed `_compute_balances` with the correct
+        # opening balance per product_kind — without them the running
+        # balance restarts from zero and downstream prev/post_balance_kg
+        # values are shifted by the opening amount.
+        events.extend(_opening_events(from_date))
 
         events.extend(await _production_events(db, from_date))
         events.extend(await _consignment_events(db, from_date))
