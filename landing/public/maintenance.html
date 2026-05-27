@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Server Maintenance — OisteBio</title>
+  <style>
+    :root {
+      --bg-0: #0a0f0d;
+      --bg-1: #101814;
+      --fg-0: #e8f0ea;
+      --fg-1: #9fb3a6;
+      --accent: #6fcf97;
+      --accent-soft: rgba(111, 207, 151, 0.12);
+      --border: rgba(255, 255, 255, 0.08);
+      --radius: 16px;
+      --shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.6);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+        Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg-0);
+      color: var(--fg-0);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(ellipse at top, rgba(111, 207, 151, 0.08), transparent 60%),
+        radial-gradient(ellipse at bottom right, rgba(80, 140, 110, 0.06), transparent 50%),
+        var(--bg-0);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: linear-gradient(180deg, var(--bg-1), #0c1310);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 16px var(--accent);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+
+    .brand-name {
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--fg-1);
+      font-weight: 500;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.25;
+      font-weight: 600;
+      margin-bottom: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .lede {
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--fg-1);
+      margin-bottom: 28px;
+    }
+
+    .schedule {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .slot {
+      background: var(--accent-soft);
+      border: 1px solid rgba(111, 207, 151, 0.2);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .slot-label {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--fg-1);
+      margin-bottom: 6px;
+    }
+
+    .slot-time {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--fg-0);
+    }
+
+    .slot-tz {
+      font-size: 11px;
+      color: var(--fg-1);
+      margin-top: 2px;
+    }
+
+    .countdown {
+      background: linear-gradient(180deg, rgba(111, 207, 151, 0.10), rgba(111, 207, 151, 0.04));
+      border: 1px solid rgba(111, 207, 151, 0.25);
+      border-radius: 12px;
+      padding: 18px 16px;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+
+    .countdown-label {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--fg-1);
+      margin-bottom: 10px;
+    }
+
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+
+    .cd-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 4px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 8px;
+    }
+
+    .cd-num {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    .cd-num.ms {
+      font-size: 18px;
+      color: var(--fg-1);
+    }
+
+    .cd-unit {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--fg-1);
+      margin-top: 4px;
+    }
+
+    .cd-done {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--accent);
+      padding: 8px 0;
+    }
+
+    .apology {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--fg-1);
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .apology strong {
+      color: var(--fg-0);
+      font-weight: 500;
+    }
+
+    footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: var(--fg-1);
+      letter-spacing: 0.04em;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 480px) {
+      .card { padding: 32px 20px; }
+      h1 { font-size: 24px; }
+      .schedule { grid-template-columns: 1fr; }
+      .slot-time { font-size: 20px; }
+      .cd-num { font-size: 18px; }
+      .cd-num.ms { font-size: 14px; }
+      .cd-unit { font-size: 9px; }
+      .countdown-grid { gap: 4px; }
+      .cd-cell { padding: 8px 2px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <div class="brand">
+      <span class="brand-dot" aria-hidden="true"></span>
+      <span class="brand-name">OisteBio</span>
+    </div>
+
+    <h1>Server maintenance</h1>
+    <p class="lede">
+      Our servers are temporarily offline while we perform planned maintenance
+      and upgrades. The platform will be restored as soon as the maintenance
+      window completes.
+    </p>
+
+    <div class="countdown" aria-live="polite">
+      <div class="countdown-label">Estimated time to full service &middot; target 12:30 London (UTC+1)</div>
+      <div id="cd-grid" class="countdown-grid">
+        <div class="cd-cell"><span id="cd-d" class="cd-num">00</span><span class="cd-unit">Days</span></div>
+        <div class="cd-cell"><span id="cd-h" class="cd-num">00</span><span class="cd-unit">Hours</span></div>
+        <div class="cd-cell"><span id="cd-m" class="cd-num">00</span><span class="cd-unit">Min</span></div>
+        <div class="cd-cell"><span id="cd-s" class="cd-num">00</span><span class="cd-unit">Sec</span></div>
+        <div class="cd-cell"><span id="cd-ms" class="cd-num ms">000</span><span class="cd-unit">ms</span></div>
+      </div>
+      <div id="cd-done" class="cd-done" hidden>Service restoration in progress&hellip;</div>
+    </div>
+
+    <div class="schedule" aria-label="Maintenance window">
+      <div class="slot">
+        <div class="slot-label">Downtime started</div>
+        <div class="slot-time">08:30</div>
+        <div class="slot-tz">London time &middot; BST (UTC+1)</div>
+      </div>
+      <div class="slot">
+        <div class="slot-label">Estimated full service</div>
+        <div class="slot-time">12:30</div>
+        <div class="slot-tz">London time &middot; BST (UTC+1)</div>
+      </div>
+    </div>
+
+    <p class="apology">
+      <strong>We apologise for the inconvenience.</strong>
+      Thank you for your patience while we improve the platform. For urgent
+      matters please contact your usual point of contact at OisteBio.
+    </p>
+
+    <footer>
+      OisteBio GmbH &middot; Baar, Switzerland
+    </footer>
+  </main>
+
+  <script>
+    // Target: 12:30 BST (UTC+1) on 2026-05-27 => 11:30 UTC.
+    var TARGET_MS = Date.UTC(2026, 4, 27, 11, 30, 0);
+    var el = {
+      d: document.getElementById('cd-d'),
+      h: document.getElementById('cd-h'),
+      m: document.getElementById('cd-m'),
+      s: document.getElementById('cd-s'),
+      ms: document.getElementById('cd-ms'),
+      grid: document.getElementById('cd-grid'),
+      done: document.getElementById('cd-done')
+    };
+    function pad(n, w) {
+      var str = '' + n;
+      while (str.length < w) str = '0' + str;
+      return str;
+    }
+    var stopped = false;
+    function tick() {
+      var diff = TARGET_MS - Date.now();
+      if (diff <= 0) {
+        el.grid.hidden = true;
+        el.done.hidden = false;
+        stopped = true;
+        return;
+      }
+      var ms = diff % 1000;
+      var totalSec = Math.floor(diff / 1000);
+      var d = Math.floor(totalSec / 86400);
+      var h = Math.floor((totalSec % 86400) / 3600);
+      var m = Math.floor((totalSec % 3600) / 60);
+      var s = totalSec % 60;
+      el.d.textContent = pad(d, 2);
+      el.h.textContent = pad(h, 2);
+      el.m.textContent = pad(m, 2);
+      el.s.textContent = pad(s, 2);
+      el.ms.textContent = pad(ms, 3);
+    }
+    function loop() {
+      tick();
+      if (!stopped) requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>
