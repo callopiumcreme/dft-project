@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { apiPost, ApiError, SESSION_COOKIE } from './api';
 import type { components } from './backend-types';
+import { welcomePathFor } from '@/config/welcome-routing';
 
 type LoginRequest = components['schemas']['LoginRequest'];
 type TokenResponse = components['schemas']['TokenResponse'];
@@ -69,7 +70,12 @@ export async function loginAction(_prev: LoginState, fd: FormData): Promise<Logi
 
   setPendingUmamiEvent('auth_login_success', {});
 
-  redirect(next);
+  // Per-user welcome route: when the user has no explicit `next` (i.e. they
+  // landed on /login directly and would default to /app), send them to their
+  // welcome page instead. An explicit `next` (e.g. from middleware after a
+  // deep link) is always honored.
+  const welcome = welcomePathFor(email);
+  redirect(welcome && next === '/app' ? welcome : next);
 }
 
 export async function logoutAction(): Promise<void> {
