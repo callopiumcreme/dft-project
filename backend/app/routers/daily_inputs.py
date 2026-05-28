@@ -11,7 +11,7 @@ from datetime import date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import OperatorUser, ViewerUser
@@ -19,6 +19,7 @@ from app.db.session import get_db
 from app.models.daily_input import DailyInput
 from app.schemas.daily_input import DailyInputCreate, DailyInputRead, DailyInputUpdate
 from app.services.audit import model_snapshot, write_audit
+from app.services.ersv_renderer import compute_doc_id_hash
 
 router = APIRouter(prefix="/daily-inputs", tags=["daily-inputs"])
 
@@ -49,6 +50,59 @@ async def list_daily_inputs(
     stmt = stmt.order_by(DailyInput.entry_date.desc(), DailyInput.id.desc()).limit(limit).offset(offset)
     result = await db.execute(stmt)
     return list(result.scalars().all())
+
+
+_DOC_ID_BATCH_SQL = text(
+    """
+    SELECT di.id, di.entry_date, di.entry_time,
+           di.car_kg, di.truck_kg, di.special_kg, di.total_input_kg,
+           di.notes, di.rectified_at, di.rectification_reason,
+           di.updated_at, di.ersv_number,
+           s.name AS supplier_name, s.code AS supplier_code,
+           s.country AS supplier_country,
+           c.cert_number AS cert_iscc_ref,
+           c.expires_at  AS cert_valid_until
+    FROM daily_inputs di
+    JOIN suppliers s   ON s.id = di.supplier_id
+    LEFT JOIN certificates c ON c.id = di.certificate_id
+    WHERE di.deleted_at IS NULL
+      AND di.ersv_number IS NOT NULL
+      AND di.id = ANY(:ids)
+    """
+)
+
+
+@router.get("/doc-id-batch")
+async def doc_id_batch(
+    _: ViewerUser,
+    db: DbDep,
+    ids: str = Query(..., description="Comma-separated daily_input ids, e.g. '1,2,3'"),
+) -> list[dict[str, str | int]]:
+    """Batch compute ``doc_id_hash`` for a list of daily_input ids.
+
+    Reuses ``compute_doc_id_hash`` from the eRSV renderer so the value
+    matches the ``Doc ID`` printed on the PDF header (first 16 hex chars).
+    Rows without an ``ersv_number`` or soft-deleted rows are omitted.
+    """
+    try:
+        id_list = [int(x) for x in ids.split(",") if x.strip()]
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ids must be comma-separated integers",
+        ) from exc
+    if not id_list:
+        return []
+    if len(id_list) > 5000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ids batch too large (max 5000)",
+        )
+    result = await db.execute(_DOC_ID_BATCH_SQL, {"ids": id_list})
+    out: list[dict[str, str | int]] = []
+    for row in result.mappings().all():
+        out.append({"id": row["id"], "doc_id_hash": compute_doc_id_hash(dict(row))})
+    return out
 
 
 @router.get("/count")

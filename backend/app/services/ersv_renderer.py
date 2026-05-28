@@ -281,6 +281,20 @@ def _canonical_row(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def compute_doc_id_hash(row: dict[str, Any]) -> str:
+    """Public — sha256 hex of the canonical eRSV row.
+
+    Single source of truth for the ``doc_id_hash`` shown on the PDF header
+    (first 16 hex chars) and on the mass-balance UI Doc ID column. Any
+    consumer that needs the hash must call this rather than reimplement the
+    canonicalisation, otherwise PDF↔UI drift becomes possible.
+    """
+    canonical = _canonical_row(row)
+    return hashlib.sha256(
+        json.dumps(canonical, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
+
+
 def _compute_etag(row: dict[str, Any]) -> str:
     """Weak ETag — 16-hex prefix of sha256 over (ersv_number, updated_at, rectified_at)."""
     payload = {
@@ -357,10 +371,7 @@ def _build_context(row: dict[str, Any]) -> dict[str, Any]:
     ersv_number = row["ersv_number"]
     supplier_code = row["supplier_code"]
 
-    canonical = _canonical_row(row)
-    doc_id_hash = hashlib.sha256(
-        json.dumps(canonical, sort_keys=True, default=str).encode("utf-8")
-    ).hexdigest()
+    doc_id_hash = compute_doc_id_hash(row)
 
     notes_text = row.get("notes")
     if notes_text:

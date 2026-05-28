@@ -4,7 +4,7 @@ import type { components } from '@/lib/backend-types';
 import { MonthQuickPicker } from './month-quick-picker';
 import { buildMonthOptions } from './month-utils';
 import { KpiTileTooltip } from './kpi-tile-tooltip';
-import { ErsvLink } from '@/components/ersv';
+import { DocIdLink } from '@/components/ersv';
 import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
 // Badge import removed: cert-flag badges (AUDIT / SCHEME?) deliberately
 // hidden from verifier-facing surface. Internal red-team uses direct SQL on
@@ -117,6 +117,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
   let monthlyRows: MonthlyRow[] = [];
   let allMonths: MonthlyRow[] = [];
   let entriesByDay: Map<string, DailyInput[]> = new Map();
+  let docIdMap: Map<number, string> = new Map();
   let supplierMap: Map<number, Supplier> = new Map();
   let certificateMap: Map<number, Certificate> = new Map();
   let contractMap: Map<number, Contract> = new Map();
@@ -189,6 +190,25 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
       }
       for (const list of entriesByDay.values()) {
         list.sort((a, b) => (a.entry_time ?? '').localeCompare(b.entry_time ?? ''));
+      }
+
+      // Doc-ID column: pull sha256 prefixes from the same canonical row
+      // that the eRSV PDF header uses. Sole reason for a second roundtrip
+      // is that the id list isn't known until /daily-inputs returns.
+      const ersvIds = entries
+        .filter((e) => e.ersv_number)
+        .map((e) => e.id);
+      if (ersvIds.length > 0) {
+        try {
+          const docIdRows = await apiGet<{ id: number; doc_id_hash: string }[]>(
+            '/daily-inputs/doc-id-batch',
+            { query: { ids: ersvIds.join(',') } },
+          );
+          docIdMap = new Map(docIdRows.map((r) => [r.id, r.doc_id_hash]));
+        } catch {
+          // Soft-fail: degrade column to '—' rather than break the page.
+          docIdMap = new Map();
+        }
       }
     }
   } catch (e) {
@@ -387,6 +407,7 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
         <DailyAccordion
           rows={dailyRows}
           entriesByDay={entriesByDay}
+          docIdMap={docIdMap}
           supplierMap={supplierMap}
           certificateMap={certificateMap}
           contractMap={contractMap}
@@ -484,6 +505,7 @@ function MonthlyTable({ rows, hasError }: { rows: MonthlyRow[]; hasError: boolea
 function DailyAccordion({
   rows,
   entriesByDay,
+  docIdMap,
   supplierMap,
   certificateMap,
   contractMap,
@@ -491,6 +513,7 @@ function DailyAccordion({
 }: {
   rows: DailyRow[];
   entriesByDay: Map<string, DailyInput[]>;
+  docIdMap: Map<number, string>;
   supplierMap: Map<number, Supplier>;
   certificateMap: Map<number, Certificate>;
   contractMap: Map<number, Contract>;
@@ -584,7 +607,7 @@ function DailyAccordion({
                         <th className="px-2 py-1.5 font-normal">Time</th>
                         <th className="px-2 py-1.5 font-normal">Supplier</th>
                         <th className="px-2 py-1.5 font-normal">Cert / Contract</th>
-                        <th className="px-2 py-1.5 font-normal">eRSV</th>
+                        <th className="px-2 py-1.5 font-normal">Doc ID</th>
                         <th className="px-2 py-1.5 font-normal">C14</th>
                         <th className="px-2 py-1.5 font-normal">Loaded</th>
                         <th className="px-2 py-1.5 text-right font-normal">Total kg</th>
@@ -624,8 +647,12 @@ function DailyAccordion({
                               </span>
                             </td>
                             <td className="px-2 py-1.5 text-ink-soft">
-                              {e.ersv_number ? (
-                                <ErsvLink ersvNumber={e.ersv_number} dailyInputId={e.id} />
+                              {e.ersv_number && docIdMap.get(e.id) ? (
+                                <DocIdLink
+                                  docIdHash={docIdMap.get(e.id) as string}
+                                  ersvNumber={e.ersv_number}
+                                  dailyInputId={e.id}
+                                />
                               ) : (
                                 '—'
                               )}
