@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { welcomePathFor } from '@/config/welcome-routing';
 import {
   LayoutDashboard,
   Scale,
@@ -120,14 +121,23 @@ function isActive(pathname: string, href: string): boolean {
 export function SidebarNav({
   onNavigate,
   role,
+  email,
 }: {
   onNavigate?: () => void;
   role?: string;
+  email?: string;
 }) {
   const pathname = usePathname();
 
   const isAdmin = role === 'admin';
-  const visible = NAV.filter((item) => !item.adminOnly || isAdmin);
+  // If this user has a per-user welcome route, point the Dashboard entry
+  // straight at it. Without this, clicking "Dashboard" hits /app which then
+  // server-redirects to /app/welcome — visible to the user as a page reload.
+  const welcomePath = welcomePathFor(email);
+  const navItems: NavItem[] = welcomePath
+    ? NAV.map((item) => (item.href === '/app' ? { ...item, href: welcomePath } : item))
+    : NAV;
+  const visible = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   const groups = visible.reduce<Record<string, NavItem[]>>((acc, item) => {
     const key = item.group ?? '';
