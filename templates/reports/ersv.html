@@ -212,7 +212,7 @@
 
 {# ===== Title band ===== #}
 <div class="title-band">Formato de Recolección eRSV</div>
-<div class="ersv-num-line">N° {{ ersv_number }}</div>
+<div class="ersv-num-line">Doc ID {{ doc_id_hash[:16] }}</div>
 
 {# ===== Remitente (supplier) ===== #}
 <div class="section-band">Remitente</div>
@@ -347,27 +347,15 @@
     impresa. (Ley 527 de 1999 y normas conexas)
 </div>
 
-{# ===== Observaciones ===== #}
-<div class="observaciones">
-    <div class="obs-title">Observaciones</div>
-    <ol>
-        <li>El remitente declara que el material entregado corresponde exclusivamente a Neumáticos al Final de su Vida Útil (ELT), libre de mezclas con otros residuos no autorizados.</li>
-        <li>El transporte se realiza conforme a las normas vigentes en materia de movilización de residuos sólidos no peligrosos en territorio colombiano.</li>
-        <li>El receptor verifica el peso de llegada en báscula calibrada; cualquier discrepancia &gt; 2% respecto a la salida queda registrada en la sección de notas.</li>
-        <li>La trazabilidad ISCC-EU del lote queda asegurada mediante el número de certificado del remitente y el presente documento eRSV.</li>
-        <li>El presente documento se emite en formato electrónico y constituye soporte válido para la cadena de custodia del sistema de balance de masa de {{ recipient_company }}.</li>
-    </ol>
-    {% if notes and notes != '—' %}
-    <div style="margin-top: 4pt;"><strong>Notas:</strong> {{ notes }}</div>
-    {% endif %}
+{% if notes and notes != '—' %}
+<div class="observaciones" style="margin-top: 8pt;">
+    <strong>Notas:</strong> {{ notes }}
 </div>
+{% endif %}
 
 {# ===== Brand bottom ===== #}
 <div class="brand-bottom">
     {% if supplier_website %}{{ supplier_website }} &middot; {% endif %}{{ version_label }}
-</div>
-<div class="doc-meta">
-    Doc ID {{ doc_id_hash[:16] }} &middot; emitido {{ entry_date_eu }}
 </div>
 
 </body>

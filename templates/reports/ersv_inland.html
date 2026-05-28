@@ -197,7 +197,7 @@
 
 {# ===== Title band ===== #}
 <div class="title-band">eRSV transporte interno — Girardot → Cartagena</div>
-<div class="ersv-num-line">N° {{ ersv_inland_no }}</div>
+<div class="ersv-num-line">Doc ID {{ doc_id_hash[:16] }}</div>
 
 {# ===== Emisor (OisteBio Girardot) ===== #}
 <div class="section-band">Emisor</div>
@@ -328,27 +328,15 @@
     impresa. (Ley 527 de 1999 y normas conexas)
 </div>
 
-{# ===== Observaciones ===== #}
-<div class="observaciones">
-    <div class="obs-title">Observaciones</div>
-    <ol>
-        <li>El emisor declara que el producto despachado corresponde exclusivamente a {{ product_grade }}, obtenido por pirólisis controlada de neumáticos al final de su vida útil (ELT) en la planta de Girardot.</li>
-        <li>El transporte se realiza en contenedor ISO 6346 sellado con precinto numerado; cualquier alteración del precinto debe registrarse en la sección de notas y comunicarse al destinatario.</li>
-        <li>El destinatario verifica el peso de llegada en báscula calibrada del Terminal Portuaria Mamonal; toda discrepancia &gt; 2 % respecto al peso de salida queda registrada en la cadena de custodia.</li>
-        <li>La trazabilidad ISCC-EU del lote queda asegurada mediante el número de consignación y el presente documento eRSV, complementario a los documentos BL oceánicos posteriores.</li>
-        <li>El presente documento se emite en formato electrónico y constituye soporte válido para la cadena de custodia del sistema de balance de masa de {{ issuer_name }}.</li>
-    </ol>
-    {% if notes %}
-    <div style="margin-top: 4pt;"><strong>Notas:</strong> {{ notes }}</div>
-    {% endif %}
+{% if notes %}
+<div class="observaciones" style="margin-top: 8pt;">
+    <strong>Notas:</strong> {{ notes }}
 </div>
+{% endif %}
 
 {# ===== Brand bottom ===== #}
 <div class="brand-bottom">
     {{ issuer_name }} · {{ version_label }}
-</div>
-<div class="doc-meta">
-    Doc ID {{ doc_id_hash[:16] }} · emitido {{ issue_date_eu }}
 </div>
 
 </body>
