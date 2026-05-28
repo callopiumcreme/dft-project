@@ -1,14 +1,17 @@
+import { redirect } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import {
   WINDOW_START_ISO as PERIOD_FROM,
   WINDOW_END_ISO as PERIOD_TO,
 } from '@/config/paper-records-window';
+import { welcomePathFor } from '@/config/welcome-routing';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { Sparkline, type SparkPoint } from './_components/sparkline';
 
 type DailyRow = components['schemas']['MassBalanceDailyRow'];
 type ClosureRow = components['schemas']['ClosureStatusRow'];
+type UserRead = components['schemas']['UserRead'];
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +45,19 @@ async function safeFetch<T>(path: string, query?: Record<string, string | number
 // surface at once — see file header in paper-records-window.ts (N1 / N6).
 
 export default async function AppHomePage() {
+  // Per-user welcome routing: if /auth/me email matches an entry in
+  // WELCOME_ROUTING, send the user there instead of rendering the default
+  // dashboard. Deep links (e.g. /app/logistics) bypass this branch.
+  let welcome: string | null = null;
+  try {
+    const me = await apiGet<UserRead>('/auth/me');
+    welcome = welcomePathFor(me.email);
+  } catch (e) {
+    if (!(e instanceof ApiError)) throw e;
+    // 401 → layout already redirects to /login.
+  }
+  if (welcome) redirect(welcome);
+
   const [daily, closure] = await Promise.all([
     safeFetch<DailyRow[]>('/reports/mass-balance/daily', {
       date_from: PERIOD_FROM,

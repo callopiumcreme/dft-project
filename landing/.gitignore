@@ -10,3 +10,6 @@ dist
 .vercel
 .turbo
 *.tsbuildinfo
+
+# audit bundles (regenerated from Drive, never commit)
+public/audit/*.zip
