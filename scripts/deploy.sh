@@ -28,6 +28,7 @@ REMOTE="oistebio"                                  # ~/.ssh/config alias
 REMOTE_ROOT="/root/dft-project"
 PM2_APP="dft-landing"
 BACKEND_CONTAINER="dft-project-backend-1"
+DB_CONTAINER="dft-project-db-1"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
@@ -90,6 +91,17 @@ maybe_ssh "test -d $REMOTE_ROOT/backend && test -d $REMOTE_ROOT/landing && echo 
 # -----------------------------------------------------------------------------
 # Backend
 # -----------------------------------------------------------------------------
+
+# Fingerprint of active mass_balance_ledger state on prod.
+# Format: "<row_count>:<sum_kg_in>:<sum_kg_out>".
+# Used to catch a deploy step (migration or manual command) that silently
+# writes phantom rows to the ledger. The cleanup from 2026-05-27 inserted
+# 2338 phantom rows on prod that local didn't have; the next deploy should
+# never repeat that — capture before alembic, capture after, diff.
+ledger_fingerprint() {
+  ssh "$REMOTE" "docker exec $DB_CONTAINER psql -U dft -d dft -tAc \"SELECT COUNT(*) || ':' || COALESCE(SUM(kg_in),0)::text || ':' || COALESCE(SUM(kg_out),0)::text FROM mass_balance_ledger WHERE deleted_at IS NULL;\"" 2>/dev/null | tr -d '[:space:]'
+}
+
 deploy_backend() {
   say "Backend → rsync"
   local rflags=(-avz --delete)
@@ -105,6 +117,16 @@ deploy_backend() {
   say "Backend → docker build"
   maybe_ssh "cd $REMOTE_ROOT && docker compose -f docker-compose.yml -f docker-compose.prod.yml build backend"
 
+  # Snapshot the mass_balance_ledger fingerprint BEFORE the new backend
+  # container comes up so we can detect any phantom writes introduced by
+  # alembic migrations or by manual commands that piggyback the deploy.
+  local ledger_pre=""
+  if (( ! DRY_RUN )); then
+    say "Backend → ledger fingerprint (pre)"
+    ledger_pre="$(ledger_fingerprint)"
+    echo "ledger_pre=$ledger_pre"
+  fi
+
   say "Backend → up -d (recreate)"
   maybe_ssh "cd $REMOTE_ROOT && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d backend"
 
@@ -119,6 +141,23 @@ deploy_backend() {
     code=$(ssh "$REMOTE" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/health" || echo 000)
     [[ "$code" == "200" ]] || die "Backend /health returned $code"
     echo "health=200"
+  fi
+
+  # Refuse to call the deploy done if the migration step silently mutated
+  # the mass_balance_ledger. New rows must come from explicit ingest paths,
+  # never from a deploy-time backfill.
+  if (( ! DRY_RUN )); then
+    say "Backend → ledger fingerprint (post)"
+    local ledger_post
+    ledger_post="$(ledger_fingerprint)"
+    echo "ledger_post=$ledger_post"
+    if [[ "$ledger_pre" != "$ledger_post" ]]; then
+      warn "mass_balance_ledger fingerprint changed during alembic upgrade!"
+      warn "  pre  = $ledger_pre"
+      warn "  post = $ledger_post"
+      die "Phantom ledger writes detected — inspect prod before considering deploy successful (memory:feedback_deploy_no_runtime_backfill)."
+    fi
+    echo "ledger unchanged ✓"
   fi
 }
 
