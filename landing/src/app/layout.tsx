@@ -4,6 +4,7 @@ import Script from 'next/script';
 import './globals.css';
 import { UmamiTracker } from '@/components/analytics/umami-tracker';
 import { UmamiPendingEvent } from '@/components/analytics/umami-pending-event';
+import { SiteFooter } from '@/components/legal/site-footer';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -94,6 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body>
         {children}
+        <SiteFooter />
         {UMAMI_SRC && UMAMI_ID && (
           <>
             <Script
