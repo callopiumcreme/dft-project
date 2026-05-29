@@ -1,10 +1,17 @@
 """Admin endpoints — MV refresh, scheduler status, users CRUD, audit log. Admin role only."""
 from __future__ import annotations
 
+import csv
+import io
+import json
 from datetime import date, datetime, time, timedelta, timezone
-from typing import Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -285,3 +292,124 @@ async def list_audit_log(
         for r in rows
     ]
     return AuditLogPage(items=items, total=total, limit=limit, offset=offset)
+
+
+# CSV export — admin-only audit-log streaming download.
+# Streams all rows matching same filters as /audit-log (no pagination).
+# Page size capped per chunk to bound memory; total rows bounded by max_rows.
+CSV_HEADERS = (
+    "id",
+    "table_name",
+    "record_id",
+    "action",
+    "changed_at",
+    "changed_by",
+    "changed_by_email",
+    "old_values",
+    "new_values",
+)
+CSV_CHUNK_SIZE = 1_000
+CSV_MAX_ROWS = 100_000
+
+
+def _csv_row(
+    entry: AuditLog,
+    email: str | None,
+) -> tuple[Any, ...]:
+    return (
+        entry.id,
+        entry.table_name,
+        entry.record_id,
+        entry.action,
+        entry.changed_at.isoformat() if entry.changed_at else "",
+        entry.changed_by if entry.changed_by is not None else "",
+        email or "",
+        json.dumps(entry.old_values, ensure_ascii=False, sort_keys=True)
+        if entry.old_values is not None
+        else "",
+        json.dumps(entry.new_values, ensure_ascii=False, sort_keys=True)
+        if entry.new_values is not None
+        else "",
+    )
+
+
+@router.get("/audit-log.csv")
+async def export_audit_log_csv(
+    _: AdminUser,
+    db: DbDep,
+    table_name: str | None = Query(default=None),
+    record_id: int | None = Query(default=None),
+    action: AuditAction | None = Query(default=None),
+    changed_by: int | None = Query(default=None),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    max_rows: int = Query(default=CSV_MAX_ROWS, ge=1, le=CSV_MAX_ROWS),
+) -> StreamingResponse:
+    base = select(AuditLog).order_by(AuditLog.changed_at.desc(), AuditLog.id.desc())
+
+    filters = []
+    if table_name:
+        filters.append(AuditLog.table_name == table_name)
+    if record_id is not None:
+        filters.append(AuditLog.record_id == record_id)
+    if action:
+        filters.append(AuditLog.action == action)
+    if changed_by is not None:
+        filters.append(AuditLog.changed_by == changed_by)
+    if date_from:
+        filters.append(
+            AuditLog.changed_at >= datetime.combine(date_from, time.min, tzinfo=timezone.utc)
+        )
+    if date_to:
+        filters.append(
+            AuditLog.changed_at
+            < datetime.combine(date_to + timedelta(days=1), time.min, tzinfo=timezone.utc)
+        )
+    for f in filters:
+        base = base.where(f)
+
+    async def stream() -> AsyncIterator[str]:
+        buf = io.StringIO()
+        writer = csv.writer(buf, quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(CSV_HEADERS)
+        yield buf.getvalue()
+        buf.seek(0)
+        buf.truncate(0)
+
+        emitted = 0
+        offset = 0
+        while emitted < max_rows:
+            chunk_size = min(CSV_CHUNK_SIZE, max_rows - emitted)
+            page = base.limit(chunk_size).offset(offset)
+            res = await db.execute(page)
+            rows = list(res.scalars().all())
+            if not rows:
+                break
+
+            user_ids = {r.changed_by for r in rows if r.changed_by is not None}
+            email_map: dict[int, str] = {}
+            if user_ids:
+                u_res = await db.execute(
+                    select(User.id, User.email).where(User.id.in_(user_ids))
+                )
+                email_map = {uid: em for uid, em in u_res.all()}
+
+            for r in rows:
+                writer.writerow(
+                    _csv_row(r, email_map.get(r.changed_by) if r.changed_by else None)
+                )
+            yield buf.getvalue()
+            buf.seek(0)
+            buf.truncate(0)
+
+            emitted += len(rows)
+            offset += len(rows)
+            if len(rows) < chunk_size:
+                break
+
+    filename = f"audit-log-{date.today().isoformat()}.csv"
+    return StreamingResponse(
+        stream(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -1,8 +1,10 @@
 # DFT Project — Analisi approfondita pre-parametrizzazione AgentOS
 
-**Data analisi:** 2026-05-08 (refresh 2026-05-20)
-**Versione:** 1.1
+**Data analisi:** 2026-05-08 (refresh 2026-05-20, rebaseline 2026-05-29)
+**Versione:** 1.2
 **Scope:** SCENARIO-B — documentazione tecnica completa per configurazione agenti AgentOS
+
+> **2026-05-29 rebaseline (DFTEN-164):** alcuni dettagli in questo doc riflettono lo stato post-Sprint 2 (2026-05-20). Vedi §15 Changelog v1.2 + `CLAUDE.md` per le delte: (a) `daily_entries` → split `daily_inputs` + `daily_production`; (b) migrations 11 → **43** (0001-0043); (c) Sprint 3 chiuso 2026-05-21, audit-prep DfT C1 in corso. Le sezioni §3 §5 §6 sono state aggiornate solo nei punti critici; i dettagli di campo per `daily_entries` in §4 sono storici e non più la sorgente di verità per le nuove tabelle.
 
 ---
 
@@ -37,7 +39,7 @@
 | Backend | FastAPI | 0.x | Async, SQLAlchemy 2.0 |
 | ORM | SQLAlchemy | 2.0 | `async_sessionmaker`, `AsyncSession` |
 | Schemas | Pydantic | v2 | `model_dump()` non `.dict()` |
-| Migrations | Alembic | latest | 11 migration files in `versions/` (0001-0011) |
+| Migrations | Alembic | latest | 43 migration files in `versions/` (0001-0043) — prossima `0044_` |
 | DB | PostgreSQL | 16 | Materialized views, GENERATED columns |
 | Auth | JWT (python-jose) | — | Bearer token, 8h TTL, stateless |
 | Password | bcrypt (passlib) | cost 12 | |
@@ -216,10 +218,19 @@ GET       /contracts/{id}
 GET|POST  /certificates
 GET       /certificates/{id}
 
-GET|POST  /daily-entries        filtri: date_from, date_to, supplier_id, contract_id, skip, limit
-GET       /daily-entries/{id}
-PATCH     /daily-entries/{id}   + audit log automatico
-DELETE    /daily-entries/{id}   soft delete (sets deleted_at) + audit log
+GET|POST  /daily-inputs         filtri: date_from, date_to, supplier_id, contract_id, skip, limit
+GET       /daily-inputs/{id}
+PATCH     /daily-inputs/{id}    + audit log automatico
+DELETE    /daily-inputs/{id}    soft delete (sets deleted_at) + audit log
+
+GET|POST  /daily-production     filtri: date_from, date_to, skip, limit
+GET       /daily-production/{id}
+PATCH     /daily-production/{id} + audit log automatico
+DELETE    /daily-production/{id} soft delete (sets deleted_at) + audit log
+
+# NB: la vecchia tabella `daily_entries` è stata split in `daily_inputs` (car_kg + truck_kg
+# + special_kg → total_input_kg GENERATED) e `daily_production` (eu_prod / plus_prod /
+# byproduct / losses). Vedi BLUEPRINT v0.2 e migrations 0017+ per il path di refactor.
 ```
 
 ### Mass balance
@@ -243,7 +254,7 @@ GET /health → {"status": "ok", "version": "0.1.0"}
 - **Payload JWT:** `{sub: email, role: role, exp: timestamp}`
 - **Ruoli:** `admin`, `operator`, `viewer`, `certifier`
 - **Dipendenza FastAPI:** `CurrentUser = Annotated[User, Depends(_get_current_user)]`
-- **Audit:** ogni write su `daily_entries` scrive riga in `audit_log` con IP client
+- **Audit:** ogni write su `daily_inputs` + `daily_production` (+ altre tabelle CRUD) scrive riga in `audit_log` con `old_values` / `new_values` JSONB. CHECK su `action` ammette solo `{insert, update, delete, soft_delete, restore, pdf_sign}` — vedi memory `project_audit_log_action_check`. Export CSV via `GET /admin/audit-log.csv` (admin-only, DFTEN-103).
 
 ---
 
@@ -444,3 +455,4 @@ python scripts/ingest_xlsx.py --file path/to/file.xlsx --dry-run
 |------|---------|------|
 | 2026-05-08 | v1.0 | Documento iniziale (pre-Sprint 2) |
 | 2026-05-20 | v1.1 — sprint 3 closure context (DFTEN-164 / S2.12) | Sprint 2 marcato DONE; Sprint 3 IN FLIGHT (closure 2026-05-21); aggiornata lista migrations a 0001-0011 con descrizioni reali; aggiunta nota supplier ELT post-0008/0009/0010/0011; cliente confermato OisteBio GmbH + buyer Crown Oil UK; feedstock = ELT (non plastiche); next migration prefix = 0012 |
+| 2026-05-29 | v1.2 — rebaseline post-Sprint 3 + audit-prep DfT C1 (DFTEN-164 Sprint γ) | Sprint 3 chiuso 2026-05-21; migrations 11 → **43** (0001-0043, next 0044); §2 + §5 + §6 ritoccati per `daily_inputs` + `daily_production` split; banner top § preserva il fatto che §4 campi `daily_entries` storici non più sorgente di verità (BLUEPRINT v0.2 in revisione); audit-prep DfT C1 (Deeba Rehman) in corso, audit submission 2026-05-27 + portale `/app/welcome` per `rtfo-compliance@dft.gov.uk`; feedstock storico = **Jan 2025 plastics + organics** (ESENTTIA / LITOPLAS / BIOWASTE), **Feb-Aug pivot a ELT** (KAL TIRE / EFFICIEN TECHNOLOGY / PYRCOM / BOLDER), correzione vs memory `project_feedstock_elt` che diceva "ELT only" (vedi §1) |
