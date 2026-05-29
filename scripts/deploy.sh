@@ -11,13 +11,24 @@
 #   /root/dft-project/.env*     — server-only secrets (NEVER overwritten).
 #
 # Usage:
-#   scripts/deploy.sh                # backend + landing (default)
-#   scripts/deploy.sh backend        # backend only
+#   scripts/deploy.sh                # compose + backend + data + landing
+#   scripts/deploy.sh backend        # compose + backend + data
 #   scripts/deploy.sh landing        # landing only
+#   scripts/deploy.sh compose        # docker-compose*.yml → prod only
+#   scripts/deploy.sh data           # data/ PDF dirs → prod only (additive)
 #   scripts/deploy.sh all            # explicit "all" alias
 #   scripts/deploy.sh --dry-run all  # rsync -n + skip ssh side-effects
 #   scripts/deploy.sh --skip-precheck backend
 #                                    # bypass git-clean + branch check
+#
+# Compose + data sync:
+#   - docker-compose.yml + docker-compose.prod.yml are rsynced to prod so
+#     mount/env edits actually reach the server. The next `docker compose
+#     up -d backend` picks them up automatically (no force-recreate needed).
+#   - data/ PDF dirs (customs, invoices, bl_ocean, certificates,
+#     pos_documents, delivery_uk, transload) are rsynced WITHOUT --delete
+#     — prod-only files are preserved (operator uploads, server-only doc
+#     receipts). Safest setting; nothing is removed from prod by the script.
 #
 # Safety: this script NEVER runs from CI or hooks; call it by hand.
 # Project rule "Ask before deploy" (memory:feedback_deploy_discipline)
@@ -48,7 +59,7 @@ while [[ $# -gt 0 ]]; do
       sed -n '2,25p' "$0"
       exit 0
       ;;
-    backend|landing|all) TARGET="$1"; shift ;;
+    backend|landing|compose|data|all) TARGET="$1"; shift ;;
     *) echo "deploy.sh: unknown arg '$1'" >&2; exit 2 ;;
   esac
 done
@@ -87,6 +98,55 @@ fi
 say "Remote sanity"
 maybe_ssh "test -d $REMOTE_ROOT/backend && test -d $REMOTE_ROOT/landing && echo ok" \
   | grep -q ok || die "Remote paths missing under $REMOTE_ROOT on $REMOTE"
+
+# -----------------------------------------------------------------------------
+# Compose + data (additive)
+# -----------------------------------------------------------------------------
+
+# PDF dirs that the backend bind-mounts read-only. Anything else under
+# data/ (sqlite, xlsx, ad-hoc dumps) is intentionally NOT synced.
+DATA_DIRS=(
+  data/customs
+  data/invoices
+  data/bl_ocean
+  data/certificates
+  data/pos_documents
+  data/delivery_uk
+  data/transload
+)
+
+deploy_compose() {
+  say "Compose → rsync (docker-compose.yml + prod override)"
+  local rflags=(-avz)
+  (( DRY_RUN )) && rflags+=(-n)
+
+  local files=(docker-compose.yml)
+  [[ -f docker-compose.prod.yml ]] && files+=(docker-compose.prod.yml)
+
+  rsync "${rflags[@]}" "${files[@]}" "$REMOTE:$REMOTE_ROOT/"
+}
+
+deploy_data() {
+  say "Data dirs → rsync (additive, no --delete)"
+  local rflags=(-avz)
+  (( DRY_RUN )) && rflags+=(-n)
+
+  local d
+  for d in "${DATA_DIRS[@]}"; do
+    if [[ ! -d "$d" ]]; then
+      warn "Local $d missing — skipping"
+      continue
+    fi
+    # Ensure target dir exists so the bind-mount has something to bind.
+    # mkdir is idempotent; safe under --dry-run because we still need the
+    # rsync output to be meaningful.
+    (( DRY_RUN )) || ssh "$REMOTE" "mkdir -p $REMOTE_ROOT/$d"
+    rsync "${rflags[@]}" \
+      --exclude='*.xlsx' --exclude='*.sqlite' --exclude='.DS_Store' \
+      --exclude='__pycache__' \
+      "$d/" "$REMOTE:$REMOTE_ROOT/$d/"
+  done
+}
 
 # -----------------------------------------------------------------------------
 # Backend
@@ -197,9 +257,11 @@ deploy_landing() {
 # Dispatch
 # -----------------------------------------------------------------------------
 case "$TARGET" in
-  backend) deploy_backend ;;
+  backend) deploy_compose; deploy_backend; deploy_data ;;
   landing) deploy_landing ;;
-  all)     deploy_backend; deploy_landing ;;
+  compose) deploy_compose ;;
+  data)    deploy_data ;;
+  all)     deploy_compose; deploy_backend; deploy_data; deploy_landing ;;
 esac
 
 say "Done."
