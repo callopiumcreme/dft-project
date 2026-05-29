@@ -20,7 +20,7 @@ ProductKind = Literal[
     "syngas",
     "h2o",
 ]
-SellableKind = Literal["plus_oil", "carbon_black", "metal_scrap"]
+SellableKind = Literal["plus_oil", "carbon_black", "metal_scrap", "eu_oil"]
 
 
 class WarehouseStockRow(BaseModel):
@@ -127,5 +127,11 @@ class ByproductSaleOut(ByproductSaleIn):
     created_at: datetime
     buyer_name: str | None = None
     has_pdf: bool = False
+    # POS pairing — only populated for virtual Crown DEV-P100 rows projected
+    # from consignment_pos_customs (paired with consignment_pos.pos_number on
+    # the same consignment). Conquer-style byproduct_sale rows have no POS:
+    # both fields are None/False there.
+    pos_no: str | None = None
+    has_pos_pdf: bool = False
 
     model_config = ConfigDict(from_attributes=True)

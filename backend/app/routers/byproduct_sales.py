@@ -208,6 +208,16 @@ async def soft_delete_buyer(
 # ---------------------------------------------------------------------------
 
 
+# Virtual-row id offset for Crown commercial invoices projected read-only
+# from `consignment_pos_customs`. The customs table is the system-of-record
+# for Crown DEV-P100 invoices (they enter via the consignment workflow, not
+# via byproduct_sale POST — eu_oil is excluded from the byproduct_sale
+# CHECK constraint by design). We surface them here for unified display
+# without copying rows: virtual_id = CUSTOMS_VIRTUAL_OFFSET + customs.id.
+# Modal/stream PDF detect the offset and re-route to the customs PDF.
+CUSTOMS_VIRTUAL_OFFSET = 1_000_000
+
+
 @router.get("/sales", response_model=list[ByproductSaleOut])
 async def list_sales(
     _: ViewerUser,
@@ -219,9 +229,19 @@ async def list_sales(
 ) -> list[ByproductSaleOut]:
     """List active byproduct sales with buyer_name JOINed in.
 
+    Result is a UNION of:
+    - byproduct_sale rows (canonical store for plus_oil / carbon_black /
+      metal_scrap sales — Conquer Trade etc.)
+    - consignment_pos_customs rows projected as virtual eu_oil sales
+      (Crown Oil DEV-P100 commercial invoices — read-only display only,
+      no INSERT, no ledger touch). Virtual id is offset by
+      CUSTOMS_VIRTUAL_OFFSET so the modal/stream PDF can detect and
+      re-route to the customs file.
+
     Ordered by sale_date DESC, id DESC.
     """
-    sql = (
+    # --- byproduct_sale branch (canonical) ---
+    byproduct_sql = (
         "SELECT s.id, s.product_kind, s.buyer_id, s.sale_date, s.kg_net, "
         "s.invoice_no, s.price_eur, s.price_amount, s.currency, s.pricing_method, "
         "(s.pdf_ref IS NOT NULL) AS has_pdf, "
@@ -230,23 +250,100 @@ async def list_sales(
         "LEFT JOIN byproduct_buyer b ON b.id = s.buyer_id "
         "WHERE s.deleted_at IS NULL"
     )
-    params: dict[str, object] = {}
+    byproduct_params: dict[str, object] = {}
     if product_kind is not None:
-        sql += " AND s.product_kind = :product_kind"
-        params["product_kind"] = product_kind
+        byproduct_sql += " AND s.product_kind = :product_kind"
+        byproduct_params["product_kind"] = product_kind
     if buyer_id is not None:
-        sql += " AND s.buyer_id = :buyer_id"
-        params["buyer_id"] = buyer_id
+        byproduct_sql += " AND s.buyer_id = :buyer_id"
+        byproduct_params["buyer_id"] = buyer_id
     if from_date is not None:
-        sql += " AND s.sale_date >= :from_date"
-        params["from_date"] = from_date
+        byproduct_sql += " AND s.sale_date >= :from_date"
+        byproduct_params["from_date"] = from_date
     if to_date is not None:
-        sql += " AND s.sale_date <= :to_date"
-        params["to_date"] = to_date
-    sql += " ORDER BY s.sale_date DESC, s.id DESC"
+        byproduct_sql += " AND s.sale_date <= :to_date"
+        byproduct_params["to_date"] = to_date
 
-    rows = (await db.execute(sa_text(sql), params)).mappings().all()
-    return [ByproductSaleOut(**dict(r)) for r in rows]
+    byproduct_rows = (
+        await db.execute(sa_text(byproduct_sql), byproduct_params)
+    ).mappings().all()
+
+    out: list[ByproductSaleOut] = [ByproductSaleOut(**dict(r)) for r in byproduct_rows]
+
+    # --- consignment_pos_customs branch (Crown DEV-P100 virtual rows) ---
+    # Only emit if the product/buyer filter does not exclude Crown/eu_oil.
+    skip_customs = False
+    if product_kind is not None and product_kind != "eu_oil":
+        skip_customs = True
+    if buyer_id is not None:
+        crown_buyer_id = (
+            await db.execute(
+                sa_text(
+                    "SELECT id FROM byproduct_buyer "
+                    "WHERE name = 'CROWN OIL LTD' AND deleted_at IS NULL"
+                )
+            )
+        ).scalar_one_or_none()
+        if crown_buyer_id is None or buyer_id != crown_buyer_id:
+            skip_customs = True
+
+    if not skip_customs:
+        customs_sql = (
+            "SELECT c.id AS customs_id, c.invoice_no, c.net_kg, c.issuing_date, "
+            "c.invoice_pdf_ref, c.pos_number, "
+            "(p.pdf_ref IS NOT NULL) AS has_pos_pdf, "
+            "b.id AS buyer_id, b.name AS buyer_name "
+            "FROM consignment_pos_customs c "
+            "LEFT JOIN consignment_pos p "
+            "  ON p.consignment_id = c.consignment_id "
+            " AND p.pos_number = c.pos_number "
+            " AND p.deleted_at IS NULL "
+            "CROSS JOIN ("
+            "  SELECT id, name FROM byproduct_buyer "
+            "  WHERE name = 'CROWN OIL LTD' AND deleted_at IS NULL"
+            ") b "
+            "WHERE c.deleted_at IS NULL AND c.invoice_no IS NOT NULL"
+        )
+        customs_params: dict[str, object] = {}
+        if from_date is not None:
+            customs_sql += " AND c.issuing_date >= :from_date"
+            customs_params["from_date"] = from_date
+        if to_date is not None:
+            customs_sql += " AND c.issuing_date <= :to_date"
+            customs_params["to_date"] = to_date
+
+        customs_rows = (
+            await db.execute(sa_text(customs_sql), customs_params)
+        ).mappings().all()
+
+        for r in customs_rows:
+            out.append(
+                ByproductSaleOut(
+                    id=CUSTOMS_VIRTUAL_OFFSET + int(r["customs_id"]),
+                    product_kind="eu_oil",
+                    buyer_id=int(r["buyer_id"]),
+                    buyer_name=r["buyer_name"],
+                    sale_date=r["issuing_date"],
+                    kg_net=r["net_kg"],
+                    invoice_no=r["invoice_no"],
+                    price_eur=None,
+                    price_amount=None,
+                    currency=None,
+                    pricing_method=None,
+                    has_pdf=bool(r["invoice_pdf_ref"]),
+                    pos_no=r["pos_number"],
+                    has_pos_pdf=bool(r["has_pos_pdf"]),
+                    notes=(
+                        "Read-only projection from consignment_pos_customs "
+                        "(Crown DEV-P100 commercial invoice)."
+                    ),
+                    created_at=datetime.now(UTC),
+                )
+            )
+
+    # Sort UNION by sale_date DESC, id DESC.
+    out.sort(key=lambda s: (s.sale_date, s.id), reverse=True)
+    return out
 
 
 async def _compute_post_balance(
@@ -363,7 +460,20 @@ async def soft_delete_sale(
     correction row has kg_in = kg_net + corrects_id = original ledger id, so
     v_warehouse_stock restores stock exactly to pre-sale level (net 0) while
     keeping both events in the ledger history.
+
+    Virtual Crown rows (sale_id >= CUSTOMS_VIRTUAL_OFFSET) are read-only
+    projections from consignment_pos_customs and cannot be deleted here —
+    Crown invoices are managed via the consignment workflow.
     """
+    if sale_id >= CUSTOMS_VIRTUAL_OFFSET:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Crown DEV-P100 invoices are read-only projections from the "
+                "consignment workflow; delete via /consignments instead."
+            ),
+        )
+
     # Fetch the sale + companion ledger row in one go (must exist together).
     sale_row = (
         await db.execute(
@@ -444,6 +554,10 @@ async def soft_delete_sale(
 
 
 _BYPRODUCT_ROOT = Path(os.environ.get("BYPRODUCT_ROOT", "/data/byproduct"))
+_INVOICES_ROOT = Path(os.environ.get("INVOICES_ROOT", "/data/invoices"))
+_POS_DOCUMENTS_ROOT = Path(
+    os.environ.get("POS_DOCUMENTS_ROOT", "/data/pos_documents")
+)
 
 
 @router.get("/sales/{sale_id}/pdf")
@@ -455,15 +569,60 @@ async def stream_sale_pdf(
 ) -> FileResponse:
     """Auth-gated stream of the byproduct-sale invoice PDF.
 
-    Looks up the sale by id and resolves ``pdf_ref`` against
-    ``BYPRODUCT_ROOT`` (default ``/data/byproduct``). Refuses any
-    resolved path that escapes the byproduct root — defence against
-    tampered ``pdf_ref`` values.
+    Two branches:
+    - sale_id < CUSTOMS_VIRTUAL_OFFSET: canonical byproduct_sale lookup,
+      resolves ``pdf_ref`` against ``BYPRODUCT_ROOT`` (default
+      ``/data/byproduct``).
+    - sale_id >= CUSTOMS_VIRTUAL_OFFSET: virtual Crown DEV-P100 row;
+      strips the offset and resolves
+      ``consignment_pos_customs.invoice_pdf_ref`` against
+      ``INVOICES_ROOT`` (default ``/data/invoices``), matching the
+      consignments router PDF endpoint.
 
-    Defaults to ``Content-Disposition: inline`` so the popup iframe can
-    render the PDF in-place. Pass ``?download=1`` to force
-    ``attachment`` (used by the modal's Download button).
+    Both branches refuse paths that escape their root (path-traversal
+    defence). Defaults to ``Content-Disposition: inline``; pass
+    ``?download=1`` to force ``attachment``.
     """
+    # --- Virtual customs row branch (Crown DEV-P100) ---
+    if sale_id >= CUSTOMS_VIRTUAL_OFFSET:
+        customs_id = sale_id - CUSTOMS_VIRTUAL_OFFSET
+        row = (
+            await db.execute(
+                sa_text(
+                    "SELECT id, invoice_no, invoice_pdf_ref "
+                    "FROM consignment_pos_customs "
+                    "WHERE id = :id AND deleted_at IS NULL"
+                ),
+                {"id": customs_id},
+            )
+        ).mappings().one_or_none()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Sale not found")
+        if not row["invoice_pdf_ref"]:
+            raise HTTPException(
+                status_code=404, detail="No PDF attached to this sale"
+            )
+
+        root = _INVOICES_ROOT.resolve()
+        candidate = (root / row["invoice_pdf_ref"]).resolve()
+        try:
+            candidate.relative_to(root)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400, detail="pdf_ref escapes invoices root"
+            ) from exc
+        if not candidate.is_file():
+            raise HTTPException(status_code=404, detail="PDF missing on disk")
+
+        filename = f"{row['invoice_no'] or f'sale-{sale_id}'}.pdf"
+        return FileResponse(
+            path=candidate,
+            media_type="application/pdf",
+            filename=filename,
+            content_disposition_type="attachment" if download else "inline",
+        )
+
+    # --- Canonical byproduct_sale branch ---
     row = (
         await db.execute(
             sa_text(
@@ -492,6 +651,81 @@ async def stream_sale_pdf(
         raise HTTPException(status_code=404, detail="PDF missing on disk")
 
     filename = f"{row['invoice_no'] or f'sale-{sale_id}'}.pdf"
+    return FileResponse(
+        path=candidate,
+        media_type="application/pdf",
+        filename=filename,
+        content_disposition_type="attachment" if download else "inline",
+    )
+
+
+@router.get("/sales/{sale_id}/pos.pdf")
+async def stream_sale_pos_pdf(
+    sale_id: int,
+    _: ViewerUser,
+    db: DbDep,
+    download: bool = False,
+) -> FileResponse:
+    """Auth-gated stream of the POS PDF paired with a virtual Crown sale row.
+
+    Only available for sale_id >= CUSTOMS_VIRTUAL_OFFSET (Crown DEV-P100
+    customs projections). The matching POS is looked up by
+    (consignment_id, pos_number) on ``consignment_pos`` and resolved against
+    ``POS_DOCUMENTS_ROOT`` (default ``/data/pos_documents``).
+
+    Canonical byproduct_sale rows (Conquer plus_oil, carbon_black,
+    metal_scrap) have no POS counterpart and return 400 here — POS is a
+    consignment-workflow artefact, not a byproduct field.
+    """
+    if sale_id < CUSTOMS_VIRTUAL_OFFSET:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="POS is only available for Crown DEV-P100 sales.",
+        )
+
+    customs_id = sale_id - CUSTOMS_VIRTUAL_OFFSET
+    row = (
+        await db.execute(
+            sa_text(
+                "SELECT p.consignment_id, p.pos_number, p.pdf_ref "
+                "FROM consignment_pos_customs c "
+                "JOIN consignment_pos p "
+                "  ON p.consignment_id = c.consignment_id "
+                " AND p.pos_number = c.pos_number "
+                " AND p.deleted_at IS NULL "
+                "WHERE c.id = :id AND c.deleted_at IS NULL"
+            ),
+            {"id": customs_id},
+        )
+    ).mappings().one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="POS not found for this sale")
+    if not row["pdf_ref"]:
+        raise HTTPException(status_code=404, detail="No POS PDF on file")
+
+    # ``pdf_ref`` is a legacy Drive-style ref (e.g.
+    # ``gdrive:DFT_2025/POS TO CROWN/OutgoingMaterial_Declaration_<pos>.pdf``).
+    # Local files live under ``POS_DOCUMENTS_ROOT/c-<consignment_id>/<basename>``
+    # — strip any leading ``gdrive:`` scheme + dirname and re-anchor on disk.
+    raw_ref = row["pdf_ref"]
+    if raw_ref.startswith("gdrive:"):
+        raw_ref = raw_ref[len("gdrive:"):]
+    basename = os.path.basename(raw_ref)
+    if not basename:
+        raise HTTPException(status_code=404, detail="POS PDF ref empty")
+
+    root = _POS_DOCUMENTS_ROOT.resolve()
+    candidate = (root / f"c-{int(row['consignment_id'])}" / basename).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="pdf_ref escapes pos_documents root"
+        ) from exc
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="POS PDF missing on disk")
+
+    filename = f"POS_{row['pos_number']}.pdf"
     return FileResponse(
         path=candidate,
         media_type="application/pdf",

@@ -6,12 +6,18 @@
  * Pattern mirrors contract-client.ts.
  */
 
-export type SellableKind = 'plus_oil' | 'carbon_black' | 'metal_scrap';
+// eu_oil = DEV-P100 (Crown Oil main product) — included for display/filter
+// only. The byproduct_sale CHECK constraint excludes eu_oil; the backend
+// projects Crown rows read-only from consignment_pos_customs (see
+// CUSTOMS_VIRTUAL_OFFSET in app/routers/byproduct_sales.py). The "New sale"
+// form keeps the 3 byproduct kinds only since eu_oil cannot be inserted.
+export type SellableKind = 'plus_oil' | 'carbon_black' | 'metal_scrap' | 'eu_oil';
 
 export const SELLABLE_KIND_LABELS: Record<SellableKind, string> = {
   plus_oil: 'DEV-P200',
   carbon_black: 'Carbon black',
   metal_scrap: 'Metal scrap',
+  eu_oil: 'DEV-P100',
 };
 
 export interface ByproductBuyer {
@@ -50,6 +56,11 @@ export interface ByproductSale {
   currency: string | null;
   pricing_method: string | null;
   has_pdf: boolean;
+  // POS pairing — populated only for virtual Crown DEV-P100 rows (paired
+  // with consignment_pos via the same consignment_id + pos_number). For
+  // Conquer-style byproduct_sale rows pos_no is null and has_pos_pdf is false.
+  pos_no: string | null;
+  has_pos_pdf: boolean;
   notes: string | null;
   created_at: string;
 }

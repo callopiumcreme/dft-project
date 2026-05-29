@@ -15,9 +15,13 @@ import {
   type ByproductSale,
 } from '@/lib/byproduct-client';
 
+type ModalVariant = 'invoice' | 'pos';
+
 interface Props {
   sale: ByproductSale | null;
   onClose: () => void;
+  /** Which document the modal previews. Defaults to 'invoice'. */
+  variant?: ModalVariant;
 }
 
 const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 3 });
@@ -56,10 +60,17 @@ function fmtMoney(amount: string | null | undefined, currency: string | null | u
  * Files stored on local disk under `data/byproduct/c-<sale_id>.pdf` —
  * no Drive runtime. Mirrors the CustomsEadModal pattern.
  */
-export function ByproductInvoiceModal({ sale, onClose }: Props) {
+export function ByproductInvoiceModal({ sale, onClose, variant = 'invoice' }: Props) {
   const isOpen = sale !== null;
-  const pdfUrl = isOpen && sale?.id ? `/api/byproduct/sales/${sale.id}/pdf` : null;
-  const filename = sale?.invoice_no ? `${sale.invoice_no}.pdf` : 'invoice.pdf';
+  const isPos = variant === 'pos';
+  const pdfUrl = isOpen && sale?.id
+    ? (isPos
+        ? `/api/byproduct/sales/${sale.id}/pos`
+        : `/api/byproduct/sales/${sale.id}/pdf`)
+    : null;
+  const filename = isPos
+    ? `${sale?.pos_no ?? 'pos'}.pdf`
+    : (sale?.invoice_no ? `${sale.invoice_no}.pdf` : 'invoice.pdf');
 
   const handleDownload = React.useCallback(() => {
     if (!pdfUrl) return;
@@ -76,10 +87,12 @@ export function ByproductInvoiceModal({ sale, onClose }: Props) {
       <DialogContent className="max-w-5xl">
         <DialogHeader>
           <DialogTitle className="font-mono text-sm tracking-[0.1em]">
-            Invoice · {sale?.invoice_no ?? '—'}
+            {isPos ? 'POS' : 'Invoice'} · {isPos ? (sale?.pos_no ?? '—') : (sale?.invoice_no ?? '—')}
           </DialogTitle>
           <DialogDescription className="font-mono text-[0.7rem] text-ink-mute">
-            Commercial invoice — OisteBio GmbH to {sale?.buyer_name ?? '—'}.
+            {isPos
+              ? `Proof of Sustainability — OisteBio GmbH to ${sale?.buyer_name ?? '—'}.`
+              : `Commercial invoice — OisteBio GmbH to ${sale?.buyer_name ?? '—'}.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -97,7 +110,11 @@ export function ByproductInvoiceModal({ sale, onClose }: Props) {
         {pdfUrl && (
           <iframe
             src={pdfUrl}
-            title={`Invoice ${sale?.invoice_no ?? ''}`}
+            title={
+              isPos
+                ? `POS ${sale?.pos_no ?? ''}`
+                : `Invoice ${sale?.invoice_no ?? ''}`
+            }
             className="h-[60vh] w-full border border-rule"
           />
         )}

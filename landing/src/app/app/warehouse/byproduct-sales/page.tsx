@@ -16,6 +16,7 @@ const SELLABLE_KINDS: ReadonlySet<SellableKind> = new Set([
   'plus_oil',
   'carbon_black',
   'metal_scrap',
+  'eu_oil',
 ]);
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -95,11 +96,12 @@ export default async function ByproductSalesPage({ searchParams }: PageProps) {
           Warehouse
         </p>
         <h1 className="mt-1 font-display text-4xl tracking-editorial text-ink">
-          Byproduct sales
+          Sales
         </h1>
         <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
-          Carbon black + metal scrap + PLUS oil sales tracking. Each sale also
-          posts a row to the mass-balance ledger.
+          Commercial invoices — DEV-P100 (Crown Oil, read-only from
+          consignment workflow) + DEV-P200 + carbon black + metal scrap.
+          Non-Crown sales also post a mass-balance ledger row.
         </p>
       </header>
 
@@ -117,7 +119,8 @@ export default async function ByproductSalesPage({ searchParams }: PageProps) {
               className="border border-rule bg-bg-soft px-2 py-1 text-ink"
             >
               <option value="">— all —</option>
-              <option value="plus_oil">PLUS oil</option>
+              <option value="eu_oil">DEV-P100 (Crown)</option>
+              <option value="plus_oil">DEV-P200 (PLUS oil)</option>
               <option value="carbon_black">Carbon black</option>
               <option value="metal_scrap">Metal scrap</option>
             </select>

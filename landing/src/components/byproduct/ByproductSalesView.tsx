@@ -66,6 +66,7 @@ export function ByproductSalesView({
   const [pendingBuyerDelete, setPendingBuyerDelete] = React.useState<number | null>(null);
   const [showBuyers, setShowBuyers] = React.useState(false);
   const [previewSale, setPreviewSale] = React.useState<ByproductSale | null>(null);
+  const [previewPosSale, setPreviewPosSale] = React.useState<ByproductSale | null>(null);
 
   // Keep state in sync if parent server-re-renders (filter changes).
   React.useEffect(() => {
@@ -153,6 +154,7 @@ export function ByproductSalesView({
               <Th>Product</Th>
               <Th>Buyer</Th>
               <ThNum>kg net</ThNum>
+              <Th>POS</Th>
               <Th>Invoice</Th>
               <Th className="text-right">
                 <span className="sr-only">Actions</span>
@@ -162,7 +164,7 @@ export function ByproductSalesView({
           <tbody>
             {sales.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-ink-mute">
+                <td colSpan={7} className="px-3 py-6 text-center text-ink-mute">
                   No sales match the selected filter.
                 </td>
               </tr>
@@ -183,6 +185,24 @@ export function ByproductSalesView({
                   </Td>
                   <TdNum>{fmtKg(r.kg_net)}</TdNum>
                   <Td className="text-ink-soft">
+                    {r.pos_no ? (
+                      r.has_pos_pdf ? (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewPosSale(r)}
+                          className="font-mono text-[0.72rem] text-ink underline decoration-dotted underline-offset-2 hover:text-olive-deep"
+                          aria-label={`Preview POS ${r.pos_no}`}
+                        >
+                          {r.pos_no}
+                        </button>
+                      ) : (
+                        <span title="No POS PDF on file">{r.pos_no}</span>
+                      )
+                    ) : (
+                      '—'
+                    )}
+                  </Td>
+                  <Td className="text-ink-soft">
                     {r.invoice_no ? (
                       <button
                         type="button"
@@ -197,15 +217,24 @@ export function ByproductSalesView({
                     )}
                   </Td>
                   <Td className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => confirmDeleteSale(r)}
-                      disabled={deleting}
-                      className="font-mono text-[0.65rem] uppercase tracking-[0.12em] text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-                      aria-label={`Delete sale ${r.id}`}
-                    >
-                      {deleting ? 'Deleting…' : 'Delete'}
-                    </button>
+                    {r.product_kind === 'eu_oil' ? (
+                      <span
+                        className="font-mono text-[0.65rem] uppercase tracking-[0.12em] text-ink-mute"
+                        title="DEV-P100 invoices are read-only projections from the consignment workflow"
+                      >
+                        read-only
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => confirmDeleteSale(r)}
+                        disabled={deleting}
+                        className="font-mono text-[0.65rem] uppercase tracking-[0.12em] text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-label={`Delete sale ${r.id}`}
+                      >
+                        {deleting ? 'Deleting…' : 'Delete'}
+                      </button>
+                    )}
                   </Td>
                 </tr>
               );
@@ -308,6 +337,12 @@ export function ByproductSalesView({
       <ByproductInvoiceModal
         sale={previewSale}
         onClose={() => setPreviewSale(null)}
+      />
+
+      <ByproductInvoiceModal
+        sale={previewPosSale}
+        onClose={() => setPreviewPosSale(null)}
+        variant="pos"
       />
     </>
   );
