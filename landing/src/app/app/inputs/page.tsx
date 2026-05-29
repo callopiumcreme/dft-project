@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
-import { ErsvLink } from '@/components/ersv';
+import {
+  InputsTableClient,
+  type InputsFilters,
+  type SupplierLite,
+} from './_components/inputs-table-client';
 
 type Input = components['schemas']['DailyInputRead'];
 type Supplier = components['schemas']['SupplierRead'];
@@ -21,13 +25,10 @@ interface PageProps {
 }
 
 const PAGE_SIZE = 50;
-
-function fmtKg(v: string | number | null | undefined): string {
-  if (v === null || v === undefined || v === '') return '—';
-  const n = typeof v === 'string' ? Number(v) : v;
-  if (!Number.isFinite(n)) return '—';
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n);
-}
+// Backend `/daily-inputs` caps limit at 10000 (see
+// backend/app/routers/daily_inputs.py). When a filter is active we ask for
+// the whole result set so the user sees the full range without paging.
+const FILTERED_LIMIT = 10000;
 
 export default async function InputsPage({ searchParams }: PageProps) {
   const date_from = (searchParams.date_from ?? '').trim();
@@ -36,6 +37,9 @@ export default async function InputsPage({ searchParams }: PageProps) {
   const showCreated = searchParams.created === '1';
   const showDeleted = searchParams.deleted === '1';
   const showError = searchParams.error;
+
+  const hasFilter = Boolean(date_from || date_to || supplier_id);
+  const effectiveLimit = hasFilter ? FILTERED_LIMIT : PAGE_SIZE;
 
   let rows: Input[] = [];
   let suppliers: Supplier[] = [];
@@ -48,7 +52,7 @@ export default async function InputsPage({ searchParams }: PageProps) {
           date_from: date_from || undefined,
           date_to: date_to || undefined,
           supplier_id: supplier_id ? Number(supplier_id) : undefined,
-          limit: PAGE_SIZE,
+          limit: effectiveLimit,
         },
       }),
       apiGet<Supplier[]>('/suppliers', { query: { active_only: false } }),
@@ -57,9 +61,20 @@ export default async function InputsPage({ searchParams }: PageProps) {
     fetchError = e instanceof ApiError ? `${e.status} · ${e.detail}` : 'unknown error';
   }
 
-  const supplierMap = new Map(suppliers.map((s) => [s.id, s]));
-
-  const totalKg = rows.reduce((sum, r) => sum + Number(r.total_input_kg ?? 0), 0);
+  const filters: InputsFilters = {
+    date_from: date_from || undefined,
+    date_to: date_to || undefined,
+    supplier_id: supplier_id || undefined,
+  };
+  const supplierLites: SupplierLite[] = suppliers.map((s) => ({
+    id: s.id,
+    code: s.code,
+    name: s.name,
+  }));
+  const rangeLabel =
+    date_from || date_to
+      ? ` · range ${date_from || '…'} → ${date_to || '…'}`
+      : ' · most recent';
 
   return (
     <div className="mx-auto max-w-editorial">
@@ -76,12 +91,6 @@ export default async function InputsPage({ searchParams }: PageProps) {
             + New input
           </Link>
         </div>
-        <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
-          {rows.length} entries · {fmtKg(totalKg)} kg total
-          {date_from || date_to
-            ? ` · range ${date_from || '…'} → ${date_to || '…'}`
-            : ' · most recent'}
-        </p>
       </header>
 
       {showCreated && (
@@ -169,85 +178,16 @@ export default async function InputsPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      <section className="mt-6 border border-rule bg-bg-soft overflow-x-auto">
-        <table className="w-full border-collapse font-mono text-[0.72rem]">
-          <thead className="border-b border-rule bg-bg">
-            <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
-              <Th>Date</Th>
-              <Th>Time</Th>
-              <Th>Supplier</Th>
-              <Th>eRSV</Th>
-              <Th className="text-right">Car</Th>
-              <Th className="text-right">Truck</Th>
-              <Th className="text-right">Special</Th>
-              <Th className="text-right">Total kg</Th>
-              <Th className="text-right">
-                <span className="sr-only">Open</span>
-              </Th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && !fetchError && (
-              <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-ink-mute">
-                  No inputs match the filter.
-                </td>
-              </tr>
-            )}
-            {rows.map((r) => {
-              const sup = supplierMap.get(r.supplier_id);
-              return (
-                <tr
-                  key={r.id}
-                  className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
-                >
-                  <Td className="text-ink">{r.entry_date}</Td>
-                  <Td className="text-ink-mute">{r.entry_time ?? '—'}</Td>
-                  <Td className="text-ink-soft">
-                    {sup ? `${sup.code} · ${sup.name}` : `#${r.supplier_id}`}
-                  </Td>
-                  <Td className="text-ink-mute">
-                    {r.ersv_number ? (
-                      <ErsvLink ersvNumber={r.ersv_number} dailyInputId={r.id} />
-                    ) : (
-                      '—'
-                    )}
-                  </Td>
-                  <Td className="text-right text-ink-soft">{fmtKg(r.car_kg)}</Td>
-                  <Td className="text-right text-ink-soft">{fmtKg(r.truck_kg)}</Td>
-                  <Td className="text-right text-ink-soft">{fmtKg(r.special_kg)}</Td>
-                  <Td className="text-right text-ink font-medium">
-                    {fmtKg(r.total_input_kg)}
-                  </Td>
-                  <Td className="text-right">
-                    <Link
-                      href={`/app/inputs/${r.id}`}
-                      className="text-ink-soft hover:text-ink"
-                      aria-label={`Open input ${r.id}`}
-                    >
-                      →
-                    </Link>
-                  </Td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
-
-      {rows.length === PAGE_SIZE && (
-        <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-ink-mute">
-          Showing first {PAGE_SIZE}. Narrow filter to see more.
-        </p>
+      {!fetchError && (
+        <InputsTableClient
+          initialRows={rows}
+          pageSize={PAGE_SIZE}
+          filters={filters}
+          suppliers={supplierLites}
+          rangeLabel={rangeLabel}
+          initialHasMore={!hasFilter && rows.length === PAGE_SIZE}
+        />
       )}
     </div>
   );
-}
-
-function Th({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <th className={`px-3 py-2 font-normal ${className}`}>{children}</th>;
-}
-
-function Td({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <td className={`px-3 py-2 ${className}`}>{children}</td>;
 }

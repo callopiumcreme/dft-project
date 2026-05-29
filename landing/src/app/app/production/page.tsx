@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
+import {
+  ProductionTableClient,
+  type ProductionFilters,
+} from './_components/production-table-client';
 
 type Production = components['schemas']['DailyProductionRead'];
 
@@ -19,13 +23,10 @@ interface PageProps {
 }
 
 const PAGE_SIZE = 50;
-
-function fmtKg(v: string | number | null | undefined): string {
-  if (v === null || v === undefined || v === '') return '—';
-  const n = typeof v === 'string' ? Number(v) : v;
-  if (!Number.isFinite(n)) return '—';
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n);
-}
+// Backend `/daily-production` caps limit at 1000 (see
+// backend/app/routers/daily_production.py). When a date filter is active we
+// ask for the whole range so the user sees everything without paging.
+const FILTERED_LIMIT = 1000;
 
 export default async function ProductionPage({ searchParams }: PageProps) {
   const date_from = (searchParams.date_from ?? '').trim();
@@ -33,6 +34,9 @@ export default async function ProductionPage({ searchParams }: PageProps) {
   const showCreated = searchParams.created === '1';
   const showDeleted = searchParams.deleted === '1';
   const showError = searchParams.error;
+
+  const hasFilter = Boolean(date_from || date_to);
+  const effectiveLimit = hasFilter ? FILTERED_LIMIT : PAGE_SIZE;
 
   let rows: Production[] = [];
   let fetchError: string | null = null;
@@ -42,15 +46,21 @@ export default async function ProductionPage({ searchParams }: PageProps) {
       query: {
         date_from: date_from || undefined,
         date_to: date_to || undefined,
-        limit: PAGE_SIZE,
+        limit: effectiveLimit,
       },
     });
   } catch (e) {
     fetchError = e instanceof ApiError ? `${e.status} · ${e.detail}` : 'unknown error';
   }
 
-  const totalKgIn = rows.reduce((sum, r) => sum + Number(r.kg_to_production ?? 0), 0);
-  const totalEuOut = rows.reduce((sum, r) => sum + Number(r.output_eu_kg ?? 0), 0);
+  const filters: ProductionFilters = {
+    date_from: date_from || undefined,
+    date_to: date_to || undefined,
+  };
+  const rangeLabel =
+    date_from || date_to
+      ? ` · range ${date_from || '…'} → ${date_to || '…'}`
+      : ' · most recent';
 
   return (
     <div className="mx-auto max-w-editorial">
@@ -67,12 +77,6 @@ export default async function ProductionPage({ searchParams }: PageProps) {
             + New day
           </Link>
         </div>
-        <p className="mt-3 max-w-reading font-mono text-[0.78rem] text-ink-soft">
-          {rows.length} days · {fmtKg(totalKgIn)} kg input · {fmtKg(totalEuOut)} kg EU output
-          {date_from || date_to
-            ? ` · range ${date_from || '…'} → ${date_to || '…'}`
-            : ' · most recent'}
-        </p>
       </header>
 
       {showCreated && (
@@ -145,65 +149,15 @@ export default async function ProductionPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      <section className="mt-6 border border-rule bg-bg-soft overflow-x-auto">
-        <table className="w-full border-collapse font-mono text-[0.72rem]">
-          <thead className="border-b border-rule bg-bg">
-            <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
-              <Th>Date</Th>
-              <Th className="text-right">Input kg</Th>
-              <Th className="text-right">EU prod</Th>
-              <Th className="text-right">Plus</Th>
-              <Th className="text-right">Output EU</Th>
-              <Th>Contract</Th>
-              <Th className="text-right">
-                <span className="sr-only">Open</span>
-              </Th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && !fetchError && (
-              <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-ink-mute">
-                  No production days match the filter.
-                </td>
-              </tr>
-            )}
-            {rows.map((r) => (
-              <tr key={r.id} className="border-b border-rule/60 last:border-b-0 hover:bg-bg">
-                <Td className="text-ink">{r.prod_date}</Td>
-                <Td className="text-right text-ink-soft">{fmtKg(r.kg_to_production)}</Td>
-                <Td className="text-right text-ink-soft">{fmtKg(r.eu_prod_kg)}</Td>
-                <Td className="text-right text-ink-soft">{fmtKg(r.plus_prod_kg)}</Td>
-                <Td className="text-right text-ink font-medium">{fmtKg(r.output_eu_kg)}</Td>
-                <Td className="text-ink-mute">{r.contract_ref ?? '—'}</Td>
-                <Td className="text-right">
-                  <Link
-                    href={`/app/production/${r.id}`}
-                    className="text-ink-soft hover:text-ink"
-                    aria-label={`Open production day ${r.prod_date}`}
-                  >
-                    →
-                  </Link>
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      {rows.length === PAGE_SIZE && (
-        <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-ink-mute">
-          Showing first {PAGE_SIZE}. Narrow filter to see more.
-        </p>
+      {!fetchError && (
+        <ProductionTableClient
+          initialRows={rows}
+          pageSize={PAGE_SIZE}
+          filters={filters}
+          rangeLabel={rangeLabel}
+          initialHasMore={!hasFilter && rows.length === PAGE_SIZE}
+        />
       )}
     </div>
   );
-}
-
-function Th({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <th className={`px-3 py-2 font-normal ${className}`}>{children}</th>;
-}
-
-function Td({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <td className={`px-3 py-2 ${className}`}>{children}</td>;
 }
