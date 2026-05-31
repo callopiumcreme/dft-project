@@ -12,6 +12,7 @@ from app.models.daily_production import DailyProduction
 from app.models.inland_shipment import InlandShipment
 from app.models.mass_balance_ledger import MassBalanceLedger
 from app.models.off_taker import OffTaker
+from app.models.product_purchase import ProductPurchase
 from app.models.shipment_leg import ShipmentLeg
 from app.models.shipment_unit import ShipmentUnit
 from app.models.supplier import Supplier
@@ -33,6 +34,7 @@ __all__ = [
     "InlandShipment",
     "MassBalanceLedger",
     "OffTaker",
+    "ProductPurchase",
     "ShipmentLeg",
     "ShipmentUnit",
     "Supplier",

@@ -30,6 +30,7 @@ services:
     volumes:
       - ./templates:/templates:ro
       - ./backend/data/contracts:/app/data/contracts:ro
+      - ./backend/data/pos:/app/data/pos:ro
       - ./data/customs:/data/customs:ro
       - ./data/invoices:/data/invoices:ro
       - ./data/bl_ocean:/data/bl_ocean:ro

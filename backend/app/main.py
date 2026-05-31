@@ -18,6 +18,7 @@ from app.routers import (
     daily_production,
     ersv,
     off_takers,
+    product_purchases,
     reports,
     shipments,
     signing,
@@ -72,6 +73,7 @@ app.include_router(consignments.router)
 app.include_router(shipments.router)
 app.include_router(warehouse.router)
 app.include_router(byproduct_sales.router)
+app.include_router(product_purchases.router)
 app.include_router(signing.router)
 
 
