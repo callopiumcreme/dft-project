@@ -26,11 +26,13 @@ from app.routers import (
     tickets,
     warehouse,
 )
+from app.services.ledger_purge import purge_ledger_tombstones
 from app.services.mv_refresh import refresh_all_mvs
 
 logger = logging.getLogger(__name__)
 
 MV_REFRESH_INTERVAL_MIN = int(os.environ.get("MV_REFRESH_INTERVAL_MIN", "30"))
+LEDGER_PURGE_INTERVAL_HOURS = int(os.environ.get("LEDGER_PURGE_INTERVAL_HOURS", "24"))
 
 
 @asynccontextmanager
@@ -44,8 +46,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         replace_existing=True,
         next_run_time=None,
     )
+    scheduler.add_job(
+        purge_ledger_tombstones,
+        "interval",
+        hours=LEDGER_PURGE_INTERVAL_HOURS,
+        id="ledger_purge",
+        replace_existing=True,
+        next_run_time=None,
+    )
     scheduler.start()
-    logger.info("MV refresh scheduler started (every %d min)", MV_REFRESH_INTERVAL_MIN)
+    logger.info(
+        "schedulers started (mv_refresh every %d min, ledger_purge every %d h)",
+        MV_REFRESH_INTERVAL_MIN,
+        LEDGER_PURGE_INTERVAL_HOURS,
+    )
     try:
         yield
     finally:
