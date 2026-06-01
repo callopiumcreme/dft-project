@@ -12,8 +12,8 @@ import re
 from pathlib import Path
 from typing import Annotated
 
+import fitz
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -101,12 +101,29 @@ def _resolve_pos_pdf(pos_number: str) -> Path | None:
     return candidate
 
 
+def _strip_outline(pdf: Path) -> bytes:
+    """Return PDF bytes with the bookmark outline removed.
+
+    POS PDFs carry an outline (PageMode /UseOutlines); Chrome's viewer
+    auto-opens the outline sidebar and ignores the #navpanes=0 URL hint. We
+    drop the outline + PageMode on the preview copy only — the on-disk original
+    is never mutated, so /pdf/download keeps audit integrity.
+    """
+    doc = fitz.open(pdf)
+    try:
+        doc.set_toc([])
+        doc.set_pagemode("UseNone")
+        return bytes(doc.tobytes())
+    finally:
+        doc.close()
+
+
 @router.get("/{pp_id}/pdf")
 async def get_product_purchase_pdf(
     pp_id: int,
     _: ViewerUser,
     db: DbDep,
-) -> FileResponse:
+) -> Response:
     """Inline PDF preview for the modal iframe. No audit (viewing != downloading)."""
     obj = await _get_or_404(db, pp_id, include_deleted=True)
     pdf = _resolve_pos_pdf(obj.pos_number)
@@ -115,8 +132,8 @@ async def get_product_purchase_pdf(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"PoS PDF not found for {obj.pos_number}",
         )
-    return FileResponse(
-        path=pdf,
+    return Response(
+        content=_strip_outline(pdf),
         media_type="application/pdf",
         headers={
             "Cache-Control": "private, max-age=300",
