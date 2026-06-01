@@ -7,12 +7,22 @@ import {
   type WarehouseStockRow,
   type WarehouseMovement,
 } from '@/lib/warehouse-client';
+import { MovementsTableClient } from './_components/movements-table-client';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Warehouse — DFT' };
 
+const PAGE_SIZE = 50;
+
 const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
 const dateFmt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
+
+// Volume-weighted density (Σkg / Σlitres) from the 2025 kg→litres reconciliation
+// bundle. Used to show Available stock in litres on the two oil cards.
+const DENSITY_KG_PER_L: Partial<Record<ProductKind, number>> = {
+  eu_oil: 0.77082,
+  plus_oil: 0.86161,
+};
 
 const STOCKABLE = ['eu_oil', 'plus_oil', 'carbon_black', 'metal_scrap'] as const;
 const FLOW_THROUGH = ['syngas', 'h2o'] as const;
@@ -32,8 +42,8 @@ const FLOW_THROUGH_LABEL: Record<(typeof FLOW_THROUGH)[number], string> = {
 };
 
 const PRODUCT_LABEL: Record<ProductKind, string> = {
-  eu_oil: 'EU oil',
-  plus_oil: 'Plus oil',
+  eu_oil: 'EU oil (DEV-P100)',
+  plus_oil: 'Plus oil (DEV-P200)',
   carbon_black: 'Carbon black',
   metal_scrap: 'Metal scrap',
   syngas: 'Syngas',
@@ -45,6 +55,13 @@ function fmtKg(v: string | null | undefined): string {
   const n = Number(v);
   if (!Number.isFinite(n)) return '—';
   return `${numFmt.format(n)} kg`;
+}
+
+function fmtLitres(v: string | null | undefined, densityKgPerL: number): string {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '—';
+  return `${numFmt.format(n / densityKgPerL)} L`;
 }
 
 function fmtDate(v: string | null | undefined): string {
@@ -92,7 +109,7 @@ export default async function WarehousePage({ searchParams }: PageProps) {
   try {
     const [stock, movs] = await Promise.all([
       getWarehouseStock(),
-      getWarehouseMovements({ limit: 50, product_kind: productFilter }),
+      getWarehouseMovements({ limit: PAGE_SIZE, product_kind: productFilter }),
     ]);
     stockRows = stock;
     movements = movs;
@@ -146,6 +163,14 @@ export default async function WarehousePage({ searchParams }: PageProps) {
                     <dt className="text-ink-mute">Available</dt>
                     <dd className="tabular-nums text-ink">{fmtKg(row.stock_kg)}</dd>
                   </div>
+                  {DENSITY_KG_PER_L[kind] !== undefined && (
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-ink-mute">Available (litres)</dt>
+                      <dd className="tabular-nums text-ink-soft">
+                        {fmtLitres(row.stock_kg, DENSITY_KG_PER_L[kind]!)}
+                      </dd>
+                    </div>
+                  )}
                   {isEuOil && (
                     <div className="flex justify-between gap-2">
                       <dt className="text-ink-mute">POS issued 2025</dt>
@@ -268,77 +293,13 @@ export default async function WarehousePage({ searchParams }: PageProps) {
           </form>
         </div>
 
-        <div className="mt-4 border border-rule bg-bg-soft overflow-x-auto">
-          <table className="w-full border-collapse font-mono text-[0.72rem]">
-            <thead className="border-b border-rule bg-bg">
-              <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
-                <Th>Date</Th>
-                <Th>Event</Th>
-                <Th>Product</Th>
-                <Th className="text-right">In (kg)</Th>
-                <Th className="text-right">Out (kg)</Th>
-                <Th className="text-right">Balance</Th>
-                <Th>Doc</Th>
-                <Th>Notes</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {movements.length === 0 && !fetchError && (
-                <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-ink-mute">
-                    No movements logged.
-                  </td>
-                </tr>
-              )}
-              {movements.map((m) => (
-                <tr
-                  key={m.id}
-                  className="border-b border-rule/60 last:border-b-0 hover:bg-bg"
-                >
-                  <Td className="text-ink">{fmtDate(m.event_date)}</Td>
-                  <Td className="text-ink-soft">{m.event_type}</Td>
-                  <Td className="text-ink-soft">{PRODUCT_LABEL[m.product_kind] ?? m.product_kind}</Td>
-                  <Td className="text-right tabular-nums text-ink-soft">{fmtKg(m.kg_in)}</Td>
-                  <Td className="text-right tabular-nums text-ink-soft">{fmtKg(m.kg_out)}</Td>
-                  <Td className="text-right tabular-nums text-ink font-medium">
-                    {fmtKg(m.post_balance_kg)}
-                  </Td>
-                  <Td className="text-ink-soft">{m.ref_doc_no ?? '—'}</Td>
-                  <Td className="text-ink-mute" title={m.notes ?? undefined}>
-                    {m.notes ?? '—'}
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {movements.length === 50 && (
-          <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-ink-mute">
-            Showing last 50 movements. Filter by product to narrow further.
-          </p>
-        )}
+        <MovementsTableClient
+          initialRows={movements}
+          pageSize={PAGE_SIZE}
+          productFilter={productFilter}
+          initialHasMore={movements.length === PAGE_SIZE}
+        />
       </section>
     </div>
-  );
-}
-
-function Th({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <th className={`px-3 py-2 font-normal ${className}`}>{children}</th>;
-}
-
-function Td({
-  children,
-  className = '',
-  title,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  title?: string;
-}) {
-  return (
-    <td className={`px-3 py-2 ${className}`} title={title}>
-      {children}
-    </td>
   );
 }

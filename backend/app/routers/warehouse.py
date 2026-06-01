@@ -153,6 +153,7 @@ async def list_warehouse_movements(
     _: ViewerUser,
     db: DbDep,
     limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
     product_kind: ProductKind | None = Query(None),  # noqa: B008 — FastAPI Query idiom
     event_type: str | None = Query(None),
 ) -> list[WarehouseMovement]:
@@ -160,7 +161,8 @@ async def list_warehouse_movements(
 
     Ordered by event_date DESC, id DESC. kg_in / kg_out NULLs in the ledger
     surface as 0 in the response so the frontend can render symmetric
-    in/out columns without null-guards.
+    in/out columns without null-guards. limit + offset drive the frontend
+    "Show more" pagination.
     """
     sql = (
         "SELECT id, event_date, event_type, product_kind, "
@@ -169,14 +171,14 @@ async def list_warehouse_movements(
         "FROM mass_balance_ledger "
         "WHERE deleted_at IS NULL"
     )
-    params: dict[str, object] = {"limit": limit}
+    params: dict[str, object] = {"limit": limit, "offset": offset}
     if product_kind is not None:
         sql += " AND product_kind = :product_kind"
         params["product_kind"] = product_kind
     if event_type is not None:
         sql += " AND event_type = :event_type"
         params["event_type"] = event_type
-    sql += " ORDER BY event_date DESC, id DESC LIMIT :limit"
+    sql += " ORDER BY event_date DESC, id DESC LIMIT :limit OFFSET :offset"
 
     rows = (await db.execute(sa_text(sql), params)).mappings().all()
     return [WarehouseMovement(**dict(r)) for r in rows]
