@@ -133,7 +133,7 @@ export default async function LogisticsPage({ searchParams }: PageProps) {
       <section className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
         <KpiTile label="Consignments" value={String(totalConsignments)} />
         <KpiTile label="Total shipped" value={fmtKg(String(totalKgShipped))} />
-        <KpiTile label="UTB stock" value={fmtKg(String(utbResidual))} />
+        <KpiTile label="Not delivered stock" value={fmtKg(String(utbResidual))} />
         <KpiTile label="Delivered UK" value={fmtKg(String(deliveredKg))} />
       </section>
 
