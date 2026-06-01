@@ -92,6 +92,11 @@ _OPENING_BALANCES: dict[str, Decimal] = {
     "h2o":          Decimal("0"),
 }
 
+# Commercial product_kind (byproduct_sale) → physical ledger code. The
+# ledger CHECK only knows physical streams; dev_p200 is the commercial name
+# of the plus_oil byproduct sold to Conquer.
+_LEDGER_KIND = {"dev_p200": "plus_oil"}
+
 # Statuses that count as "delivered" — these get a uk_delivery (kg_out) row.
 _TERMINAL_STATUSES = {"delivered_uk", "closed"}
 
@@ -416,8 +421,10 @@ async def _byproduct_sale_events(
 ) -> list[dict]:
     """Replay byproduct_sale rows → byproduct_sale event rows.
 
-    plus_oil / carbon_black / metal_scrap only — table CHECK constraint
-    enforces this, so no defensive validation needed here.
+    byproduct_sale.product_kind carries the commercial code (e.g. dev_p200);
+    the ledger CHECK only knows physical codes, so map commercial→physical
+    via _LEDGER_KIND before writing the balance event. dev_p200 is the
+    commercial name of the plus_oil physical stream sold to Conquer.
     """
     rows = (await db.execute(text(
         "SELECT id, product_kind, sale_date, kg_net, "
@@ -430,10 +437,11 @@ async def _byproduct_sale_events(
 
     events: list[dict] = []
     for r in rows:
+        ledger_kind = _LEDGER_KIND.get(r.product_kind, r.product_kind)
         events.append({
             "event_type": "byproduct_sale",
             "event_date": r.sale_date,
-            "product_kind": r.product_kind,
+            "product_kind": ledger_kind,
             "kg_in": None,
             "kg_out": Decimal(r.kg_net),
             "ref_table": "byproduct_sale",

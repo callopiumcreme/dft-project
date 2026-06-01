@@ -4,9 +4,9 @@ Source: ``DFT_2025/INVOICES_CONQUER/INVOICES TO CONQUER 8.pdf`` (Drive),
 8 invoices ``CONQ-250001..250008`` issued by OisteBio GmbH to
 ``C.I. CONQUERS WORLD TRADE S.A.S.`` (buyer id=23, Colombia).
 
-Each invoice = one ``byproduct_sale`` row with ``product_kind='plus_oil'``.
+Each invoice = one ``byproduct_sale`` row with ``product_kind='dev_p200'``.
 The companion ``mass_balance_ledger`` row (event_type='byproduct_sale',
-product_kind='plus_oil') is *not* inserted here — running
+product_kind='dev_p200') is *not* inserted here — running
 ``backfill_warehouse.py --reset`` after this script picks up the new
 sales and recomputes the entire chain in chronological order.
 
@@ -74,7 +74,7 @@ _UPSERT_SQL = text(
         price_amount, currency, pricing_method, pdf_ref, notes
     )
     VALUES (
-        'plus_oil', :buyer_id, :sale_date, :kg_net, :invoice_no,
+        'dev_p200', :buyer_id, :sale_date, :kg_net, :invoice_no,
         :price_amount, 'USD', 'AVG_BRENT_USD_PER_MT', :pdf_ref, :notes
     )
     ON CONFLICT (invoice_no) WHERE deleted_at IS NULL DO UPDATE SET
@@ -221,7 +221,7 @@ async def _manual_upsert(db, args) -> None:
                 "  product_kind, buyer_id, sale_date, kg_net, invoice_no, "
                 "  price_amount, currency, pricing_method, pdf_ref, notes "
                 ") VALUES ("
-                "  'plus_oil', :buyer_id, :sale_date, :kg_net, :invoice_no, "
+                "  'dev_p200', :buyer_id, :sale_date, :kg_net, :invoice_no, "
                 "  :price_amount, 'USD', 'AVG_BRENT_USD_PER_MT', :pdf_ref, :notes "
                 ") RETURNING id"
             ), {
