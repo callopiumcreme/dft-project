@@ -114,6 +114,12 @@ async function ensureOk(res: Response): Promise<void> {
 // the same split.
 // ---------------------------------------------------------------------------
 
+// Fire a Umami action event for a byproduct mutation. No-op on the server
+// (window absent) or before the analytics script has installed the helper.
+function track(name: string, data: Record<string, unknown>): void {
+  if (typeof window !== 'undefined') window.trackEvent?.(name, data);
+}
+
 export async function listBuyers(): Promise<ByproductBuyer[]> {
   const res = await fetch('/api/byproduct/buyers', {
     method: 'GET',
@@ -134,7 +140,9 @@ export async function createBuyer(body: ByproductBuyerIn): Promise<ByproductBuye
     body: JSON.stringify(body),
   });
   await ensureOk(res);
-  return (await res.json()) as ByproductBuyer;
+  const created = (await res.json()) as ByproductBuyer;
+  track('byproduct_buyer_created', { id: created.id });
+  return created;
 }
 
 export async function getBuyer(buyerId: number): Promise<ByproductBuyer> {
@@ -160,7 +168,9 @@ export async function updateBuyer(
     body: JSON.stringify(body),
   });
   await ensureOk(res);
-  return (await res.json()) as ByproductBuyer;
+  const updated = (await res.json()) as ByproductBuyer;
+  track('byproduct_buyer_updated', { id: buyerId });
+  return updated;
 }
 
 export async function deleteBuyer(buyerId: number): Promise<void> {
@@ -170,6 +180,7 @@ export async function deleteBuyer(buyerId: number): Promise<void> {
     cache: 'no-store',
   });
   await ensureOk(res);
+  track('byproduct_buyer_deleted', { id: buyerId });
 }
 
 export async function listSales(
@@ -200,7 +211,9 @@ export async function createSale(body: ByproductSaleIn): Promise<ByproductSale> 
     body: JSON.stringify(body),
   });
   await ensureOk(res);
-  return (await res.json()) as ByproductSale;
+  const created = (await res.json()) as ByproductSale;
+  track('byproduct_sale_created', { id: created.id });
+  return created;
 }
 
 export async function deleteSale(saleId: number): Promise<void> {
@@ -210,4 +223,5 @@ export async function deleteSale(saleId: number): Promise<void> {
     cache: 'no-store',
   });
   await ensureOk(res);
+  track('byproduct_sale_deleted', { id: saleId });
 }

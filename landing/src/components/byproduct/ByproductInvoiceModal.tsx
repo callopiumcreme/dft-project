@@ -72,15 +72,24 @@ export function ByproductInvoiceModal({ sale, onClose, variant = 'invoice' }: Pr
     ? `${sale?.pos_no ?? 'pos'}.pdf`
     : (sale?.invoice_no ? `${sale.invoice_no}.pdf` : 'invoice.pdf');
 
+  const docEntity = isPos ? 'byproduct_pos' : 'byproduct_invoice';
+
+  React.useEffect(() => {
+    if (isOpen && sale?.id) {
+      window.trackEvent?.('doc_pdf_view', { entity: docEntity, id: sale.id });
+    }
+  }, [isOpen, docEntity, sale?.id]);
+
   const handleDownload = React.useCallback(() => {
     if (!pdfUrl) return;
+    window.trackEvent?.('doc_pdf_download', { entity: docEntity, id: sale?.id });
     const a = document.createElement('a');
     a.href = `${pdfUrl}?download=1`;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-  }, [pdfUrl, filename]);
+  }, [pdfUrl, filename, docEntity, sale?.id]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose(); }}>

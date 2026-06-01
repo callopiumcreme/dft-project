@@ -203,7 +203,14 @@ export function C14CertificateModal({ c14Id, certNumber, onClose }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => {
-                if (!canDownload) e.preventDefault();
+                if (!canDownload) {
+                  e.preventDefault();
+                  return;
+                }
+                window.trackEvent?.('doc_pdf_download', {
+                  entity: 'c14_certificate',
+                  id: c14Id,
+                });
               }}
             >
               Download PDF

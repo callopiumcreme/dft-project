@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { apiPost, apiPatch, apiDelete, apiGet, ApiError } from './api';
 import type { components } from './backend-types';
+import { setPendingUmamiEvent } from './umami-server';
 
 type CreateBody = components['schemas']['UserCreate'];
 type UpdateBody = components['schemas']['UserUpdate'];
@@ -167,6 +168,7 @@ export async function createUserAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('user_created', { id: createdId });
   revalidatePath('/app/users');
   redirect(`/app/users/${createdId}?created=1`);
 }
@@ -189,6 +191,7 @@ export async function updateUserAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('user_updated', { id });
   revalidatePath('/app/users');
   revalidatePath(`/app/users/${id}`);
   redirect(`/app/users/${id}?updated=1`);
@@ -213,6 +216,7 @@ export async function deactivateUserAction(fd: FormData): Promise<void> {
     redirect(`/app/users/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('user_deactivated', { id });
   revalidatePath('/app/users');
   redirect('/app/users?deactivated=1');
 }
@@ -236,6 +240,7 @@ export async function reactivateUserAction(fd: FormData): Promise<void> {
     redirect(`/app/users/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('user_reactivated', { id });
   revalidatePath('/app/users');
   redirect(`/app/users/${id}?reactivated=1`);
 }

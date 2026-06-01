@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { apiPost, apiPatch, apiDelete, apiGet, ApiError } from './api';
 import type { components } from './backend-types';
+import { setPendingUmamiEvent } from './umami-server';
 
 type CreateBody = components['schemas']['SupplierCreate'];
 type UpdateBody = components['schemas']['SupplierUpdate'];
@@ -109,6 +110,7 @@ export async function createSupplierAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('supplier_created', { id: createdId });
   revalidatePath('/app/suppliers');
   redirect(`/app/suppliers/${createdId}?created=1`);
 }
@@ -131,6 +133,7 @@ export async function updateSupplierAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('supplier_updated', { id });
   revalidatePath('/app/suppliers');
   revalidatePath(`/app/suppliers/${id}`);
   redirect(`/app/suppliers/${id}?updated=1`);
@@ -155,6 +158,7 @@ export async function deleteSupplierAction(fd: FormData): Promise<void> {
     redirect(`/app/suppliers/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('supplier_deleted', { id });
   revalidatePath('/app/suppliers');
   redirect('/app/suppliers?deleted=1');
 }
@@ -178,6 +182,7 @@ export async function restoreSupplierAction(fd: FormData): Promise<void> {
     redirect(`/app/suppliers/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('supplier_restored', { id });
   revalidatePath('/app/suppliers');
   redirect(`/app/suppliers/${id}?restored=1`);
 }

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { apiPost, ApiError, SESSION_COOKIE } from './api';
 import type { components } from './backend-types';
 import { welcomePathFor } from '@/config/welcome-routing';
+import { setPendingUmamiEvent } from './umami-server';
 
 type LoginRequest = components['schemas']['LoginRequest'];
 type TokenResponse = components['schemas']['TokenResponse'];
@@ -12,18 +13,6 @@ type TokenResponse = components['schemas']['TokenResponse'];
 export type LoginState = { error?: string };
 
 const COOKIE_MAX_AGE = 60 * 60 * 8;
-
-const PENDING_UMAMI_COOKIE = '__umami_pending';
-
-function setPendingUmamiEvent(name: string, data: Record<string, unknown> = {}): void {
-  cookies().set(PENDING_UMAMI_COOKIE, JSON.stringify({ name, data }), {
-    httpOnly: false, // client must read it
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60, // short-lived; consumed on next page load
-  });
-}
 
 function safeNext(raw: unknown): string {
   if (typeof raw !== 'string') return '/app';

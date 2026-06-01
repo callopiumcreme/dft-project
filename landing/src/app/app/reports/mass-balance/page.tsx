@@ -6,6 +6,7 @@ import { buildMonthOptions } from './month-utils';
 import { KpiTileTooltip } from './kpi-tile-tooltip';
 import { DocIdLink } from '@/components/ersv';
 import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
+import { CsvExportLink } from '@/components/analytics/csv-export-link';
 // Badge import removed: cert-flag badges (AUDIT / SCHEME?) deliberately
 // hidden from verifier-facing surface. Internal red-team uses direct SQL on
 // certificates.notes + certificates.scheme_pdf_detected (migrations 0034 +
@@ -359,13 +360,13 @@ export default async function MassBalancePage({ searchParams }: PageProps) {
           >
             Reset
           </Link>
-          <a
+          <CsvExportLink
             href={csvHref}
+            report="mass_balance"
             className="border border-olive-deep bg-olive-deep px-3 py-1.5 text-bg hover:bg-olive"
-            download
           >
             Export CSV
-          </a>
+          </CsvExportLink>
         </form>
       </section>
 

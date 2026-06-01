@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
+import { CsvExportLink } from '@/components/analytics/csv-export-link';
 
 type Row = components['schemas']['ClosureStatusRow'];
 type Bucket = 'ok' | 'warn' | 'alert' | 'no_input' | 'no_output';
@@ -169,13 +170,13 @@ export default async function ClosureStatusPage({ searchParams }: PageProps) {
           >
             Reset
           </Link>
-          <a
+          <CsvExportLink
             href={csvHref}
+            report="closure_status"
             className="border border-olive-deep bg-olive-deep px-3 py-1.5 text-bg hover:bg-olive"
-            download
           >
             Export CSV
-          </a>
+          </CsvExportLink>
         </form>
       </section>
 

@@ -6,6 +6,7 @@ import {
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { SupplierPie, type PieSlice } from '../../_components/supplier-pie';
+import { CsvExportLink } from '@/components/analytics/csv-export-link';
 
 type Row = components['schemas']['BySupplierRow'];
 
@@ -140,13 +141,13 @@ export default async function BySupplierPage({ searchParams }: PageProps) {
           >
             Full period
           </Link>
-          <a
+          <CsvExportLink
             href={csvHref}
+            report="by_supplier"
             className="border border-olive-deep bg-olive-deep px-3 py-1.5 text-bg hover:bg-olive"
-            download
           >
             Export CSV
-          </a>
+          </CsvExportLink>
         </form>
       </section>
 

@@ -187,7 +187,14 @@ export function ProductPurchaseModal({ ppId, posNumber, onClose }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => {
-                if (!canDownload) e.preventDefault();
+                if (!canDownload) {
+                  e.preventDefault();
+                  return;
+                }
+                window.trackEvent?.('doc_pdf_download', {
+                  entity: 'product_purchase',
+                  id: ppId,
+                });
               }}
             >
               Download PDF

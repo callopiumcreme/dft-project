@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { apiPost, apiPatch, apiDelete, apiGet, ApiError } from './api';
 import type { components } from './backend-types';
+import { setPendingUmamiEvent } from './umami-server';
 
 type CreateBody = components['schemas']['CertificateCreate'];
 type UpdateBody = components['schemas']['CertificateUpdate'];
@@ -176,6 +177,7 @@ export async function createCertificateAction(
     };
   }
 
+  setPendingUmamiEvent('certificate_created', { id: createdId });
   revalidatePath('/app/certificates');
   redirect(`/app/certificates/${createdId}?created=1`);
 }
@@ -207,6 +209,7 @@ export async function updateCertificateAction(
     };
   }
 
+  setPendingUmamiEvent('certificate_updated', { id });
   revalidatePath('/app/certificates');
   revalidatePath(`/app/certificates/${id}`);
   redirect(`/app/certificates/${id}?updated=1`);
@@ -231,6 +234,7 @@ export async function deleteCertificateAction(fd: FormData): Promise<void> {
     redirect(`/app/certificates/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('certificate_deleted', { id });
   revalidatePath('/app/certificates');
   redirect('/app/certificates?deleted=1');
 }
@@ -254,6 +258,7 @@ export async function restoreCertificateAction(fd: FormData): Promise<void> {
     redirect(`/app/certificates/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('certificate_restored', { id });
   revalidatePath('/app/certificates');
   redirect(`/app/certificates/${id}?restored=1`);
 }

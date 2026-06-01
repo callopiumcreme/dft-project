@@ -33,10 +33,10 @@ export function ProductPurchaseModalProvider({
 }) {
   const [state, setState] = React.useState<ProductPurchaseModalState | null>(null);
 
-  const open = React.useCallback(
-    (ppId: number, posNumber: string) => setState({ ppId, posNumber }),
-    [],
-  );
+  const open = React.useCallback((ppId: number, posNumber: string) => {
+    window.trackEvent?.('doc_pdf_view', { entity: 'product_purchase', id: ppId });
+    setState({ ppId, posNumber });
+  }, []);
   const close = React.useCallback(() => setState(null), []);
 
   const value = React.useMemo<ProductPurchaseModalContextValue>(

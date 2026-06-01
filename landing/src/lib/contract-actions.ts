@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { apiPost, apiPatch, apiDelete, apiGet, ApiError } from './api';
 import type { components } from './backend-types';
+import { setPendingUmamiEvent } from './umami-server';
 
 type CreateBody = components['schemas']['ContractCreate'];
 type UpdateBody = components['schemas']['ContractUpdate'];
@@ -140,6 +141,7 @@ export async function createContractAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('contract_created', { id: createdId });
   revalidatePath('/app/contracts');
   redirect(`/app/contracts/${createdId}?created=1`);
 }
@@ -162,6 +164,7 @@ export async function updateContractAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('contract_updated', { id });
   revalidatePath('/app/contracts');
   revalidatePath(`/app/contracts/${id}`);
   redirect(`/app/contracts/${id}?updated=1`);
@@ -186,6 +189,7 @@ export async function deleteContractAction(fd: FormData): Promise<void> {
     redirect(`/app/contracts/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('contract_deleted', { id });
   revalidatePath('/app/contracts');
   redirect('/app/contracts?deleted=1');
 }
@@ -209,6 +213,7 @@ export async function restoreContractAction(fd: FormData): Promise<void> {
     redirect(`/app/contracts/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('contract_restored', { id });
   revalidatePath('/app/contracts');
   redirect(`/app/contracts/${id}?restored=1`);
 }

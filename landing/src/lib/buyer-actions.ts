@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { apiPost, apiPatch, apiDelete, apiGet, ApiError } from './api';
 import type { components } from './backend-types';
+import { setPendingUmamiEvent } from './umami-server';
 
 type UserRead = components['schemas']['UserRead'];
 
@@ -125,6 +126,7 @@ export async function createBuyerAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('buyer_created', { id: createdId });
   revalidatePath('/app/buyers');
   redirect(`/app/buyers/${createdId}?created=1`);
 }
@@ -147,6 +149,7 @@ export async function updateBuyerAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('buyer_updated', { id });
   revalidatePath('/app/buyers');
   revalidatePath(`/app/buyers/${id}`);
   redirect(`/app/buyers/${id}?updated=1`);
@@ -171,6 +174,7 @@ export async function deleteBuyerAction(fd: FormData): Promise<void> {
     redirect(`/app/buyers/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('buyer_deleted', { id });
   revalidatePath('/app/buyers');
   redirect('/app/buyers?deleted=1');
 }

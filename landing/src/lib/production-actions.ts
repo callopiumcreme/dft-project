@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { apiPost, apiPatch, apiDelete, ApiError } from './api';
 import type { components } from './backend-types';
+import { setPendingUmamiEvent } from './umami-server';
 
 type CreateBody = components['schemas']['DailyProductionCreate'];
 type UpdateBody = components['schemas']['DailyProductionUpdate'];
@@ -129,6 +130,7 @@ export async function createProductionAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('production_created', {});
   revalidatePath('/app/production');
   redirect('/app/production?created=1');
 }
@@ -149,6 +151,7 @@ export async function updateProductionAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('production_updated', { id });
   revalidatePath('/app/production');
   revalidatePath(`/app/production/${id}`);
   redirect(`/app/production/${id}?updated=1`);
@@ -168,6 +171,7 @@ export async function deleteProductionAction(fd: FormData): Promise<void> {
     redirect(`/app/production/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('production_deleted', { id });
   revalidatePath('/app/production');
   redirect('/app/production?deleted=1');
 }

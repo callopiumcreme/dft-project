@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { apiPost, apiPatch, apiDelete, ApiError } from './api';
 import type { components } from './backend-types';
+import { setPendingUmamiEvent } from './umami-server';
 
 type CreateBody = components['schemas']['DailyInputCreate'];
 type UpdateBody = components['schemas']['DailyInputUpdate'];
@@ -177,6 +178,7 @@ export async function createInputAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('input_created', {});
   revalidatePath('/app/inputs');
   redirect('/app/inputs?created=1');
 }
@@ -196,6 +198,7 @@ export async function updateInputAction(
     return { error: 'Server connection error', values: parsed.values };
   }
 
+  setPendingUmamiEvent('input_updated', { id });
   revalidatePath('/app/inputs');
   revalidatePath(`/app/inputs/${id}`);
   redirect(`/app/inputs/${id}?updated=1`);
@@ -215,6 +218,7 @@ export async function deleteInputAction(fd: FormData): Promise<void> {
     redirect(`/app/inputs/${id}?error=${encodeURIComponent(detail)}`);
   }
 
+  setPendingUmamiEvent('input_deleted', { id });
   revalidatePath('/app/inputs');
   redirect('/app/inputs?deleted=1');
 }

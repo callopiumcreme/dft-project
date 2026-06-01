@@ -33,10 +33,10 @@ export function C14CertificateModalProvider({
 }) {
   const [state, setState] = React.useState<C14CertificateModalState | null>(null);
 
-  const open = React.useCallback(
-    (c14Id: number, certNumber: string) => setState({ c14Id, certNumber }),
-    [],
-  );
+  const open = React.useCallback((c14Id: number, certNumber: string) => {
+    window.trackEvent?.('doc_pdf_view', { entity: 'c14_certificate', id: c14Id });
+    setState({ c14Id, certNumber });
+  }, []);
   const close = React.useCallback(() => setState(null), []);
 
   const value = React.useMemo<C14CertificateModalContextValue>(
