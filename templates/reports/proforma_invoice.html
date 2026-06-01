@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Supply Data Sheet — {{ pos_number }}</title>
+    <style>
+        /* --------------------------------------------------------------
+           PAGE — A4 portrait, running header/footer.
+           -------------------------------------------------------------- */
+        @page {
+            size: A4 portrait;
+            margin: 12mm 14mm 16mm 14mm;
+            @bottom-left {
+                content: "{{ supplier_footer_address or '' }}";
+                font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+                font-size: 7pt;
+                color: #888;
+            }
+            @bottom-right {
+                content: "{{ version_label }} — Page " counter(page) " of " counter(pages);
+                font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+                font-size: 7pt;
+                color: #888;
+            }
+        }
+
+        html, body {
+            font-family: "Helvetica", "Arial", "Liberation Sans", sans-serif;
+            font-size: 9pt;
+            line-height: 1.25;
+            color: #111;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2, h3 { margin: 0; }
+
+        /* --------------------------------------------------------------
+           HEADER — supplier brand name (left), document meta (right).
+           -------------------------------------------------------------- */
+        .head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2.5pt solid {{ proforma_color }};
+            padding-bottom: 6pt;
+            margin-bottom: 8pt;
+        }
+        .head .brand {
+            font-size: 16pt;
+            font-weight: bold;
+            color: {{ proforma_color }};
+            letter-spacing: 0.3pt;
+        }
+        .head .brand .sub {
+            display: block;
+            font-size: 7.5pt;
+            font-weight: normal;
+            color: #555;
+            letter-spacing: 0;
+            margin-top: 2pt;
+        }
+        .head .meta {
+            text-align: right;
+            font-size: 8pt;
+            color: #444;
+        }
+        .head .meta .docno {
+            font-family: "Courier New", "Liberation Mono", monospace;
+            font-size: 9.5pt;
+            color: {{ proforma_color }};
+            font-weight: bold;
+        }
+
+        /* --------------------------------------------------------------
+           TITLE band — clearly a supply data sheet, NOT a fiscal invoice.
+           -------------------------------------------------------------- */
+        .title-band {
+            background: {{ proforma_color }};
+            color: #fff;
+            text-align: center;
+            padding: 5pt 8pt;
+            font-size: 12pt;
+            font-weight: bold;
+            letter-spacing: 0.8pt;
+            text-transform: uppercase;
+        }
+        .title-sub {
+            text-align: center;
+            font-size: 7.5pt;
+            color: #555;
+            margin: 3pt 0 8pt 0;
+            font-style: italic;
+        }
+
+        /* --------------------------------------------------------------
+           Party blocks — seller (supplier) + buyer (OisteBio).
+           -------------------------------------------------------------- */
+        .parties {
+            display: flex;
+            gap: 8pt;
+            margin-bottom: 8pt;
+        }
+        .party {
+            flex: 1;
+            border: 0.5pt solid #cbd5e1;
+            border-top: 2.5pt solid {{ proforma_color }};
+        }
+        .party .ph {
+            background: #f1f5f9;
+            padding: 3pt 6pt;
+            font-weight: bold;
+            font-size: 7.5pt;
+            color: {{ proforma_color }};
+            text-transform: uppercase;
+            letter-spacing: 0.5pt;
+        }
+        .party .pb {
+            padding: 5pt 6pt;
+            font-size: 8.5pt;
+            line-height: 1.35;
+        }
+        .party .pb .pname { font-weight: bold; font-size: 9.5pt; }
+
+        /* --------------------------------------------------------------
+           Reference strip — PoS / contract / period.
+           -------------------------------------------------------------- */
+        table.refs {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8pt;
+        }
+        table.refs td {
+            border: 0.5pt solid #cbd5e1;
+            padding: 3pt 6pt;
+            font-size: 8pt;
+        }
+        table.refs td.k {
+            background: #f8fafc;
+            color: #555;
+            width: 16%;
+            text-transform: uppercase;
+            letter-spacing: 0.3pt;
+            font-size: 7pt;
+        }
+        table.refs td.v {
+            width: 17.3%;
+            font-weight: bold;
+            font-family: "Courier New", "Liberation Mono", monospace;
+        }
+
+        /* --------------------------------------------------------------
+           Line-items table.
+           -------------------------------------------------------------- */
+        table.lines {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2pt;
+        }
+        table.lines th, table.lines td {
+            border: 0.5pt solid #94a3b8;
+            padding: 5pt 6pt;
+            font-size: 8.5pt;
+        }
+        table.lines th {
+            background: {{ proforma_color }};
+            color: #fff;
+            text-align: left;
+            font-size: 7.5pt;
+            text-transform: uppercase;
+            letter-spacing: 0.3pt;
+        }
+        table.lines td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-family: "Courier New", "Liberation Mono", monospace;
+        }
+        table.lines td.ph {
+            text-align: right;
+            color: #94a3b8;
+            font-style: italic;
+        }
+        table.lines tr.total td {
+            font-weight: bold;
+            background: #eef2f6;
+        }
+
+        /* --------------------------------------------------------------
+           Disclaimer — explicit: data presentation, supplier issues invoice.
+           -------------------------------------------------------------- */
+        .disclaimer {
+            margin-top: 10pt;
+            padding: 6pt 8pt;
+            border: 0.5pt solid #cbd5e1;
+            border-left: 2.5pt solid {{ proforma_color }};
+            background: #f8fafc;
+            font-size: 7.5pt;
+            line-height: 1.4;
+            color: #333;
+            text-align: justify;
+        }
+        .disclaimer .dt {
+            font-weight: bold;
+            color: {{ proforma_color }};
+            text-transform: uppercase;
+            letter-spacing: 0.4pt;
+            display: block;
+            margin-bottom: 2pt;
+        }
+
+        .brand-bottom {
+            margin-top: 8pt;
+            padding-top: 3pt;
+            border-top: 0.5pt solid {{ proforma_color }};
+            text-align: center;
+            font-size: 7pt;
+            color: {{ proforma_color }};
+            letter-spacing: 0.3pt;
+        }
+        .doc-meta {
+            margin-top: 2pt;
+            text-align: center;
+            font-family: "Courier New", "Liberation Mono", monospace;
+            font-size: 6.5pt;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+
+{# ===== Header — supplier brand + document meta ===== #}
+<div class="head">
+    <div class="brand">
+        {{ supplier_name }}
+        <span class="sub">{{ supplier_address }}{% if supplier_city %} · {{ supplier_city }}{% endif %} · {{ supplier_country }}</span>
+    </div>
+    <div class="meta">
+        Issue date: <strong>{{ issue_date_eu }}</strong><br>
+        Currency: {{ currency }}
+    </div>
+</div>
+
+{# ===== Title band ===== #}
+<div class="title-band">Supply Data Sheet</div>
+<div class="title-sub">
+    Quantity summary per OisteBio receiving records — to be confirmed and honoured
+    by the supplier's official commercial invoice.
+</div>
+
+{# ===== Parties ===== #}
+<div class="parties">
+    <div class="party">
+        <div class="ph">Supplier (seller)</div>
+        <div class="pb">
+            <span class="pname">{{ supplier_name }}</span><br>
+            {{ supplier_address }}<br>
+            {% if supplier_city %}{{ supplier_city }}<br>{% endif %}
+            {% if supplier_department %}{{ supplier_department }}<br>{% endif %}
+            {{ supplier_country }}
+        </div>
+    </div>
+    <div class="party">
+        <div class="ph">Buyer (bill to)</div>
+        <div class="pb">
+            <span class="pname">{{ buyer_name }}</span><br>
+            {{ buyer_address }}<br>
+            VAT {{ buyer_vat }}<br>
+            Plant: {{ buyer_plant }}
+        </div>
+    </div>
+</div>
+
+{# ===== Reference strip ===== #}
+<table class="refs">
+    <tr>
+        <td class="k">PoS No.</td>
+        <td class="v">{{ pos_number }}</td>
+        <td class="k">Contract</td>
+        <td class="v">{{ contract_code }}</td>
+        <td class="k">Period</td>
+        <td class="v">{{ period }}</td>
+    </tr>
+</table>
+
+{# ===== Line items ===== #}
+<table class="lines">
+    <thead>
+        <tr>
+            <th style="width:44%">Description</th>
+            <th style="width:12%">HS code</th>
+            <th style="width:16%; text-align:right">Quantity (kg)</th>
+            <th style="width:14%; text-align:right">Unit price</th>
+            <th style="width:14%; text-align:right">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>{{ feedstock }}<br><span style="font-size:7pt; color:#666">Origin: {{ supplier_country }} · Sustainable feedstock (ELT)</span></td>
+            <td>{{ hs_code }}</td>
+            <td class="num">{{ quantity_kg_str }}</td>
+            <td class="ph">{{ price_placeholder }}</td>
+            <td class="ph">{{ price_placeholder }}</td>
+        </tr>
+        <tr class="total">
+            <td colspan="2">Total — delivered quantity (period)</td>
+            <td class="num">{{ quantity_kg_str }}</td>
+            <td class="ph">{{ price_placeholder }}</td>
+            <td class="ph">{{ price_placeholder }}</td>
+        </tr>
+    </tbody>
+</table>
+
+{# ===== Disclaimer ===== #}
+<div class="disclaimer">
+    <span class="dt">Document status — not a fiscal invoice</span>
+    This document is a data-presentation sheet that summarises the feedstock
+    quantity received by OisteBio GmbH from {{ supplier_name }} during the period
+    shown, as recorded in OisteBio's incoming-material register and the associated
+    Proof-of-Sustainability ({{ pos_number }}).
+</div>
+
+{# ===== Brand bottom ===== #}
+<div class="brand-bottom">
+    {{ supplier_footer_address }} &middot; {{ version_label }}
+</div>
+
+</body>
+</html>

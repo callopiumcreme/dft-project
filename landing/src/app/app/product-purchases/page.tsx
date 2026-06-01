@@ -3,7 +3,10 @@ import type { components } from '@/lib/backend-types';
 import type { ProductPurchaseDetail } from '@/lib/product-purchase-client';
 import { ProductPurchaseLink } from '@/components/product-purchases/product-purchase-link';
 import { ProductPurchaseModalProvider } from '@/components/product-purchases/product-purchase-modal-provider';
+import { InvoiceLink } from '@/components/product-purchases/invoice-link';
+import { ProformaLink } from '@/components/product-purchases/proforma-link';
 import { UmamiViewEvent } from '@/components/analytics/umami-view-event';
+import { posInvoice } from '@/config/pos-invoice-map';
 
 type Supplier = components['schemas']['SupplierRead'];
 
@@ -66,6 +69,9 @@ export default async function ProductPurchasesPage({ searchParams }: PageProps) 
 
   const supplierMap = new Map(suppliers.map((s) => [s.id, s]));
   const totalKg = rows.reduce((s, r) => s + (Number(r.quantity_kg) || 0), 0);
+  // Invoice coverage — how many PoS have an associated supplier invoice (FATTURA).
+  const withInvoice = rows.reduce((n, r) => (posInvoice(r.pos_number) ? n + 1 : n), 0);
+  const missingInvoice = rows.length - withInvoice;
 
   return (
     <ProductPurchaseModalProvider>
@@ -160,9 +166,11 @@ export default async function ProductPurchasesPage({ searchParams }: PageProps) 
           </div>
         )}
 
-        <section className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <section className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <KpiTile label="PoS documents" value={String(rows.length)} />
           <KpiTile label="Total quantity" value={`${numFmt.format(totalKg)} kg`} />
+          <KpiTile label="With invoice" value={String(withInvoice)} />
+          <KpiTile label="Require" value={String(missingInvoice)} />
         </section>
 
         <section className="mt-6 border border-rule bg-bg-soft overflow-x-auto">
@@ -170,6 +178,7 @@ export default async function ProductPurchasesPage({ searchParams }: PageProps) 
             <thead className="border-b border-rule bg-bg">
               <tr className="text-left uppercase tracking-[0.12em] text-ink-mute">
                 <Th>PoS number</Th>
+                <Th>Invoice</Th>
                 <Th>Supplier</Th>
                 <Th>Issued</Th>
                 <Th>Dispatch</Th>
@@ -181,7 +190,7 @@ export default async function ProductPurchasesPage({ searchParams }: PageProps) 
             <tbody>
               {rows.length === 0 && !fetchError && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-ink-mute">
+                  <td colSpan={8} className="px-3 py-6 text-center text-ink-mute">
                     No product purchases match the selected filter.
                   </td>
                 </tr>
@@ -194,6 +203,7 @@ export default async function ProductPurchasesPage({ searchParams }: PageProps) 
                     ? `${sup.code} · ${sup.name}`
                     : '—';
                 const deleted = !!r.deleted_at;
+                const inv = posInvoice(r.pos_number);
                 return (
                   <tr
                     key={r.id}
@@ -201,6 +211,17 @@ export default async function ProductPurchasesPage({ searchParams }: PageProps) 
                   >
                     <Td className="text-ink">
                       <ProductPurchaseLink ppId={r.id} posNumber={r.pos_number} />
+                    </Td>
+                    <Td>
+                      {inv ? (
+                        <InvoiceLink
+                          invoice={inv.invoice}
+                          file={inv.file}
+                          aggregate={inv.aggregate}
+                        />
+                      ) : (
+                        <ProformaLink ppId={r.id} posNumber={r.pos_number} />
+                      )}
                     </Td>
                     <Td className="text-ink-soft">{supplierLabel}</Td>
                     <Td className="text-ink-soft">{fmtDate(r.issuance_date)}</Td>

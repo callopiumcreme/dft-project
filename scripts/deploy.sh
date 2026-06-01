@@ -15,6 +15,7 @@
 #   scripts/deploy.sh backend        # compose + backend + data
 #   scripts/deploy.sh landing        # landing only
 #   scripts/deploy.sh compose        # docker-compose*.yml → prod only
+#   scripts/deploy.sh templates      # templates/ → prod only (additive)
 #   scripts/deploy.sh data           # data/ PDF dirs → prod only (additive)
 #   scripts/deploy.sh all            # explicit "all" alias
 #   scripts/deploy.sh --dry-run all  # rsync -n + skip ssh side-effects
@@ -59,7 +60,7 @@ while [[ $# -gt 0 ]]; do
       sed -n '2,25p' "$0"
       exit 0
       ;;
-    backend|landing|compose|data|all) TARGET="$1"; shift ;;
+    backend|landing|compose|data|templates|all) TARGET="$1"; shift ;;
     *) echo "deploy.sh: unknown arg '$1'" >&2; exit 2 ;;
   esac
 done
@@ -124,6 +125,23 @@ deploy_compose() {
   [[ -f docker-compose.prod.yml ]] && files+=(docker-compose.prod.yml)
 
   rsync "${rflags[@]}" "${files[@]}" "$REMOTE:$REMOTE_ROOT/"
+}
+
+deploy_templates() {
+  # Jinja2 report templates (eRSV, proforma/supply-data-sheet, cover letters)
+  # are bind-mounted read-only into the backend at /templates. They live in the
+  # repo but are NOT under backend/, so the backend rsync never carries them —
+  # without this step a new template (e.g. proforma_invoice.html) never reaches
+  # prod and on-the-fly render 500s. Additive (no --delete) to preserve any
+  # server-only artifact.
+  say "Templates → rsync (additive, no --delete)"
+  local rflags=(-avz)
+  (( DRY_RUN )) && rflags+=(-n)
+
+  (( DRY_RUN )) || ssh "$REMOTE" "mkdir -p $REMOTE_ROOT/templates"
+  rsync "${rflags[@]}" \
+    --exclude='__pycache__' --exclude='.DS_Store' \
+    templates/ "$REMOTE:$REMOTE_ROOT/templates/"
 }
 
 deploy_data() {
@@ -257,11 +275,12 @@ deploy_landing() {
 # Dispatch
 # -----------------------------------------------------------------------------
 case "$TARGET" in
-  backend) deploy_compose; deploy_backend; deploy_data ;;
-  landing) deploy_landing ;;
-  compose) deploy_compose ;;
-  data)    deploy_data ;;
-  all)     deploy_compose; deploy_backend; deploy_data; deploy_landing ;;
+  backend)   deploy_compose; deploy_templates; deploy_backend; deploy_data ;;
+  landing)   deploy_landing ;;
+  compose)   deploy_compose ;;
+  data)      deploy_data ;;
+  templates) deploy_templates ;;
+  all)       deploy_compose; deploy_templates; deploy_backend; deploy_data; deploy_landing ;;
 esac
 
 say "Done."
