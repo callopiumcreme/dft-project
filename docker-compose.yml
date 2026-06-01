@@ -31,6 +31,7 @@ services:
       - ./templates:/templates:ro
       - ./backend/data/contracts:/app/data/contracts:ro
       - ./backend/data/pos:/app/data/pos:ro
+      - ./backend/data/c14:/app/data/c14:ro
       - ./data/customs:/data/customs:ro
       - ./data/invoices:/data/invoices:ro
       - ./data/bl_ocean:/data/bl_ocean:ro

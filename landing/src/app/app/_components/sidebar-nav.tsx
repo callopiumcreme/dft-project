@@ -12,6 +12,7 @@ import {
   FileText,
   Truck,
   Factory,
+  FlaskConical,
   UserCog,
   History,
   Route,
@@ -33,8 +34,9 @@ const NAV: NavItem[] = [
   { href: '/app/inputs', label: 'Daily inputs', icon: Truck, group: 'Operations' },
   { href: '/app/production', label: 'Daily production', icon: Factory, group: 'Operations' },
   { href: '/app/warehouse', label: 'Warehouse', icon: Package, group: 'Operations' },
-  { href: '/app/warehouse/byproduct-sales', label: 'Byproduct sales', icon: Package, group: 'Operations', tooltip: 'Carbon black / metal scrap / PLUS oil sales' },
+  { href: '/app/warehouse/byproduct-sales', label: 'Product sales', icon: Package, group: 'Operations', tooltip: 'Carbon black / metal scrap / PLUS oil sales' },
   { href: '/app/product-purchases', label: 'Product purchases', icon: FileText, group: 'Operations', tooltip: 'Supplier PoS of purchased feedstock (upstream)' },
+  { href: '/app/c14-certificates', label: 'C14 certificates', icon: FlaskConical, group: 'Operations', tooltip: 'FMS Appendix A — radiocarbon bio-based carbon content of DEV-P100' },
   // PLUS sales — route still live (/app/warehouse/plus-sales) but hidden from sidebar per user request 2026-05-25
   // { href: '/app/warehouse/plus-sales', label: 'PLUS sales', icon: Package, group: 'Operations', tooltip: 'Pyrolysis oil PLUS — Colombia buyer' },
   { href: '/app/reports/mass-balance', label: 'Mass balance', icon: Scale, group: 'Reports' },

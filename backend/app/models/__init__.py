@@ -1,6 +1,7 @@
 from app.models.audit_log import AuditLog
 from app.models.byproduct_buyer import ByproductBuyer
 from app.models.byproduct_sale import ByproductSale
+from app.models.c14_certificate import C14Certificate
 from app.models.certificate import Certificate
 from app.models.consignment import Consignment
 from app.models.consignment_pos import ConsignmentPos
@@ -23,6 +24,7 @@ __all__ = [
     "AuditLog",
     "ByproductBuyer",
     "ByproductSale",
+    "C14Certificate",
     "Certificate",
     "Consignment",
     "ConsignmentPos",

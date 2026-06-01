@@ -13,6 +13,7 @@ from app.routers import (
     anagrafica,
     auth,
     byproduct_sales,
+    c14_certificates,
     consignments,
     daily_inputs,
     daily_production,
@@ -74,6 +75,7 @@ app.include_router(shipments.router)
 app.include_router(warehouse.router)
 app.include_router(byproduct_sales.router)
 app.include_router(product_purchases.router)
+app.include_router(c14_certificates.router)
 app.include_router(signing.router)
 
 
