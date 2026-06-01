@@ -6,20 +6,12 @@ import type { ConsignmentSummary, ConsignmentStatus, OffTaker } from '@/types/lo
 export const dynamic = 'force-dynamic';
 
 const numFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
-const dateFmt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
 
 function fmtKg(v: string | null | undefined): string {
   if (v === null || v === undefined) return '—';
   const n = Number(v);
   if (!Number.isFinite(n)) return '—';
   return `${numFmt.format(n)} kg`;
-}
-
-function fmtDate(v: string | null | undefined): string {
-  if (!v) return '—';
-  const d = new Date(v);
-  if (!Number.isFinite(d.getTime())) return v;
-  return dateFmt.format(d);
 }
 
 const STATUSES: ConsignmentStatus[] = [
@@ -229,7 +221,6 @@ export default async function LogisticsPage({ searchParams }: PageProps) {
               <Th>Code</Th>
               <Th>Off-taker</Th>
               <Th>Product</Th>
-              <Th>Prod dates</Th>
               <ThNum>Total kg</ThNum>
               <Th>Status</Th>
               <Th className="text-right">
@@ -240,7 +231,7 @@ export default async function LogisticsPage({ searchParams }: PageProps) {
           <tbody>
             {consignments.length === 0 && !fetchError && (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-ink-mute">
+                <td colSpan={6} className="px-3 py-8 text-center text-ink-mute">
                   No consignments match the selected filter.
                 </td>
               </tr>
@@ -257,11 +248,6 @@ export default async function LogisticsPage({ searchParams }: PageProps) {
                   <Td className="text-ink font-medium">{c.code}</Td>
                   <Td className="text-ink-soft">{c.off_taker?.code ?? '—'}</Td>
                   <Td className="text-ink-soft">{c.product_grade}</Td>
-                  <Td className="text-ink-soft">
-                    {fmtDate(c.prod_date_from)}
-                    <span className="mx-1 text-ink-mute">→</span>
-                    {fmtDate(c.prod_date_to)}
-                  </Td>
                   <TdNum>{fmtKg(c.total_kg)}</TdNum>
                   <Td>
                     <span
