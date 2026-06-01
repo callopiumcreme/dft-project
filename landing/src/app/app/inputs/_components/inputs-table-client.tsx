@@ -3,9 +3,14 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { components } from '@/lib/backend-types';
-import { ErsvLink } from '@/components/ersv';
+import { DocIdLink } from '@/components/ersv';
 
 type Input = components['schemas']['DailyInputRead'];
+
+export interface DocIdRow {
+  id: number;
+  doc_id_hash: string;
+}
 
 export interface InputsFilters {
   date_from?: string;
@@ -21,6 +26,7 @@ export interface SupplierLite {
 
 interface Props {
   initialRows: Input[];
+  initialDocIds: DocIdRow[];
   pageSize: number;
   filters: InputsFilters;
   suppliers: SupplierLite[];
@@ -40,6 +46,7 @@ function fmtKg(v: string | number | null | undefined): string {
 
 export function InputsTableClient({
   initialRows,
+  initialDocIds,
   pageSize,
   filters,
   suppliers,
@@ -47,6 +54,9 @@ export function InputsTableClient({
   initialHasMore,
 }: Props) {
   const [rows, setRows] = useState<Input[]>(initialRows);
+  const [docIdMap, setDocIdMap] = useState<Map<number, string>>(
+    () => new Map(initialDocIds.map((d) => [d.id, d.doc_id_hash])),
+  );
   const [hasMore, setHasMore] = useState<boolean>(initialHasMore);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +91,28 @@ export function InputsTableClient({
       const more = (await res.json()) as Input[];
       setRows((prev) => [...prev, ...more]);
       if (more.length < pageSize) setHasMore(false);
+
+      // Pull Doc IDs for the newly loaded rows so the column stays populated
+      // past the first page (same batch endpoint as the SSR initial load).
+      const newErsvIds = more.filter((r) => r.ersv_number).map((r) => r.id);
+      if (newErsvIds.length > 0) {
+        try {
+          const dRes = await fetch(
+            `/api/daily-inputs/doc-id-batch?ids=${newErsvIds.join(',')}`,
+            { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } },
+          );
+          if (dRes.ok) {
+            const dRows = (await dRes.json()) as DocIdRow[];
+            setDocIdMap((prev) => {
+              const next = new Map(prev);
+              for (const d of dRows) next.set(d.id, d.doc_id_hash);
+              return next;
+            });
+          }
+        } catch {
+          // Doc IDs are advisory; a failed batch leaves '—' in the column.
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'load failed');
     } finally {
@@ -102,7 +134,7 @@ export function InputsTableClient({
               <Th>Date</Th>
               <Th>Time</Th>
               <Th>Supplier</Th>
-              <Th>eRSV</Th>
+              <Th>Doc ID</Th>
               <Th className="text-right">Car</Th>
               <Th className="text-right">Truck</Th>
               <Th className="text-right">Special</Th>
@@ -132,9 +164,13 @@ export function InputsTableClient({
                   <Td className="text-ink-soft">
                     {sup ? `${sup.code} · ${sup.name}` : `#${r.supplier_id}`}
                   </Td>
-                  <Td className="text-ink-mute">
-                    {r.ersv_number ? (
-                      <ErsvLink ersvNumber={r.ersv_number} dailyInputId={r.id} />
+                  <Td className="text-ink-soft">
+                    {r.ersv_number && docIdMap.get(r.id) ? (
+                      <DocIdLink
+                        docIdHash={docIdMap.get(r.id) as string}
+                        ersvNumber={r.ersv_number}
+                        dailyInputId={r.id}
+                      />
                     ) : (
                       '—'
                     )}

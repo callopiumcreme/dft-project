@@ -5,6 +5,7 @@ import {
   InputsTableClient,
   type InputsFilters,
   type SupplierLite,
+  type DocIdRow,
 } from './_components/inputs-table-client';
 
 type Input = components['schemas']['DailyInputRead'];
@@ -43,6 +44,7 @@ export default async function InputsPage({ searchParams }: PageProps) {
 
   let rows: Input[] = [];
   let suppliers: Supplier[] = [];
+  let docIds: DocIdRow[] = [];
   let fetchError: string | null = null;
 
   try {
@@ -57,6 +59,20 @@ export default async function InputsPage({ searchParams }: PageProps) {
       }),
       apiGet<Supplier[]>('/suppliers', { query: { active_only: false } }),
     ]);
+
+    // Doc-ID column: batch-compute the sha256 prefixes for the rows that
+    // carry an eRSV number, mirroring the mass-balance day breakdown so the
+    // printed PDF header ("Doc ID …") correlates 1:1 with the ledger row.
+    const ersvIds = rows.filter((r) => r.ersv_number).map((r) => r.id);
+    if (ersvIds.length > 0) {
+      try {
+        docIds = await apiGet<DocIdRow[]>('/daily-inputs/doc-id-batch', {
+          query: { ids: ersvIds.join(',') },
+        });
+      } catch {
+        docIds = [];
+      }
+    }
   } catch (e) {
     fetchError = e instanceof ApiError ? `${e.status} · ${e.detail}` : 'unknown error';
   }
@@ -181,6 +197,7 @@ export default async function InputsPage({ searchParams }: PageProps) {
       {!fetchError && (
         <InputsTableClient
           initialRows={rows}
+          initialDocIds={docIds}
           pageSize={PAGE_SIZE}
           filters={filters}
           suppliers={supplierLites}
