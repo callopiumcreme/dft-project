@@ -20,7 +20,10 @@ ProductKind = Literal[
     "syngas",
     "h2o",
 ]
-SellableKind = Literal["plus_oil", "carbon_black", "metal_scrap", "eu_oil"]
+# dev_p200 (DEV-P200 fossil-equivalent oil, Conquer Trade) is a distinct
+# sellable kind added by migration 0041 to close DFT-C1 C11; eu_oil is the
+# virtual Crown DEV-P100 projection. Both must round-trip through the read schema.
+SellableKind = Literal["plus_oil", "carbon_black", "metal_scrap", "eu_oil", "dev_p200"]
 
 
 class WarehouseStockRow(BaseModel):

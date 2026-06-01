@@ -11,13 +11,14 @@
 // projects Crown rows read-only from consignment_pos_customs (see
 // CUSTOMS_VIRTUAL_OFFSET in app/routers/byproduct_sales.py). The "New sale"
 // form keeps the 3 byproduct kinds only since eu_oil cannot be inserted.
-export type SellableKind = 'plus_oil' | 'carbon_black' | 'metal_scrap' | 'eu_oil';
+export type SellableKind = 'plus_oil' | 'carbon_black' | 'metal_scrap' | 'eu_oil' | 'dev_p200';
 
 export const SELLABLE_KIND_LABELS: Record<SellableKind, string> = {
   plus_oil: 'DEV-P200',
   carbon_black: 'Carbon black',
   metal_scrap: 'Metal scrap',
   eu_oil: 'DEV-P100',
+  dev_p200: 'DEV-P200',
 };
 
 export interface ByproductBuyer {

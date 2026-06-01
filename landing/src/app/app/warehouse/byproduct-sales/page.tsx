@@ -17,6 +17,7 @@ const SELLABLE_KINDS: ReadonlySet<SellableKind> = new Set([
   'carbon_black',
   'metal_scrap',
   'eu_oil',
+  'dev_p200',
 ]);
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -120,6 +121,7 @@ export default async function ByproductSalesPage({ searchParams }: PageProps) {
             >
               <option value="">— all —</option>
               <option value="eu_oil">DEV-P100 (Crown)</option>
+              <option value="dev_p200">DEV-P200 (Conquer)</option>
               <option value="plus_oil">DEV-P200 (PLUS oil)</option>
               <option value="carbon_black">Carbon black</option>
               <option value="metal_scrap">Metal scrap</option>
