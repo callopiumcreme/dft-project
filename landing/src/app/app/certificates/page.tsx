@@ -328,7 +328,14 @@ export default async function CertificatesPage({ searchParams }: PageProps) {
                           <span aria-hidden="true" className="ml-1 text-ink-mute">↗</span>
                         </a>
                       ) : (
-                        r.cert_number
+                        <Link
+                          href={`/app/certificates/${r.id}`}
+                          className="underline decoration-dotted underline-offset-2 hover:text-olive-deep"
+                          title={`Open ${r.cert_number}`}
+                          aria-label={`Open certificate ${r.cert_number}`}
+                        >
+                          {r.cert_number}
+                        </Link>
                       );
                     })()}
                   </Td>

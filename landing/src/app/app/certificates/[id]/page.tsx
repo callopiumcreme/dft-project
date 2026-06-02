@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { apiGet, ApiError } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { deleteCertificateAction, restoreCertificateAction } from '@/lib/certificate-actions';
+import { CertPdfViewer } from '@/components/certificates/cert-pdf-viewer';
 
 type Certificate = components['schemas']['CertificateRead'];
 type Supplier = components['schemas']['SupplierRead'];
@@ -199,6 +200,21 @@ export default async function CertificateDetailPage({ params, searchParams }: Pa
             </ul>
           )}
         </DataBlock>
+
+        {cert.pdf_ref && (
+          <DataBlock title="Certificate PDF" full>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="font-mono text-[0.72rem] text-ink-soft break-all">
+                {cert.pdf_ref}
+              </span>
+              <CertPdfViewer
+                certId={cert.id}
+                certNumber={cert.cert_number}
+                pdfRef={cert.pdf_ref}
+              />
+            </div>
+          </DataBlock>
+        )}
 
         {cert.document_url && (
           <DataBlock title="Document" full>

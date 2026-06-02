@@ -384,6 +384,93 @@ async def restore_certificate(
     return obj
 
 
+# ---------- CERTIFICATE PDF (supplier cert / self-declaration, bind-mounted) ----------
+# Mounted at /data/certificates in compose (same family as /data/invoices,
+# /data/customs, /data/bl_ocean — NOT the /app/data/* contracts/c14 family).
+CERT_PDF_DIR = Path(os.environ.get("CERT_PDF_DIR", "/data/certificates"))
+
+
+def _resolve_cert_pdf(pdf_ref: str | None) -> Path | None:
+    """Resolve a certificate's pdf_ref (path relative to CERT_PDF_DIR) safely.
+
+    pdf_ref is stored relative (e.g. ``le5ton/SD-LE5TON-2025-01-08-25078_*.pdf``).
+    Reject anything that escapes CERT_PDF_DIR (path traversal) or is missing.
+    """
+    if not pdf_ref:
+        return None
+    candidate = (CERT_PDF_DIR / pdf_ref).resolve()
+    try:
+        candidate.relative_to(CERT_PDF_DIR.resolve())
+    except ValueError:
+        return None
+    if not candidate.is_file():
+        return None
+    return candidate
+
+
+@certificates_router.get("/{cert_id}/pdf")
+async def get_certificate_pdf(
+    cert_id: int,
+    _: ViewerUser,
+    db: DbDep,
+) -> FileResponse:
+    """Inline PDF preview for the modal iframe. No audit (viewing != downloading)."""
+    obj = await _get_certificate_or_404(db, cert_id, include_deleted=True)
+    pdf = _resolve_cert_pdf(obj.pdf_ref)
+    if pdf is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Certificate PDF not found for {obj.cert_number}",
+        )
+    return FileResponse(
+        path=pdf,
+        media_type="application/pdf",
+        headers={
+            "Cache-Control": "private, max-age=300",
+            "Content-Disposition": f'inline; filename="{obj.cert_number}.pdf"',
+        },
+    )
+
+
+@certificates_router.get("/{cert_id}/pdf/download")
+async def download_certificate_pdf(
+    cert_id: int,
+    user: ViewerUser,
+    db: DbDep,
+) -> Response:
+    """Audited PDF download (attachment). One audit_log row per download."""
+    obj = await _get_certificate_or_404(db, cert_id, include_deleted=True)
+    pdf = _resolve_cert_pdf(obj.pdf_ref)
+    if pdf is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Certificate PDF not found for {obj.cert_number}",
+        )
+    data = pdf.read_bytes()
+    audit = AuditLog(
+        table_name=CERTIFICATES_TABLE,
+        record_id=obj.id,
+        action="insert",
+        old_values=None,
+        new_values={
+            "kind": "CERT_PDF_DOWNLOAD",
+            "cert_number": obj.cert_number,
+            "size_bytes": len(data),
+        },
+        changed_by=user.id,
+    )
+    db.add(audit)
+    await db.commit()
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={
+            "Cache-Control": "private, max-age=300",
+            "Content-Disposition": f'attachment; filename="{obj.cert_number}.pdf"',
+        },
+    )
+
+
 # ---------- CONTRACTS ----------
 contracts_router = APIRouter(prefix="/contracts", tags=["contracts"])
 CONTRACTS_TABLE = "contracts"
