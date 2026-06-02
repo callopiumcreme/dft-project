@@ -37,6 +37,10 @@ export function CertPdfViewer({ certId, certNumber, pdfRef }: Props) {
   const [probe, setProbe] = React.useState<Probe>({ kind: 'idle' });
 
   React.useEffect(() => {
+    if (open) window.trackEvent?.('doc_pdf_view', { entity: 'certificate', id: certId });
+  }, [open, certId]);
+
+  React.useEffect(() => {
     if (!open) {
       setProbe({ kind: 'idle' });
       return;
@@ -122,7 +126,11 @@ export function CertPdfViewer({ certId, certNumber, pdfRef }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => {
-                  if (!canDownload) e.preventDefault();
+                  if (!canDownload) {
+                    e.preventDefault();
+                    return;
+                  }
+                  window.trackEvent?.('doc_pdf_download', { entity: 'certificate', id: certId });
                 }}
               >
                 Download PDF
