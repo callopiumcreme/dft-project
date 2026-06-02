@@ -106,6 +106,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/audit-log.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Audit Log Csv */
+        get: operations["export_audit_log_csv_admin_audit_log_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -268,6 +285,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/certificates/{cert_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Certificate Pdf
+         * @description Inline PDF preview for the modal iframe. No audit (viewing != downloading).
+         */
+        get: operations["get_certificate_pdf_certificates__cert_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/certificates/{cert_id}/pdf/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Certificate Pdf
+         * @description Audited PDF download (attachment). One audit_log row per download.
+         */
+        get: operations["download_certificate_pdf_certificates__cert_id__pdf_download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/contracts": {
         parameters: {
             query?: never;
@@ -305,6 +362,46 @@ export interface paths {
         patch: operations["update_contract_contracts__contract_id__patch"];
         trace?: never;
     };
+    "/contracts/{contract_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Contract Pdf
+         * @description Inline PDF preview for the modal iframe. No audit (viewing != downloading).
+         */
+        get: operations["get_contract_pdf_contracts__contract_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{contract_id}/pdf/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Contract Pdf
+         * @description Audited PDF download (attachment). One audit_log row per download.
+         */
+        get: operations["download_contract_pdf_contracts__contract_id__pdf_download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/contracts/{contract_id}/restore": {
         parameters: {
             query?: never;
@@ -334,6 +431,30 @@ export interface paths {
         put?: never;
         /** Create Daily Input */
         post: operations["create_daily_input_daily_inputs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/daily-inputs/doc-id-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Doc Id Batch
+         * @description Batch compute ``doc_id_hash`` for a list of daily_input ids.
+         *
+         *     Reuses ``compute_doc_id_hash`` from the eRSV renderer so the value
+         *     matches the ``Doc ID`` printed on the PDF header (first 16 hex chars).
+         *     Rows without an ``ersv_number`` or soft-deleted rows are omitted.
+         */
+        get: operations["doc_id_batch_daily_inputs_doc_id_batch_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -387,6 +508,225 @@ export interface paths {
         put?: never;
         /** Restore Daily Input */
         post: operations["restore_daily_input_daily_inputs__entry_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ersv/outbound": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Outbound Declarations
+         * @description Return a paginated list of all outbound declarations.
+         *
+         *     Each item exposes: ``consignment_id``, ``code``, ``ersv_outbound_no``,
+         *     ``issued_at`` (= prod_date_from as proxy), ``off_taker_code``,
+         *     ``off_taker_name``, ``total_kg``.
+         */
+        get: operations["list_outbound_declarations_ersv_outbound_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ersv/outbound/{consignment_id}/{pos_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Outbound Ersv
+         * @description Render the outbound eRSV for a single Proof-of-Sustainability row.
+         *
+         *     Cliente direction (2026-05-23): one eRSV per PoS. ``CO/{yy}/{seq:03d}`` is
+         *     minted on first request and persisted on the ``consignment_pos`` row.
+         *
+         *     - First call allocates a number and persists it on the PoS row.
+         *     - Subsequent calls return the same number (idempotent).
+         *     - ``?format=html`` (default): returns ``text/html``.
+         *     - ``?format=pdf``: returns ``application/pdf`` (audited to audit_log).
+         */
+        get: operations["get_outbound_ersv_ersv_outbound__consignment_id___pos_number__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ersv/outbound/{consignment_id}/{pos_number}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate Outbound Number
+         * @description Admin-only: force-allocate a new ``ersv_outbound_no`` for a PoS row.
+         *
+         *     The previous number is permanently replaced. An audit log entry is written
+         *     with ``old_values.ersv_outbound_no`` = previous number so the change is
+         *     traceable. Only admins may call this endpoint.
+         */
+        post: operations["regenerate_outbound_number_ersv_outbound__consignment_id___pos_number__regenerate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ersv/inland": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Inland Shipments
+         * @description Return inland shipments (Girardot → Cartagena), optionally filtered.
+         *
+         *     One row per ISO container. Pass ``consignment_id`` to scope to a single
+         *     parent consignment (e.g. all 29 containers of DEL-CRW-2025-2).
+         */
+        get: operations["list_inland_shipments_ersv_inland_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ersv/inland/{shipment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Inland Ersv
+         * @description Render the inland eRSV for one ISO container shipment.
+         *
+         *     Numbering ``GIR/{yy}/{DD-MM}/{seq:02d}`` is minted on first call and
+         *     persisted on ``inland_shipment.ersv_inland_no``. Idempotent thereafter.
+         *
+         *     - ``?format=html`` (default): inline HTML.
+         *     - ``?format=pdf``: application/pdf (audited).
+         */
+        get: operations["get_inland_ersv_ersv_inland__shipment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ersv/{ersv_number}/html": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Ersv Html */
+        get: operations["get_ersv_html_ersv__ersv_number__html_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ersv/{ersv_number}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Ersv Pdf */
+        get: operations["get_ersv_pdf_ersv__ersv_number__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ersv/{ersv_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ersv Metadata
+         * @description Return JSON metadata for a single eRSV — no audit log, no render.
+         */
+        get: operations["get_ersv_metadata_ersv__ersv_number__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tickets/{daily_input_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ticket
+         * @description Return JSON metadata + 48-col preview text for a single ticket.
+         */
+        get: operations["get_ticket_tickets__daily_input_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tickets/{daily_input_id}/escpos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ticket Escpos
+         * @description Return a raw ESC/POS byte stream; insert an audit_log row on success.
+         */
+        get: operations["get_ticket_escpos_tickets__daily_input_id__escpos_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -532,6 +872,1048 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports/mass-balance/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mass Balance Export
+         * @description Render Annex A mass-balance PDF for the given month.
+         *
+         *     Assumes the materialized views ``mv_mass_balance_daily`` and
+         *     ``mv_mass_balance_monthly`` are fresh — refresh is the caller's
+         *     responsibility (see ``POST /mass-balance/refresh``). This handler is
+         *     a pure read + render path: it never refreshes the MVs, so a stale
+         *     view will produce a stale PDF. Caller (UI / cron) MUST refresh first
+         *     when underlying ``daily_inputs`` / ``daily_production`` have changed.
+         *
+         *     Response headers:
+         *         - ``X-Content-SHA256``: deterministic digest of the rendered PDF.
+         *         - ``Content-Disposition``: ``attachment; filename=...``.
+         *
+         *     Audit:
+         *         Inserts an ``audit_log`` row with ``action='insert'`` (the CHECK
+         *         constraint restricts ``action`` to a fixed set; ``insert`` is the
+         *         canonical "create" action for this exported artifact) and
+         *         ``new_values`` containing ``kind=REPORT_EXPORT``, the month, and
+         *         the SHA-256 digest — enough to reconstruct the audit trail of
+         *         every regulator-facing PDF emitted by the system.
+         */
+        get: operations["mass_balance_export_reports_mass_balance_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/off-takers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Off Takers
+         * @description List all off-takers. Excludes soft-deleted rows by default.
+         */
+        get: operations["list_off_takers_off_takers_get"];
+        put?: never;
+        /**
+         * Create Off Taker
+         * @description Create a new off-taker. Admin only.
+         */
+        post: operations["create_off_taker_off_takers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/off-takers/{off_taker_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Off Taker
+         * @description Retrieve a single off-taker by ID.
+         */
+        get: operations["get_off_taker_off_takers__off_taker_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft Delete Off Taker
+         * @description Soft delete (sets deleted_at). Admin only. DB row is never removed.
+         */
+        delete: operations["soft_delete_off_taker_off_takers__off_taker_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Off Taker
+         * @description Partial update. Admin only.
+         */
+        patch: operations["update_off_taker_off_takers__off_taker_id__patch"];
+        trace?: never;
+    };
+    "/consignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Consignments
+         * @description List consignments with optional filters on off_taker, status, and production date range.
+         *
+         *     Response shape: ConsignmentSummary — nested off_taker + chain-derived KPI fields
+         *     (kg_residual_utb from UTB transload leg.kg_stock_residual, kg_delivered_uk from
+         *     delivery_uk leg.kg_out). Eager-loads off_taker to avoid N+1 / async lazy-load None.
+         */
+        get: operations["list_consignments_consignments_get"];
+        put?: never;
+        /**
+         * Create Consignment
+         * @description Create a new consignment. Operator+ required.
+         */
+        post: operations["create_consignment_consignments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Consignment Detail
+         * @description Return full ConsignmentDetail: consignment + off_taker + legs (with units) + pos + links.
+         *
+         *     This is the primary endpoint consumed by #3 logistics-ui for the chain-of-custody detail page.
+         */
+        get: operations["get_consignment_detail_consignments__consignment_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft Delete Consignment
+         * @description Soft delete (sets deleted_at = NOW()). Admin only. DB row is never removed.
+         */
+        delete: operations["soft_delete_consignment_consignments__consignment_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Consignment
+         * @description Partial update. Operator+ required.
+         *
+         *     Status override: any authenticated operator+ may set any status value.
+         *     Admin-only status gate is not enforced here — the UI controls access by
+         *     showing the status field only to admins (see locked decision Q8).
+         */
+        patch: operations["update_consignment_consignments__consignment_id__patch"];
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/chain-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Chain Summary
+         * @description Read-only chain-of-custody aggregate from ``v_chain_summary``.
+         *
+         *     Returned shape is a flat dict (the view's columns) with Decimals
+         *     serialised as strings via FastAPI's default JSON encoder. Powers the
+         *     ``/app/logistics/[id]`` widget rendered above Chain of custody.
+         *
+         *     See docs/mass-balance-allocation-policy.md for the allocation rule
+         *     that drives the upstream / downstream counts in this payload.
+         */
+        get: operations["get_chain_summary_consignments__consignment_id__chain_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/customs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Consignment Customs
+         * @description List EAD customs records attached to this consignment.
+         *
+         *     Same data also embedded in ConsignmentDetail.customs — this endpoint
+         *     exists for standalone use (e.g. customs-only screens).
+         */
+        get: operations["list_consignment_customs_consignments__consignment_id__customs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/customs/{mrn}.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Customs Pdf
+         * @description Auth-gated stream of the EAD PDF.
+         *
+         *     Looks up the customs row by (consignment_id, mrn) and resolves
+         *     ``pdf_ref`` against ``CUSTOMS_ROOT`` (default ``/data/customs``).
+         *     Refuses any resolved path that escapes the customs root — defence
+         *     against tampered ``pdf_ref`` values.
+         *
+         *     Defaults to ``Content-Disposition: inline`` so the popup iframe can
+         *     render the PDF in-place via the browser's built-in viewer. Pass
+         *     ``?download=1`` to force ``attachment`` (used by the modal's
+         *     Download button).
+         */
+        get: operations["stream_customs_pdf_consignments__consignment_id__customs__mrn__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/invoices/{invoice_no}.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Invoice Pdf
+         * @description Auth-gated stream of the OisteBio→Crown Oil commercial invoice.
+         *
+         *     Looks up the customs row by (consignment_id, invoice_no) and
+         *     resolves ``invoice_pdf_ref`` against ``INVOICES_ROOT`` (default
+         *     ``/data/invoices``).  Refuses any resolved path that escapes the
+         *     invoices root.
+         *
+         *     Defaults to ``Content-Disposition: inline`` so the popup iframe can
+         *     render the PDF in-place. Pass ``?download=1`` to force
+         *     ``attachment`` (used by the modal's Download button).
+         */
+        get: operations["stream_invoice_pdf_consignments__consignment_id__invoices__invoice_no__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/bl/{bl_no}.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Bl Ocean Pdf
+         * @description Auth-gated stream of the Ocean BL PDF.
+         *
+         *     Looks up the ``shipment_leg`` row by
+         *     ``(consignment_id, document_ref=bl_no, leg_type='bl_ocean')`` and
+         *     resolves ``pdf_ref`` against ``BL_OCEAN_ROOT`` (default
+         *     ``/data/bl_ocean``).  Refuses any resolved path that escapes the
+         *     BL-ocean root — defence against tampered ``pdf_ref`` values.
+         *
+         *     Defaults to ``Content-Disposition: inline`` so the popup iframe can
+         *     render the PDF in-place via the browser's built-in viewer. Pass
+         *     ``?download=1`` to force ``attachment`` (used by the modal's
+         *     Download button).
+         */
+        get: operations["stream_bl_ocean_pdf_consignments__consignment_id__bl__bl_no__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/transload/{ref}.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Transload Pdf
+         * @description Auth-gated stream of the UTB transload consolidated PDF.
+         *
+         *     Looks up the ``shipment_leg`` row by
+         *     ``(consignment_id, document_ref=ref, leg_type='utb_transload')`` and
+         *     resolves ``pdf_ref`` against ``TRANSLOAD_ROOT`` (default
+         *     ``/data/transload``). Refuses any resolved path that escapes that
+         *     root — defence against tampered ``pdf_ref`` values.
+         *
+         *     Mirrors the Ocean-BL streaming contract: ``inline`` disposition by
+         *     default so the popup iframe can render the PDF in-place; pass
+         *     ``?download=1`` to force ``attachment``.
+         */
+        get: operations["stream_transload_pdf_consignments__consignment_id__transload__ref__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/pos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach Pos
+         * @description Attach a PoS document to a consignment. Operator+ required.
+         *
+         *     No audit written for association rows (noise-reduction decision).
+         */
+        post: operations["attach_pos_consignments__consignment_id__pos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/pos/{pos_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Detach Pos
+         * @description Soft-delete a PoS association (sets deleted_at).
+         *
+         *     Since 0022 consignment_pos carries an outbound eRSV number under a partial
+         *     UNIQUE index (active rows only). Soft-deleting frees the number for reuse
+         *     while preserving the historical row. No audit written (association row).
+         */
+        delete: operations["detach_pos_consignments__consignment_id__pos__pos_number__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/delivery-uk.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Delivery Uk Pdf
+         * @description Auth-gated stream of the JLY commercial-invoice bundle.
+         *
+         *     Looks up the ``shipment_leg`` row by
+         *     ``(consignment_id, leg_type='delivery_uk', deleted_at IS NULL)`` and
+         *     resolves ``pdf_ref`` against ``DELIVERY_UK_ROOT`` (default
+         *     ``/data/delivery_uk``). Refuses any resolved path that escapes the
+         *     delivery-uk root — defence against tampered ``pdf_ref`` values.
+         *
+         *     Defaults to ``Content-Disposition: inline`` so the popup iframe can
+         *     render the bundle in-place. Pass ``?download=1`` to force
+         *     ``attachment`` (used by the modal's Download button).
+         */
+        get: operations["stream_delivery_uk_pdf_consignments__consignment_id__delivery_uk_pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/production-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach Production Link
+         * @description Link a production day to this consignment with kg_allocated. Operator+ required.
+         *
+         *     No audit written for association rows (noise-reduction decision).
+         */
+        post: operations["attach_production_link_consignments__consignment_id__production_links_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consignments/{consignment_id}/production-links/{prod_date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Detach Production Link
+         * @description Hard-delete a production-link row. No deleted_at on this table — hard delete is correct.
+         *
+         *     No audit written for association rows (noise-reduction decision).
+         */
+        delete: operations["detach_production_link_consignments__consignment_id__production_links__prod_date__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shipments/legs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Legs
+         * @description List shipment legs, optionally filtered by consignment_id.
+         */
+        get: operations["list_legs_shipments_legs_get"];
+        put?: never;
+        /**
+         * Create Leg
+         * @description Create a shipment leg. Operator+ required.
+         *
+         *     Validates:
+         *       - kg_in >= kg_out (422 if violated)
+         *       - utb_transload: kg_stock_residual required; kg_in == kg_out + kg_stock_residual (422)
+         *       - seq unique per consignment (409 on conflict)
+         *
+         *     Auto-advances parent consignment status to 'delivered_uk' when leg_type='delivery_uk'.
+         */
+        post: operations["create_leg_shipments_legs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shipments/legs/{leg_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Leg Detail
+         * @description Return a single leg with its shipment_unit children.
+         */
+        get: operations["get_leg_detail_shipments_legs__leg_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft Delete Leg
+         * @description Soft delete a leg (sets deleted_at). Admin only. DB row is never removed.
+         */
+        delete: operations["soft_delete_leg_shipments_legs__leg_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Leg
+         * @description Partial update on a leg. Operator+ required.
+         */
+        patch: operations["update_leg_shipments_legs__leg_id__patch"];
+        trace?: never;
+    };
+    "/shipments/legs/{leg_id}/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Units
+         * @description List all shipment units (containers/tanks) for a given leg.
+         */
+        get: operations["list_units_shipments_legs__leg_id__units_get"];
+        put?: never;
+        /**
+         * Create Unit
+         * @description Add a container/tank unit to a leg. Operator+ required.
+         *
+         *     No audit written for shipment_unit (noise-reduction decision).
+         */
+        post: operations["create_unit_shipments_legs__leg_id__units_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shipments/units/{unit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Unit
+         * @description Hard-delete a shipment unit. ShipmentUnit has no deleted_at column — hard delete is correct.
+         *
+         *     No audit written for shipment_unit (noise-reduction decision).
+         */
+        delete: operations["delete_unit_shipments_units__unit_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Unit
+         * @description Partial update on a shipment unit. Operator+ required.
+         *
+         *     No audit written for shipment_unit (noise-reduction decision).
+         */
+        patch: operations["update_unit_shipments_units__unit_id__patch"];
+        trace?: never;
+    };
+    "/warehouse/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Warehouse Stock
+         * @description Per-product on-hand + cumulative totals, plus reserved_kg for eu_oil.
+         *
+         *     reserved_kg = SUM(consignment.total_kg) for active consignments whose
+         *     status is not in ('delivered_uk', 'closed'). Only meaningful for eu_oil;
+         *     every other product_kind reports 0.
+         *
+         *     When ``product_kind`` is supplied it must be one of the six allowed
+         *     values (see ``ProductKind``); the result is filtered to that single
+         *     product (possibly an empty list if the view has no row yet).
+         */
+        get: operations["list_warehouse_stock_warehouse_stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/warehouse/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Warehouse Movements
+         * @description Recent ledger movements (active rows only).
+         *
+         *     Ordered by event_date DESC, id DESC. kg_in / kg_out NULLs in the ledger
+         *     surface as 0 in the response so the frontend can render symmetric
+         *     in/out columns without null-guards. limit + offset drive the frontend
+         *     "Show more" pagination.
+         */
+        get: operations["list_warehouse_movements_warehouse_movements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/byproduct/buyers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Buyers
+         * @description List active (non-soft-deleted) byproduct buyers, ordered by name.
+         */
+        get: operations["list_buyers_byproduct_buyers_get"];
+        put?: never;
+        /**
+         * Create Buyer
+         * @description Create a new byproduct buyer. 409 if active name already exists.
+         */
+        post: operations["create_buyer_byproduct_buyers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/byproduct/buyers/{buyer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Buyer
+         * @description Fetch one active byproduct buyer by id. 404 if absent or soft-deleted.
+         */
+        get: operations["get_buyer_byproduct_buyers__buyer_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft Delete Buyer
+         * @description Soft-delete a buyer (deleted_at = NOW). Admin only.
+         *
+         *     Existing byproduct_sale rows referencing this buyer remain intact — the
+         *     FK is RESTRICT-on-delete at the SQL layer and the soft-delete only flips
+         *     a flag, so historical sales keep resolving the buyer_name via the JOIN.
+         */
+        delete: operations["soft_delete_buyer_byproduct_buyers__buyer_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Buyer
+         * @description Partial-update an active buyer. 404 if absent; 409 on name conflict.
+         *
+         *     Only fields explicitly supplied in the request body are written
+         *     (Pydantic v2 ``model_dump(exclude_unset=True)``). Empty body = no-op
+         *     UPDATE that still returns the current row so the client can refresh.
+         */
+        patch: operations["update_buyer_byproduct_buyers__buyer_id__patch"];
+        trace?: never;
+    };
+    "/byproduct/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sales
+         * @description List active byproduct sales with buyer_name JOINed in.
+         *
+         *     Result is a UNION of:
+         *     - byproduct_sale rows (canonical store for plus_oil / carbon_black /
+         *       metal_scrap sales — Conquer Trade etc.)
+         *     - consignment_pos_customs rows projected as virtual eu_oil sales
+         *       (Crown Oil DEV-P100 commercial invoices — read-only display only,
+         *       no INSERT, no ledger touch). Virtual id is offset by
+         *       CUSTOMS_VIRTUAL_OFFSET so the modal/stream PDF can detect and
+         *       re-route to the customs file.
+         *
+         *     Ordered by sale_date DESC, id DESC.
+         */
+        get: operations["list_sales_byproduct_sales_get"];
+        put?: never;
+        /**
+         * Create Sale
+         * @description Create a byproduct sale + companion mass_balance_ledger event_type='byproduct_sale'.
+         *
+         *     Atomic: both INSERTs run inside ``async with db.begin()``. On any failure
+         *     (FK violation, check constraint, network drop after the first INSERT) the
+         *     surrounding context manager rolls back BOTH writes, so the sale row can
+         *     never survive without its ledger entry. FK violations on buyer_id surface
+         *     as 409.
+         */
+        post: operations["create_sale_byproduct_sales_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/byproduct/sales/{sale_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Soft Delete Sale
+         * @description Soft-delete a sale and post a correction ledger row reversing the kg_out.
+         *
+         *     Audit trail: the original ledger row stays visible (kg_out preserved); the
+         *     correction row has kg_in = kg_net + corrects_id = original ledger id, so
+         *     v_warehouse_stock restores stock exactly to pre-sale level (net 0) while
+         *     keeping both events in the ledger history.
+         *
+         *     Virtual Crown rows (sale_id >= CUSTOMS_VIRTUAL_OFFSET) are read-only
+         *     projections from consignment_pos_customs and cannot be deleted here —
+         *     Crown invoices are managed via the consignment workflow.
+         */
+        delete: operations["soft_delete_sale_byproduct_sales__sale_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/byproduct/sales/{sale_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Sale Pdf
+         * @description Auth-gated stream of the byproduct-sale invoice PDF.
+         *
+         *     Two branches:
+         *     - sale_id < CUSTOMS_VIRTUAL_OFFSET: canonical byproduct_sale lookup,
+         *       resolves ``pdf_ref`` against ``BYPRODUCT_ROOT`` (default
+         *       ``/data/byproduct``).
+         *     - sale_id >= CUSTOMS_VIRTUAL_OFFSET: virtual Crown DEV-P100 row;
+         *       strips the offset and resolves
+         *       ``consignment_pos_customs.invoice_pdf_ref`` against
+         *       ``INVOICES_ROOT`` (default ``/data/invoices``), matching the
+         *       consignments router PDF endpoint.
+         *
+         *     Both branches refuse paths that escape their root (path-traversal
+         *     defence). Defaults to ``Content-Disposition: inline``; pass
+         *     ``?download=1`` to force ``attachment``.
+         */
+        get: operations["stream_sale_pdf_byproduct_sales__sale_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/byproduct/sales/{sale_id}/pos.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Sale Pos Pdf
+         * @description Auth-gated stream of the POS PDF paired with a virtual Crown sale row.
+         *
+         *     Only available for sale_id >= CUSTOMS_VIRTUAL_OFFSET (Crown DEV-P100
+         *     customs projections). The matching POS is looked up by
+         *     (consignment_id, pos_number) on ``consignment_pos`` and resolved against
+         *     ``POS_DOCUMENTS_ROOT`` (default ``/data/pos_documents``).
+         *
+         *     Canonical byproduct_sale rows (Conquer plus_oil, carbon_black,
+         *     metal_scrap) have no POS counterpart and return 400 here — POS is a
+         *     consignment-workflow artefact, not a byproduct field.
+         */
+        get: operations["stream_sale_pos_pdf_byproduct_sales__sale_id__pos_pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/product-purchases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Product Purchases */
+        get: operations["list_product_purchases_product_purchases_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/product-purchases/invoice-pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Invoice Pdf
+         * @description Inline supplier-invoice PDF preview for the modal iframe.
+         *
+         *     Keyed by filename (Drive name from landing's pos-invoice-map), since one
+         *     aggregate invoice file may back several PoS. No audit (viewing != download).
+         */
+        get: operations["get_invoice_pdf_product_purchases_invoice_pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/product-purchases/{pp_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Product Purchase */
+        get: operations["get_product_purchase_product_purchases__pp_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/product-purchases/{pp_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Product Purchase Pdf
+         * @description Inline PDF preview for the modal iframe. No audit (viewing != downloading).
+         */
+        get: operations["get_product_purchase_pdf_product_purchases__pp_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/product-purchases/{pp_id}/pdf/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Product Purchase Pdf
+         * @description Audited PDF download (attachment). One audit_log row per download.
+         */
+        get: operations["download_product_purchase_pdf_product_purchases__pp_id__pdf_download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/product-purchases/{pp_id}/proforma": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Proforma
+         * @description Inline proforma / supply-data-sheet, rendered on-the-fly from the PoS row.
+         *
+         *     For suppliers whose official invoice is not yet issued. NOT a fiscal
+         *     invoice — price/total/invoice-no are placeholders the supplier completes.
+         *     Viewing != download, so no audit row here (mirrors /pdf inline preview).
+         */
+        get: operations["get_proforma_product_purchases__pp_id__proforma_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/product-purchases/{pp_id}/proforma/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Proforma
+         * @description Audited proforma PDF download (attachment). One audit_log row per download.
+         */
+        get: operations["download_proforma_product_purchases__pp_id__proforma_download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/c14-certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List C14 Certificates */
+        get: operations["list_c14_certificates_c14_certificates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/c14-certificates/{c14_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get C14 Certificate */
+        get: operations["get_c14_certificate_c14_certificates__c14_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/c14-certificates/{c14_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get C14 Certificate Pdf
+         * @description Inline PDF preview for the modal iframe. No audit (viewing != downloading).
+         */
+        get: operations["get_c14_certificate_pdf_c14_certificates__c14_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/c14-certificates/{c14_id}/pdf/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download C14 Certificate Pdf
+         * @description Audited PDF download (attachment). One audit_log row per download.
+         */
+        get: operations["download_c14_certificate_pdf_c14_certificates__c14_id__pdf_download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sign/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign Pdf Endpoint
+         * @description Sign a PDF artefact and write an audit_log row. Admin-only.
+         *
+         *     The signed output sits next to the input with a ``.signed.pdf`` suffix
+         *     so the original is preserved (audit trail invariant). Re-signing the
+         *     same input overwrites the previous signed file (signing is non-
+         *     idempotent — each call carries a fresh timestamp / signature).
+         */
+        post: operations["sign_pdf_endpoint_sign_pdf_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -609,6 +1991,184 @@ export interface components {
             entries: number;
             /** Days */
             days: number;
+        };
+        /** ByproductBuyerIn */
+        ByproductBuyerIn: {
+            /** Name */
+            name: string;
+            /** Country */
+            country?: string | null;
+            /** Vat */
+            vat?: string | null;
+            /** Contact */
+            contact?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ByproductBuyerOut */
+        ByproductBuyerOut: {
+            /** Name */
+            name: string;
+            /** Country */
+            country?: string | null;
+            /** Vat */
+            vat?: string | null;
+            /** Contact */
+            contact?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ByproductBuyerUpdate
+         * @description PATCH body for /byproduct/buyers/{id}.
+         *
+         *     All fields optional; only those explicitly supplied are written via the
+         *     Pydantic ``model_dump(exclude_unset=True)`` pattern. ``name`` keeps the
+         *     same length bounds as the create-shape so renames go through the same
+         *     UNIQUE-on-active-rows check.
+         */
+        ByproductBuyerUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Vat */
+            vat?: string | null;
+            /** Contact */
+            contact?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ByproductSaleIn */
+        ByproductSaleIn: {
+            /**
+             * Product Kind
+             * @enum {string}
+             */
+            product_kind: "plus_oil" | "carbon_black" | "metal_scrap" | "eu_oil" | "dev_p200";
+            /** Buyer Id */
+            buyer_id: number;
+            /**
+             * Sale Date
+             * Format: date
+             */
+            sale_date: string;
+            /** Kg Net */
+            kg_net: number | string;
+            /** Invoice No */
+            invoice_no?: string | null;
+            /** Price Eur */
+            price_eur?: number | string | null;
+            /** Price Amount */
+            price_amount?: number | string | null;
+            /** Currency */
+            currency?: string | null;
+            /** Pricing Method */
+            pricing_method?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ByproductSaleOut */
+        ByproductSaleOut: {
+            /**
+             * Product Kind
+             * @enum {string}
+             */
+            product_kind: "plus_oil" | "carbon_black" | "metal_scrap" | "eu_oil" | "dev_p200";
+            /** Buyer Id */
+            buyer_id: number;
+            /**
+             * Sale Date
+             * Format: date
+             */
+            sale_date: string;
+            /** Kg Net */
+            kg_net: string;
+            /** Invoice No */
+            invoice_no?: string | null;
+            /** Price Eur */
+            price_eur?: string | null;
+            /** Price Amount */
+            price_amount?: string | null;
+            /** Currency */
+            currency?: string | null;
+            /** Pricing Method */
+            pricing_method?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Buyer Name */
+            buyer_name?: string | null;
+            /**
+             * Has Pdf
+             * @default false
+             */
+            has_pdf: boolean;
+            /** Pos No */
+            pos_no?: string | null;
+            /**
+             * Has Pos Pdf
+             * @default false
+             */
+            has_pos_pdf: boolean;
+        };
+        /** C14CertificateRead */
+        C14CertificateRead: {
+            /** Cert Number */
+            cert_number: string;
+            /** Lab */
+            lab?: string | null;
+            /** Product */
+            product?: string | null;
+            /** Period Month */
+            period_month?: string | null;
+            /** Sampled Date */
+            sampled_date?: string | null;
+            /** Tested Date */
+            tested_date?: string | null;
+            /** Report Date */
+            report_date?: string | null;
+            /** Bio Carbon Pct */
+            bio_carbon_pct?: string | null;
+            /** Method */
+            method?: string | null;
+            /** Sample Ref */
+            sample_ref?: string | null;
+            /** Batch Ref */
+            batch_ref?: string | null;
+            /** Sustainability Decl */
+            sustainability_decl?: string | null;
+            /** Pdf Filename */
+            pdf_filename?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Deleted At */
+            deleted_at?: string | null;
         };
         /** CertificateCreate */
         CertificateCreate: {
@@ -691,6 +2251,16 @@ export interface components {
             updated_at: string;
             /** Deleted At */
             deleted_at?: string | null;
+            /** Pdf Ref */
+            pdf_ref?: string | null;
+            /** Scope Material Groups */
+            scope_material_groups?: string[] | null;
+            /** Scope Raw */
+            scope_raw?: string | null;
+            /** Scope Parsed At */
+            scope_parsed_at?: string | null;
+            /** Scheme Pdf Detected */
+            scheme_pdf_detected?: string | null;
         };
         /** CertificateUpdate */
         CertificateUpdate: {
@@ -728,6 +2298,320 @@ export interface components {
             closure_diff_pct?: string | null;
             /** Bucket */
             bucket: string;
+        };
+        /** ConsignmentCreate */
+        ConsignmentCreate: {
+            /** Code */
+            code: string;
+            /** Off Taker Id */
+            off_taker_id: number;
+            /** Contract Ref */
+            contract_ref?: string | null;
+            product_grade: components["schemas"]["ProductGrade"];
+            /** Prod Date From */
+            prod_date_from?: string | null;
+            /** Prod Date To */
+            prod_date_to?: string | null;
+            /** Total Kg */
+            total_kg?: number | string | null;
+            /** Ersv Outbound No */
+            ersv_outbound_no?: string | null;
+            /** Port Rsv No */
+            port_rsv_no?: string | null;
+            /** @default draft */
+            status: components["schemas"]["ConsignmentStatus"];
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * ConsignmentDetail
+         * @description Composite view: consignment + nested off_taker + legs (with units) + pos + production links.
+         *
+         *     This is the response shape for GET /consignments/{id}.
+         *     Used by #3 logistics-ui for the chain-of-custody detail page.
+         */
+        ConsignmentDetail: {
+            /** Id */
+            id: number;
+            /** Code */
+            code: string;
+            /** Off Taker Id */
+            off_taker_id: number;
+            /** Contract Ref */
+            contract_ref: string | null;
+            /** Product Grade */
+            product_grade: string;
+            /** Prod Date From */
+            prod_date_from: string | null;
+            /** Prod Date To */
+            prod_date_to: string | null;
+            /** Total Kg */
+            total_kg: string | null;
+            /** Ersv Outbound No */
+            ersv_outbound_no: string | null;
+            /** Port Rsv No */
+            port_rsv_no: string | null;
+            /** Status */
+            status: string;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Deleted At */
+            deleted_at: string | null;
+            off_taker?: components["schemas"]["OffTakerOut"] | null;
+            /** Legs */
+            legs?: components["schemas"]["ShipmentLegDetail"][];
+            /** Pos */
+            pos?: components["schemas"]["ConsignmentPosOut"][];
+            /** Production Links */
+            production_links?: components["schemas"]["ConsignmentProductionLinkOut"][];
+            /** Customs */
+            customs?: components["schemas"]["ConsignmentPosCustomsOut"][];
+        };
+        /** ConsignmentOut */
+        ConsignmentOut: {
+            /** Id */
+            id: number;
+            /** Code */
+            code: string;
+            /** Off Taker Id */
+            off_taker_id: number;
+            /** Contract Ref */
+            contract_ref: string | null;
+            /** Product Grade */
+            product_grade: string;
+            /** Prod Date From */
+            prod_date_from: string | null;
+            /** Prod Date To */
+            prod_date_to: string | null;
+            /** Total Kg */
+            total_kg: string | null;
+            /** Ersv Outbound No */
+            ersv_outbound_no: string | null;
+            /** Port Rsv No */
+            port_rsv_no: string | null;
+            /** Status */
+            status: string;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Deleted At */
+            deleted_at: string | null;
+        };
+        /** ConsignmentPosCreate */
+        ConsignmentPosCreate: {
+            /** Pos Number */
+            pos_number: string;
+            /** Pdf Ref */
+            pdf_ref?: string | null;
+            /** Kg Net */
+            kg_net?: number | string | null;
+            /** Ghg Ep */
+            ghg_ep?: number | string | null;
+            /** Ghg Etd */
+            ghg_etd?: number | string | null;
+            /** Ghg Total */
+            ghg_total?: number | string | null;
+            /** Ghg Saving Pct */
+            ghg_saving_pct?: number | string | null;
+        };
+        /**
+         * ConsignmentPosCustomsOut
+         * @description One EAD row joined 1:1 with a ConsignmentPos.
+         *
+         *     Used by the landing's Outbound table — replaces the previous
+         *     "eRSV outbound" column (Colombia-only format, mislabelled) with the
+         *     correct DMS export customs reference filed by BiNova BV in NL.
+         */
+        ConsignmentPosCustomsOut: {
+            /** Consignment Id */
+            consignment_id: number;
+            /** Pos Number */
+            pos_number: string;
+            /** Mrn */
+            mrn: string;
+            /** Lrn */
+            lrn?: string | null;
+            /** Customs Office */
+            customs_office?: string | null;
+            /** Container No */
+            container_no?: string | null;
+            /** Gross Kg */
+            gross_kg?: string | null;
+            /** Net Kg */
+            net_kg?: string | null;
+            /** Invoice No */
+            invoice_no?: string | null;
+            /** Declarant Name */
+            declarant_name?: string | null;
+            /** Declarant Vat */
+            declarant_vat?: string | null;
+            /** Issuing Date */
+            issuing_date?: string | null;
+            /** Pdf Ref */
+            pdf_ref?: string | null;
+            /** Invoice Pdf Ref */
+            invoice_pdf_ref?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ConsignmentPosOut */
+        ConsignmentPosOut: {
+            /** Consignment Id */
+            consignment_id: number;
+            /** Pos Number */
+            pos_number: string;
+            /** Pdf Ref */
+            pdf_ref: string | null;
+            /** Kg Net */
+            kg_net: string | null;
+            /** Ersv Outbound No */
+            ersv_outbound_no?: string | null;
+            /** Ghg Ep */
+            ghg_ep?: string | null;
+            /** Ghg Etd */
+            ghg_etd?: string | null;
+            /** Ghg Total */
+            ghg_total?: string | null;
+            /** Ghg Saving Pct */
+            ghg_saving_pct?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Deleted At */
+            deleted_at?: string | null;
+        };
+        /** ConsignmentProductionLinkCreate */
+        ConsignmentProductionLinkCreate: {
+            /**
+             * Prod Date
+             * Format: date
+             */
+            prod_date: string;
+            /** Kg Allocated */
+            kg_allocated: number | string;
+        };
+        /** ConsignmentProductionLinkOut */
+        ConsignmentProductionLinkOut: {
+            /** Consignment Id */
+            consignment_id: number;
+            /**
+             * Prod Date
+             * Format: date
+             */
+            prod_date: string;
+            /** Kg Allocated */
+            kg_allocated: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ConsignmentStatus
+         * @enum {string}
+         */
+        ConsignmentStatus: "draft" | "loaded" | "in_transit" | "at_utb" | "delivered_uk" | "closed";
+        /**
+         * ConsignmentSummary
+         * @description List shape: ConsignmentOut + nested off_taker + chain-derived KPI fields.
+         *
+         *     KPI fields are computed from leg rows at query time:
+         *       * kg_residual_utb — sum of `kg_stock_residual` across leg_type='utb_transload'
+         *       * kg_delivered_uk — sum of `kg_out` across leg_type='delivery_uk'
+         *
+         *     Used by #3 logistics-ui list/index — KPI tiles (UTB stock, Delivered UK) +
+         *     table's off-taker column.
+         */
+        ConsignmentSummary: {
+            /** Id */
+            id: number;
+            /** Code */
+            code: string;
+            /** Off Taker Id */
+            off_taker_id: number;
+            /** Contract Ref */
+            contract_ref: string | null;
+            /** Product Grade */
+            product_grade: string;
+            /** Prod Date From */
+            prod_date_from: string | null;
+            /** Prod Date To */
+            prod_date_to: string | null;
+            /** Total Kg */
+            total_kg: string | null;
+            /** Ersv Outbound No */
+            ersv_outbound_no: string | null;
+            /** Port Rsv No */
+            port_rsv_no: string | null;
+            /** Status */
+            status: string;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Deleted At */
+            deleted_at: string | null;
+            off_taker?: components["schemas"]["OffTakerOut"] | null;
+            /** Kg Residual Utb */
+            kg_residual_utb?: string | null;
+            /** Kg Delivered Uk */
+            kg_delivered_uk?: string | null;
+        };
+        /** ConsignmentUpdate */
+        ConsignmentUpdate: {
+            /** Code */
+            code?: string | null;
+            /** Off Taker Id */
+            off_taker_id?: number | null;
+            /** Contract Ref */
+            contract_ref?: string | null;
+            product_grade?: components["schemas"]["ProductGrade"] | null;
+            /** Prod Date From */
+            prod_date_from?: string | null;
+            /** Prod Date To */
+            prod_date_to?: string | null;
+            /** Total Kg */
+            total_kg?: number | string | null;
+            /** Ersv Outbound No */
+            ersv_outbound_no?: string | null;
+            /** Port Rsv No */
+            port_rsv_no?: string | null;
+            status?: components["schemas"]["ConsignmentStatus"] | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** ContractCreate */
         ContractCreate: {
@@ -913,6 +2797,18 @@ export interface components {
             created_by?: number | null;
             /** Updated By */
             updated_by?: number | null;
+            /** Rectified At */
+            rectified_at?: string | null;
+            /** Rectified By */
+            rectified_by?: number | null;
+            /** Rectification Reason */
+            rectification_reason?: string | null;
+            /** Rectification Source */
+            rectification_source?: ("supplier_letter" | "internal_audit" | "dft_request" | "other") | null;
+            /** Original Values */
+            original_values?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** DailyInputUpdate */
         DailyInputUpdate: {
@@ -1014,6 +2910,10 @@ export interface components {
             notes?: string | null;
             /** Id */
             id: number;
+            /** Litres Eu */
+            litres_eu?: string | null;
+            /** Litres Plus */
+            litres_plus?: string | null;
             /** Source File */
             source_file?: string | null;
             /** Source Row */
@@ -1062,11 +2962,98 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /**
+         * DocumentType
+         * @enum {string}
+         */
+        DocumentType: "eRSV_outbound" | "Port_RSV" | "BL_ocean" | "transload_report" | "MRN" | "BL_road" | "commercial_invoice";
+        /**
+         * ErsvDetail
+         * @description JSON metadata for a single eRSV — drives UI badges and detail pane.
+         */
+        ErsvDetail: {
+            /** Ersv Number */
+            ersv_number: string;
+            /** Daily Input Id */
+            daily_input_id: number;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /** Entry Time */
+            entry_time: string | null;
+            /** Supplier Id */
+            supplier_id: number;
+            /** Supplier Code */
+            supplier_code: string;
+            /** Supplier Name */
+            supplier_name: string;
+            /** Total Input Kg */
+            total_input_kg: string;
+            /** Car Kg */
+            car_kg: string;
+            /** Truck Kg */
+            truck_kg: string;
+            /** Special Kg */
+            special_kg: string;
+            /** Cert Iscc Ref */
+            cert_iscc_ref: string | null;
+            /** Is Regenerated */
+            is_regenerated: boolean;
+            /** Rectified At */
+            rectified_at: string | null;
+            /** Rectification Reason */
+            rectification_reason: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * InlandListItem
+         * @description Single row in the inland shipment list — one per ISO container.
+         */
+        InlandListItem: {
+            /** Shipment Id */
+            shipment_id: number;
+            /** Consignment Id */
+            consignment_id: number;
+            /** Consignment Code */
+            consignment_code: string;
+            /** Bl Ref */
+            bl_ref: string;
+            /** Seq In Bl */
+            seq_in_bl: number;
+            /** Container Id */
+            container_id: string;
+            /** Seal Ref */
+            seal_ref: string | null;
+            /**
+             * Load Date
+             * Format: date
+             */
+            load_date: string;
+            /** Gross Kg */
+            gross_kg: number;
+            /** Tare Kg */
+            tare_kg: number;
+            /** Net Kg */
+            net_kg: number;
+            /** Ersv Inland No */
+            ersv_inland_no: string | null;
+        };
+        /**
+         * LegType
+         * @enum {string}
+         */
+        LegType: "plant_to_port" | "port_loading" | "bl_ocean" | "utb_transload" | "nl_to_uk_export" | "delivery_uk";
         /** LoginRequest */
         LoginRequest: {
             /** Email */
@@ -1148,6 +3135,394 @@ export interface components {
             /** Closure Diff Pct */
             closure_diff_pct?: string | null;
         };
+        /** OffTakerCreate */
+        OffTakerCreate: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Country */
+            country?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Iscc Certificate Id */
+            iscc_certificate_id?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** OffTakerOut */
+        OffTakerOut: {
+            /** Id */
+            id: number;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Country */
+            country: string | null;
+            /** Address */
+            address: string | null;
+            /** Iscc Certificate Id */
+            iscc_certificate_id: number | null;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Deleted At */
+            deleted_at: string | null;
+        };
+        /** OffTakerUpdate */
+        OffTakerUpdate: {
+            /** Code */
+            code?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Iscc Certificate Id */
+            iscc_certificate_id?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * OutboundListItem
+         * @description Single row in the outbound declaration list — one per PoS.
+         */
+        OutboundListItem: {
+            /** Consignment Id */
+            consignment_id: number;
+            /** Code */
+            code: string;
+            /** Pos Number */
+            pos_number: string;
+            /** Ersv Outbound No */
+            ersv_outbound_no: string | null;
+            /** Issued At */
+            issued_at: string | null;
+            /** Off Taker Code */
+            off_taker_code: string;
+            /** Off Taker Name */
+            off_taker_name: string;
+            /** Kg Net */
+            kg_net: number | null;
+        };
+        /**
+         * ProductGrade
+         * @enum {string}
+         */
+        ProductGrade: "DEV-P100" | "DEV-P200";
+        /** ProductPurchaseRead */
+        ProductPurchaseRead: {
+            /** Pos Number */
+            pos_number: string;
+            /** Supplier Id */
+            supplier_id?: number | null;
+            /** Certificate Id */
+            certificate_id?: number | null;
+            /** Contract Id */
+            contract_id?: number | null;
+            /** Issuance Date */
+            issuance_date?: string | null;
+            /** Dispatch Label */
+            dispatch_label?: string | null;
+            /** Quantity Kg */
+            quantity_kg?: string | null;
+            /** Feedstock */
+            feedstock?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Id */
+            id: number;
+            /** Supplier Name */
+            supplier_name?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Deleted At */
+            deleted_at?: string | null;
+        };
+        /**
+         * RegenerateResponse
+         * @description Returned by POST /ersv/outbound/{id}/{pos}/regenerate.
+         */
+        RegenerateResponse: {
+            /** Consignment Id */
+            consignment_id: number;
+            /** Pos Number */
+            pos_number: string;
+            /** Ersv Outbound No */
+            ersv_outbound_no: string;
+            /** Previous No */
+            previous_no: string | null;
+        };
+        /** ShipmentLegCreate */
+        ShipmentLegCreate: {
+            /** Consignment Id */
+            consignment_id: number;
+            /** Seq */
+            seq: number;
+            leg_type: components["schemas"]["LegType"];
+            document_type: components["schemas"]["DocumentType"];
+            /** Document Ref */
+            document_ref?: string | null;
+            /** Document Date */
+            document_date?: string | null;
+            /** Carrier */
+            carrier?: string | null;
+            /** Origin Node */
+            origin_node: string;
+            /** Destination Node */
+            destination_node: string;
+            /** Kg In */
+            kg_in: number | string;
+            /** Kg Out */
+            kg_out: number | string;
+            /** Kg Stock Residual */
+            kg_stock_residual?: number | string | null;
+            /** Operator Certificate Id */
+            operator_certificate_id?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * ShipmentLegDetail
+         * @description ShipmentLeg with its units — used in ConsignmentDetail.
+         */
+        ShipmentLegDetail: {
+            /** Id */
+            id: number;
+            /** Consignment Id */
+            consignment_id: number;
+            /** Seq */
+            seq: number;
+            /** Leg Type */
+            leg_type: string;
+            /** Document Type */
+            document_type: string;
+            /** Document Ref */
+            document_ref: string | null;
+            /** Document Date */
+            document_date: string | null;
+            /** Carrier */
+            carrier: string | null;
+            /** Origin Node */
+            origin_node: string;
+            /** Destination Node */
+            destination_node: string;
+            /** Kg In */
+            kg_in: string;
+            /** Kg Out */
+            kg_out: string;
+            /** Kg Stock Residual */
+            kg_stock_residual: string | null;
+            /** Operator Certificate Id */
+            operator_certificate_id: number | null;
+            /** Pdf Ref */
+            pdf_ref?: string | null;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Deleted At */
+            deleted_at: string | null;
+            /** Units */
+            units?: components["schemas"]["ShipmentUnitOut"][];
+        };
+        /** ShipmentLegOut */
+        ShipmentLegOut: {
+            /** Id */
+            id: number;
+            /** Consignment Id */
+            consignment_id: number;
+            /** Seq */
+            seq: number;
+            /** Leg Type */
+            leg_type: string;
+            /** Document Type */
+            document_type: string;
+            /** Document Ref */
+            document_ref: string | null;
+            /** Document Date */
+            document_date: string | null;
+            /** Carrier */
+            carrier: string | null;
+            /** Origin Node */
+            origin_node: string;
+            /** Destination Node */
+            destination_node: string;
+            /** Kg In */
+            kg_in: string;
+            /** Kg Out */
+            kg_out: string;
+            /** Kg Stock Residual */
+            kg_stock_residual: string | null;
+            /** Operator Certificate Id */
+            operator_certificate_id: number | null;
+            /** Pdf Ref */
+            pdf_ref?: string | null;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Deleted At */
+            deleted_at: string | null;
+        };
+        /** ShipmentLegUpdate */
+        ShipmentLegUpdate: {
+            /** Seq */
+            seq?: number | null;
+            leg_type?: components["schemas"]["LegType"] | null;
+            document_type?: components["schemas"]["DocumentType"] | null;
+            /** Document Ref */
+            document_ref?: string | null;
+            /** Document Date */
+            document_date?: string | null;
+            /** Carrier */
+            carrier?: string | null;
+            /** Origin Node */
+            origin_node?: string | null;
+            /** Destination Node */
+            destination_node?: string | null;
+            /** Kg In */
+            kg_in?: number | string | null;
+            /** Kg Out */
+            kg_out?: number | string | null;
+            /** Kg Stock Residual */
+            kg_stock_residual?: number | string | null;
+            /** Operator Certificate Id */
+            operator_certificate_id?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ShipmentUnitCreate */
+        ShipmentUnitCreate: {
+            /** Container Ref */
+            container_ref: string;
+            /** Flexitank Ref */
+            flexitank_ref?: string | null;
+            /** Kg Gross */
+            kg_gross?: number | string | null;
+            /** Kg Tare */
+            kg_tare?: number | string | null;
+            /** Kg Net */
+            kg_net: number | string;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ShipmentUnitOut */
+        ShipmentUnitOut: {
+            /** Id */
+            id: number;
+            /** Leg Id */
+            leg_id: number;
+            /** Container Ref */
+            container_ref: string;
+            /** Flexitank Ref */
+            flexitank_ref: string | null;
+            /** Kg Gross */
+            kg_gross: string | null;
+            /** Kg Tare */
+            kg_tare: string | null;
+            /** Kg Net */
+            kg_net: string;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ShipmentUnitUpdate */
+        ShipmentUnitUpdate: {
+            /** Container Ref */
+            container_ref?: string | null;
+            /** Flexitank Ref */
+            flexitank_ref?: string | null;
+            /** Kg Gross */
+            kg_gross?: number | string | null;
+            /** Kg Tare */
+            kg_tare?: number | string | null;
+            /** Kg Net */
+            kg_net?: number | string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * SignRequest
+         * @description POST /sign/pdf body — single ``bundle_path`` relative or absolute.
+         */
+        SignRequest: {
+            /**
+             * Bundle Path
+             * @description Path to the unsigned PDF, relative to repo root or absolute. Must resolve under one of data/verifier_bundles/, data/transload/, or data/delivery_uk/.
+             */
+            bundle_path: string;
+            /**
+             * Signer Name
+             * @description Human-readable signer name embedded in the /Name entry.
+             * @default DFT verifier
+             */
+            signer_name: string;
+        };
+        /**
+         * SignResponse
+         * @description POST /sign/pdf response — paths + hashes + subject.
+         */
+        SignResponse: {
+            /** Signed Path */
+            signed_path: string;
+            /** Sha256 Before */
+            sha256_before: string;
+            /** Sha256 After */
+            sha256_after: string;
+            /** Signer Subject */
+            signer_subject: string;
+            /** Algorithm */
+            algorithm: string;
+            /**
+             * Signed At
+             * Format: date-time
+             */
+            signed_at: string;
+            /** Output Size Bytes */
+            output_size_bytes: number;
+            /** Audit Log Id */
+            audit_log_id: number;
+        };
         /** SupplierCreate */
         SupplierCreate: {
             /** Name */
@@ -1218,6 +3593,53 @@ export interface components {
             is_aggregate?: boolean | null;
             /** Notes */
             notes?: string | null;
+        };
+        /**
+         * TicketDetail
+         * @description JSON metadata for a single báscula ticket — drives the print preview.
+         */
+        TicketDetail: {
+            /** Daily Input Id */
+            daily_input_id: number;
+            /** Ersv Number */
+            ersv_number: string | null;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /** Supplier Code */
+            supplier_code: string;
+            /** Supplier Name */
+            supplier_name: string;
+            /** Prod */
+            prod: string;
+            /** Total Input Kg */
+            total_input_kg: string;
+            /** Driver Name */
+            driver_name: string;
+            /** Driver Cedula */
+            driver_cedula: string;
+            /** Vehicle Plate */
+            vehicle_plate: string;
+            /** Transport Company */
+            transport_company: string;
+            /** Hora Ent */
+            hora_ent: string;
+            /** Hora Sal */
+            hora_sal: string;
+            /** Peso Ent Kg */
+            peso_ent_kg: string;
+            /** Peso Sal Kg */
+            peso_sal_kg: string;
+            /** Peso Neto Kg */
+            peso_neto_kg: string;
+            /** Ticket Num */
+            ticket_num: number;
+            /** Weigher */
+            weigher: string;
+            /** Preview Text */
+            preview_text: string;
         };
         /** TokenResponse */
         TokenResponse: {
@@ -1306,6 +3728,88 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /**
+         * WarehouseMovement
+         * @description One row from mass_balance_ledger (active rows only).
+         */
+        WarehouseMovement: {
+            /** Id */
+            id: number;
+            /**
+             * Event Date
+             * Format: date
+             */
+            event_date: string;
+            /** Event Type */
+            event_type: string;
+            /**
+             * Product Kind
+             * @enum {string}
+             */
+            product_kind: "eu_oil" | "plus_oil" | "carbon_black" | "metal_scrap" | "syngas" | "h2o";
+            /** Kg In */
+            kg_in: string;
+            /** Kg Out */
+            kg_out: string;
+            /** Post Balance Kg */
+            post_balance_kg: string | null;
+            /** Ref Doc No */
+            ref_doc_no: string | null;
+            /** Consignment Id */
+            consignment_id: number | null;
+            /** Notes */
+            notes: string | null;
+        };
+        /**
+         * WarehouseStockRow
+         * @description One row per product_kind from v_warehouse_stock + reserved_kg overlay.
+         *
+         *     reserved_kg is computed in the router (not in the view): sum of
+         *     consignment.total_kg for active consignments whose status is not
+         *     delivered_uk / closed. Only meaningful for eu_oil — other kinds are 0.
+         *
+         *     pos_issued_kg = SUM(consignment_pos.kg_net) for the same set of active
+         *     consignments (POS already issued, awaiting delivery). Only meaningful
+         *     for eu_oil.
+         *
+         *     at_utb_awaiting_pos_kg = reserved_kg - pos_issued_kg (residual reserved
+         *     stock at UTB that has no POS yet). Only meaningful for eu_oil.
+         *
+         *     produced_ytd_kg = SUM(kg_in) where event_date falls in the most-recent
+         *     operational year (carried forward automatically by the view as data
+         *     accrues). opening_balance_kg = SUM(kg_in) for any prior year (i.e.
+         *     inception / carry-over rows). produced_total_kg stays equal to the sum
+         *     of the two so existing consumers do not break.
+         */
+        WarehouseStockRow: {
+            /**
+             * Product Kind
+             * @enum {string}
+             */
+            product_kind: "eu_oil" | "plus_oil" | "carbon_black" | "metal_scrap" | "syngas" | "h2o";
+            /** Stock Kg */
+            stock_kg: string;
+            /** Produced Total Kg */
+            produced_total_kg: string;
+            /** Dispatched Total Kg */
+            dispatched_total_kg: string;
+            /** Produced Ytd Kg */
+            produced_ytd_kg: string;
+            /** Opening Balance Kg */
+            opening_balance_kg: string;
+            /** Reserved Kg */
+            reserved_kg: string;
+            /** Pos Issued Kg */
+            pos_issued_kg: string;
+            /** Pos Issued By Year */
+            pos_issued_by_year?: {
+                [key: string]: string;
+            };
+            /** At Utb Awaiting Pos Kg */
+            at_utb_awaiting_pos_kg: string;
+            /** Last Movement At */
+            last_movement_at: string | null;
         };
     };
     responses: never;
@@ -1456,6 +3960,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditLogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_audit_log_csv_admin_audit_log_csv_get: {
+        parameters: {
+            query?: {
+                table_name?: string | null;
+                record_id?: number | null;
+                action?: ("insert" | "update" | "delete" | "soft_delete" | "restore") | null;
+                changed_by?: number | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                max_rows?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -2046,6 +4587,68 @@ export interface operations {
             };
         };
     };
+    get_certificate_pdf_certificates__cert_id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_certificate_pdf_certificates__cert_id__pdf_download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_contracts_contracts_get: {
         parameters: {
             query?: {
@@ -2208,6 +4811,68 @@ export interface operations {
             };
         };
     };
+    get_contract_pdf_contracts__contract_id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_contract_pdf_contracts__contract_id__pdf_download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     restore_contract_contracts__contract_id__restore_post: {
         parameters: {
             query?: never;
@@ -2295,6 +4960,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DailyInputRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    doc_id_batch_daily_inputs_doc_id_batch_get: {
+        parameters: {
+            query: {
+                /** @description Comma-separated daily_input ids, e.g. '1,2,3' */
+                ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string | number;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -2459,6 +5158,331 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DailyInputRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_outbound_declarations_ersv_outbound_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutboundListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_outbound_ersv_ersv_outbound__consignment_id___pos_number__get: {
+        parameters: {
+            query?: {
+                format?: string;
+            };
+            header?: never;
+            path: {
+                consignment_id: number;
+                pos_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regenerate_outbound_number_ersv_outbound__consignment_id___pos_number__regenerate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignment_id: number;
+                pos_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegenerateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_inland_shipments_ersv_inland_get: {
+        parameters: {
+            query?: {
+                consignment_id?: number | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InlandListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_inland_ersv_ersv_inland__shipment_id__get: {
+        parameters: {
+            query?: {
+                format?: string;
+            };
+            header?: never;
+            path: {
+                shipment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ersv_html_ersv__ersv_number__html_get: {
+        parameters: {
+            query?: {
+                daily_input_id?: number | null;
+            };
+            header?: never;
+            path: {
+                ersv_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ersv_pdf_ersv__ersv_number__pdf_get: {
+        parameters: {
+            query?: {
+                daily_input_id?: number | null;
+            };
+            header?: never;
+            path: {
+                ersv_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ersv_metadata_ersv__ersv_number__get: {
+        parameters: {
+            query?: {
+                daily_input_id?: number | null;
+            };
+            header?: never;
+            path: {
+                ersv_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErsvDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ticket_tickets__daily_input_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                daily_input_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ticket_escpos_tickets__daily_input_id__escpos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                daily_input_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -2708,6 +5732,7 @@ export interface operations {
             query?: {
                 date_from?: string | null;
                 date_to?: string | null;
+                supplier_id?: number | null;
                 limit?: number;
                 offset?: number;
             };
@@ -2743,6 +5768,7 @@ export interface operations {
                 /** @description month start (e.g., 2025-01-01) */
                 date_from?: string | null;
                 date_to?: string | null;
+                supplier_id?: number | null;
             };
             header?: never;
             path?: never;
@@ -2821,6 +5847,1777 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClosureStatusRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mass_balance_export_reports_mass_balance_export_get: {
+        parameters: {
+            query: {
+                /** @description Reporting month, ``YYYY-MM`` */
+                month: string;
+                /** @description Output format — only ``pdf`` is supported */
+                format?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_off_takers_off_takers_get: {
+        parameters: {
+            query?: {
+                include_deleted?: boolean;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OffTakerOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_off_taker_off_takers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OffTakerCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OffTakerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_off_taker_off_takers__off_taker_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                off_taker_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OffTakerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    soft_delete_off_taker_off_takers__off_taker_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                off_taker_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_off_taker_off_takers__off_taker_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                off_taker_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OffTakerUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OffTakerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_consignments_consignments_get: {
+        parameters: {
+            query?: {
+                off_taker_id?: number | null;
+                status?: string | null;
+                prod_date_from?: string | null;
+                prod_date_to?: string | null;
+                include_deleted?: boolean;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsignmentSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_consignment_consignments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsignmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsignmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_consignment_detail_consignments__consignment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsignmentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    soft_delete_consignment_consignments__consignment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_consignment_consignments__consignment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsignmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsignmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_chain_summary_consignments__consignment_id__chain_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_consignment_customs_consignments__consignment_id__customs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsignmentPosCustomsOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_customs_pdf_consignments__consignment_id__customs__mrn__pdf_get: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                consignment_id: number;
+                mrn: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_invoice_pdf_consignments__consignment_id__invoices__invoice_no__pdf_get: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                consignment_id: number;
+                invoice_no: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_bl_ocean_pdf_consignments__consignment_id__bl__bl_no__pdf_get: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                consignment_id: number;
+                bl_no: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_transload_pdf_consignments__consignment_id__transload__ref__pdf_get: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                consignment_id: number;
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_pos_consignments__consignment_id__pos_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsignmentPosCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsignmentPosOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detach_pos_consignments__consignment_id__pos__pos_number__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignment_id: number;
+                pos_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_delivery_uk_pdf_consignments__consignment_id__delivery_uk_pdf_get: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                consignment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_production_link_consignments__consignment_id__production_links_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsignmentProductionLinkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsignmentProductionLinkOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detach_production_link_consignments__consignment_id__production_links__prod_date__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignment_id: number;
+                prod_date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_legs_shipments_legs_get: {
+        parameters: {
+            query?: {
+                consignment_id?: number | null;
+                include_deleted?: boolean;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipmentLegOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_leg_shipments_legs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShipmentLegCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipmentLegOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_leg_detail_shipments_legs__leg_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leg_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipmentLegDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    soft_delete_leg_shipments_legs__leg_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leg_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_leg_shipments_legs__leg_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leg_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShipmentLegUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipmentLegOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_units_shipments_legs__leg_id__units_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leg_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipmentUnitOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_unit_shipments_legs__leg_id__units_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leg_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShipmentUnitCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipmentUnitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_unit_shipments_units__unit_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_unit_shipments_units__unit_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShipmentUnitUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipmentUnitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_warehouse_stock_warehouse_stock_get: {
+        parameters: {
+            query?: {
+                product_kind?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarehouseStockRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_warehouse_movements_warehouse_movements_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                product_kind?: ("eu_oil" | "plus_oil" | "carbon_black" | "metal_scrap" | "syngas" | "h2o") | null;
+                event_type?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarehouseMovement"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_buyers_byproduct_buyers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ByproductBuyerOut"][];
+                };
+            };
+        };
+    };
+    create_buyer_byproduct_buyers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ByproductBuyerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ByproductBuyerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_buyer_byproduct_buyers__buyer_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                buyer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ByproductBuyerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    soft_delete_buyer_byproduct_buyers__buyer_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                buyer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_buyer_byproduct_buyers__buyer_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                buyer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ByproductBuyerUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ByproductBuyerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sales_byproduct_sales_get: {
+        parameters: {
+            query?: {
+                product_kind?: ("plus_oil" | "carbon_black" | "metal_scrap" | "eu_oil" | "dev_p200") | null;
+                buyer_id?: number | null;
+                from_date?: string | null;
+                to_date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ByproductSaleOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_sale_byproduct_sales_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ByproductSaleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ByproductSaleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    soft_delete_sale_byproduct_sales__sale_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sale_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_sale_pdf_byproduct_sales__sale_id__pdf_get: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                sale_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_sale_pos_pdf_byproduct_sales__sale_id__pos_pdf_get: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                sale_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_product_purchases_product_purchases_get: {
+        parameters: {
+            query?: {
+                supplier_id?: number | null;
+                include_deleted?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPurchaseRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_invoice_pdf_product_purchases_invoice_pdf_get: {
+        parameters: {
+            query: {
+                file: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_product_purchase_product_purchases__pp_id__get: {
+        parameters: {
+            query?: {
+                include_deleted?: boolean;
+            };
+            header?: never;
+            path: {
+                pp_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPurchaseRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_product_purchase_pdf_product_purchases__pp_id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pp_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_product_purchase_pdf_product_purchases__pp_id__pdf_download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pp_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_proforma_product_purchases__pp_id__proforma_get: {
+        parameters: {
+            query?: {
+                format?: string;
+            };
+            header?: never;
+            path: {
+                pp_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_proforma_product_purchases__pp_id__proforma_download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pp_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_c14_certificates_c14_certificates_get: {
+        parameters: {
+            query?: {
+                include_deleted?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["C14CertificateRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_c14_certificate_c14_certificates__c14_id__get: {
+        parameters: {
+            query?: {
+                include_deleted?: boolean;
+            };
+            header?: never;
+            path: {
+                c14_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["C14CertificateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_c14_certificate_pdf_c14_certificates__c14_id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                c14_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_c14_certificate_pdf_c14_certificates__c14_id__pdf_download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                c14_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sign_pdf_endpoint_sign_pdf_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignResponse"];
                 };
             };
             /** @description Validation Error */
