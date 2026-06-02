@@ -213,7 +213,7 @@ export default async function CertificateDetailPage({ params, searchParams }: Pa
           </DataBlock>
         )}
 
-        {cert.notes && (
+        {cert.notes && me?.role !== 'viewer' && (
           <DataBlock title="Notes" full>
             <p className="font-mono text-[0.78rem] text-ink whitespace-pre-wrap">{cert.notes}</p>
           </DataBlock>

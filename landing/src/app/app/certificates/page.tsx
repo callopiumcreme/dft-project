@@ -106,13 +106,15 @@ export default async function CertificatesPage({ searchParams }: PageProps) {
   }
 
   const isAdmin = me?.role === 'admin';
+  // Notes carry internal compliance annotations — obfuscate for viewer role.
+  const canSeeNotes = me?.role !== 'viewer';
 
   const filtered = q
     ? rows.filter(
         (r) =>
           r.cert_number.toLowerCase().includes(q) ||
           r.scheme.toLowerCase().includes(q) ||
-          (r.notes ?? '').toLowerCase().includes(q),
+          (canSeeNotes && (r.notes ?? '').toLowerCase().includes(q)),
       )
     : rows;
 
@@ -245,7 +247,7 @@ export default async function CertificatesPage({ searchParams }: PageProps) {
               type="search"
               name="q"
               defaultValue={q}
-              placeholder="number, scheme, notes"
+              placeholder="number, scheme"
               className="border border-rule bg-bg-soft px-2 py-1 text-ink lowercase tracking-normal w-56"
             />
           </label>
@@ -346,9 +348,15 @@ export default async function CertificatesPage({ searchParams }: PageProps) {
                   <Td className="text-ink-soft">{fmtDate(r.issued_at)}</Td>
                   <Td className="text-ink-soft">{fmtDate(r.expires_at)}</Td>
                   <Td className="text-ink-soft tabular-nums">{r.supplier_ids.length}</Td>
-                  <Td className="text-ink-mute max-w-[16rem] truncate" title={r.notes ?? ''}>
-                    {r.notes ?? '—'}
-                  </Td>
+                  {canSeeNotes ? (
+                    <Td className="text-ink-mute max-w-[16rem] truncate" title={r.notes ?? ''}>
+                      {r.notes ?? '—'}
+                    </Td>
+                  ) : (
+                    <Td className="text-ink-mute/40 select-none" title="restricted">
+                      {r.notes ? '••••••' : '—'}
+                    </Td>
+                  )}
                   <Td className="text-right">
                     <Link
                       href={`/app/certificates/${r.id}`}
